@@ -1,0 +1,1861 @@
+
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { TranscriptEntry, QuizQuestion, Card, InlineNote } from '../types';
+import PlayIcon from './icons/PlayIcon';
+import PauseIcon from './icons/PauseIcon';
+import TranslateIcon from './icons/TranslateIcon';
+import { Theme } from '../App';
+import RewindIcon from './icons/RewindIcon';
+import ForwardIcon from './icons/ForwardIcon';
+import MusicIcon from './icons/MusicIcon';
+import CommentaryIcon from './icons/CommentaryIcon';
+import InfoIcon from './icons/InfoIcon';
+import QuizIcon from './icons/QuizIcon';
+import LightBulbIcon from './icons/LightBulbIcon';
+import TrashIcon from './icons/TrashIcon';
+import StopwatchIcon from './icons/StopwatchIcon';
+import PdfIcon from './icons/PdfIcon';
+import NoteIcon from './icons/NoteIcon';
+import FlashIcon from './icons/FlashIcon'; // Import new icon
+import QuizCreationModal from './QuizCreationModal';
+import PdfExportModal from './PdfExportModal';
+import { grammarTerms, GrammarTerm } from '../lib/grammarTerms';
+import { RsvpScreen } from './RsvpScreen'; // Import RSVP Screen
+
+interface ReaderScreenProps {
+  mediaUrl: string | null;
+  transcript: TranscriptEntry[];
+  onBack: () => void;
+  title: string;
+  thumbnailUrl?: string;
+  duration?: number;
+  bgmFile?: File;
+  annotationFile?: File;
+  materialId: number;
+  hasWordFile: boolean;
+  registeredWords?: Card[]; 
+  onStartStudy: (id: number) => void;
+  T: Theme;
+  personaProfile: string | null;
+  backgroundInfo: string | null;
+  hasQuizFile?: boolean;
+  onStartQuiz: (id: number) => void;
+  onUpdateMaterial: (id: number, data: { quizFile?: File | null, annotationFile?: File | null, globalMemo?: string, inlineNotes?: InlineNote[] }) => Promise<void>;
+  globalMemo?: string;
+  inlineNotes?: InlineNote[];
+}
+
+const VolumeIcon: React.FC<{className?: string, muted?: boolean}> = ({className, muted}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className || "w-5 h-5"}>
+        {muted ? (
+             <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+        ) : (
+             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        )}
+    </svg>
+);
+
+const EyeIcon: React.FC<{className?: string; off?: boolean}> = ({className, off}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        {off ? (
+             <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+        ) : (
+             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        )}
+        {!off && <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />}
+    </svg>
+);
+
+const SkipPrevIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+    </svg>
+);
+
+const SkipNextIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-6 h-6"} fill="currentColor" viewBox="0 0 24 24">
+        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+    </svg>
+);
+
+const ColumnsIcon: React.FC<{className?: string}> = ({className}) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1="12" y1="3" x2="12" y2="21" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const fontOptions = [
+    { label: 'ゴシック', value: "'Noto Sans JP', sans-serif" },
+    { label: '明朝', value: "'Noto Serif JP', serif" },
+    { label: 'ロック', value: "'RocknRoll One', sans-serif" },
+    { label: 'システム', value: "sans-serif" },
+    { label: '英語用', value: "'Inter', sans-serif" },
+];
+
+// Selection Data type for the popover menu
+interface SelectionData {
+    top: number;
+    left: number;
+    type: 'english' | 'japanese' | 'explanation';
+    // For English
+    startGlobalIndex?: number;
+    endGlobalIndex?: number;
+    // For Japanese/Explanation
+    sentenceIndex?: number;
+    characterRange?: { start: number; end: number };
+}
+
+const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBack, title, thumbnailUrl, duration: totalDuration, bgmFile, annotationFile, materialId, hasWordFile, registeredWords = [], onStartStudy, T, personaProfile, backgroundInfo, hasQuizFile, onStartQuiz, onUpdateMaterial, globalMemo: initialGlobalMemo, inlineNotes: initialInlineNotes }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const bgmAudioRef = useRef<HTMLAudioElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
+  const [showEnglish, setShowEnglish] = useState(true);
+  const [showJapanese, setShowJapanese] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [isSideBySide, setIsSideBySide] = useState(false);
+  const [useTTS, setUseTTS] = useState(!mediaUrl);
+  const [abLoop, setAbLoop] = useState<{ a: number | null, b: number | null }>({ a: null, b: null });
+  const [fontSize, setFontSize] = useState(120);
+
+  // TTS Refs for callbacks
+  const isPlayingRef = useRef(isPlaying);
+  const useTTSRef = useRef(useTTS);
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+  useEffect(() => {
+    useTTSRef.current = useTTS;
+  }, [useTTS]);
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const speakSentence = useCallback((index: number) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    if (index < 0 || index >= transcript.length) {
+      setIsPlaying(false);
+      return;
+    }
+
+    const entry = transcript[index];
+    setCurrentTime(entry.start);
+
+    const sentenceEl = document.getElementById(`sentence-${index}`);
+    if (sentenceEl && scrollContainerRef.current) {
+      sentenceEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const textToSpeak = cleanText(entry.english);
+    if (!textToSpeak) {
+      if (index + 1 < transcript.length) {
+        speakSentence(index + 1);
+      } else {
+        setIsPlaying(false);
+      }
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = 'en-US';
+    utterance.rate = playbackRate;
+
+    utterance.onend = () => {
+      if (isPlayingRef.current && useTTSRef.current) {
+        if (index + 1 < transcript.length) {
+          speakSentence(index + 1);
+        } else {
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    utterance.onerror = (e: any) => {
+      if (e.error !== 'interrupted') {
+        console.error("TTS play error", e);
+        setIsPlaying(false);
+      }
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }, [transcript, playbackRate]);
+  const [fontFamily, setFontFamily] = useState(fontOptions[0].value);
+  const [isImmersive, setIsImmersive] = useState(false);
+  const [bgmUrl, setBgmUrl] = useState<string | null>(null);
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  const [bgmVolume, setBgmVolume] = useState(0.2);
+  const [mainVolume, setMainVolume] = useState(1);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isBackgroundModalOpen, setIsBackgroundModalOpen] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  
+  // RSVP Mode State
+  const [isRsvpModeOpen, setIsRsvpModeOpen] = useState(false);
+
+  // Memo Feature State
+  const [globalMemo, setGlobalMemo] = useState(initialGlobalMemo || '');
+  const [isGlobalMemoOpen, setIsGlobalMemoOpen] = useState(false);
+  const [inlineNotes, setInlineNotes] = useState<InlineNote[]>(initialInlineNotes || []);
+  const [showInlineNotes, setShowInlineNotes] = useState(true);
+  const [selectionMenu, setSelectionMenu] = useState<SelectionData | null>(null);
+  const [activeNote, setActiveNote] = useState<InlineNote | null>(null);
+  const [isNoteInputOpen, setIsNoteInputOpen] = useState(false);
+  const [newNoteText, setNewNoteText] = useState('');
+
+  // Registered Word Pop State
+  const [activeWordPopup, setActiveWordPopup] = useState<{ card: Card, position: { top: number, left: number, width: number } } | null>(null);
+
+  // Grammar Term Pop State
+  const [activeGrammarTerm, setActiveGrammarTerm] = useState<{ term: GrammarTerm, position: { top: number, left: number, width: number } } | null>(null);
+  
+  // Speed Reading State
+  const [isSpeedMode, setIsSpeedMode] = useState(false);
+  const [isSpeedSettingsOpen, setIsSpeedSettingsOpen] = useState(false);
+  const [wpmLevel, setWpmLevel] = useState(150);
+  const [speedTimerState, setSpeedTimerState] = useState<'idle' | 'running' | 'finished'>('idle');
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [targetDuration, setTargetDuration] = useState(0);
+  const speedTimerRef = useRef<number | null>(null);
+
+  // Pacer State (Speed Reading Guide)
+  const [isPacerEnabled, setIsPacerEnabled] = useState(true);
+  const [currentPacerIndex, setCurrentPacerIndex] = useState(-1);
+  const [chunkSize, setChunkSize] = useState(1);
+
+  // Visibility State
+  const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+  
+  const sortedGrammarTerms = useMemo(() => {
+      return [...grammarTerms].sort((a, b) => b.term.length - a.term.length);
+  }, []);
+
+  // Precompile grammar terms RegExp to avoid recreating it multiple times during render
+  const grammarTermsRegExp = useMemo(() => {
+      const escapeRegExp = (string: string) => {
+          return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      };
+      if (sortedGrammarTerms.length === 0) return null;
+      return new RegExp(`(${sortedGrammarTerms.map(t => escapeRegExp(t.term)).join('|')})`, 'g');
+  }, [sortedGrammarTerms]);
+
+  // Precompute registeredWords lookup optimization
+  const precomputedRegisteredWords = useMemo(() => {
+      return (registeredWords || []).map(c => {
+          const contentWithoutNotes = c.front.toLowerCase()
+              .replace(/\[.*?\]/g, '')
+              .replace(/\(.*?\)/g, '')
+              .replace(/【.*?】/g, '')
+              .replace(/[^\w\s']/g, ''); 
+          const cardWords: string[] = contentWithoutNotes.match(/[a-z0-9']+/g) || [];
+          return { card: c, cardWords };
+      });
+  }, [registeredWords]);
+
+  // Fast direct lookup logic targeting registered cards
+  const findRegisteredCard = useCallback((cleanTranscriptWord: string) => {
+      if (!showInlineNotes || cleanTranscriptWord.length <= 1 || precomputedRegisteredWords.length === 0) return undefined;
+      
+      for (let i = 0; i < precomputedRegisteredWords.length; i++) {
+          const { card, cardWords } = precomputedRegisteredWords[i];
+          if (cardWords.includes(cleanTranscriptWord)) return card;
+          if (cleanTranscriptWord.length >= 5) {
+              const transcriptPrefix = cleanTranscriptWord.substring(0, 5);
+              const hasPrefixMatch = cardWords.some(cw => cw.length >= 5 && cw.substring(0, 5) === transcriptPrefix);
+              if (hasPrefixMatch) return card;
+          }
+          if (cleanTranscriptWord.endsWith('s') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return card;
+          if (cleanTranscriptWord.endsWith('es') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return card;
+          if (cleanTranscriptWord.endsWith('ed') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return card;
+          if (cleanTranscriptWord.endsWith('d') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return card;
+          if (cleanTranscriptWord.endsWith('ing') && cardWords.includes(cleanTranscriptWord.slice(0, -3))) return card;
+      }
+      return undefined;
+  }, [precomputedRegisteredWords, showInlineNotes]);
+
+  const cleanText = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/\[(?:その日本語訳|英文の第[0-9一二三四五六七八九十]+文)\]/g, '')
+      .replace(/[\[\]]/g, '')
+      .trim();
+  };
+
+  const normalizeForMatch = (str: string) => str.toLowerCase().replace(/[^a-z0-9']/g, '');
+
+  const { sentenceStartIndices, totalWordCount } = useMemo(() => {
+      let count = 0;
+      const indices = transcript.map(entry => {
+          const currentStart = count;
+          const words = cleanText(entry.english).trim().split(/\s+/).filter(w => w.length > 0);
+          count += words.length;
+          return currentStart;
+      });
+      return { sentenceStartIndices: indices, totalWordCount: count };
+  }, [transcript]);
+
+  const msSkipBackward = useCallback(() => {
+      if (audioRef.current) {
+          audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 3, 0);
+      }
+  }, []);
+
+  const msSkipForward = useCallback(() => {
+      if (audioRef.current) {
+          audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 3, audioRef.current.duration);
+      }
+  }, []);
+
+  const msPrevTrack = useCallback(() => {
+      if (!audioRef.current || !transcript || transcript.length === 0) return;
+      const t = audioRef.current.currentTime;
+      const curIdx = transcript.findIndex(entry => t >= entry.start && t < entry.end);
+      let targetTime = 0;
+      
+      if (curIdx !== -1) {
+          if (t - transcript[curIdx].start > 1.5) {
+              targetTime = transcript[curIdx].start;
+          } else {
+              if (curIdx > 0) targetTime = transcript[curIdx - 1].start;
+              else targetTime = 0;
+          }
+      } else {
+          for (let i = transcript.length - 1; i >= 0; i--) {
+             if (transcript[i].start < t - 1.0) {
+                 targetTime = transcript[i].start;
+                 break;
+             }
+         }
+      }
+      audioRef.current.currentTime = targetTime;
+  }, [transcript]);
+
+  const msNextTrack = useCallback(() => {
+      if (!audioRef.current || !transcript || transcript.length === 0) return;
+      const t = audioRef.current.currentTime;
+      const curIdx = transcript.findIndex(entry => t >= entry.start && t < entry.end);
+      let targetTime = audioRef.current.duration;
+
+      if (curIdx !== -1) {
+        if (curIdx < transcript.length - 1) {
+            targetTime = transcript[curIdx + 1].start;
+        }
+      } else {
+         const next = transcript.find(entry => entry.start > t);
+         if (next) targetTime = next.start;
+      }
+      audioRef.current.currentTime = targetTime;
+  }, [transcript]);
+
+  const safePlay = async (audioEl: HTMLAudioElement) => {
+    try {
+        await audioEl.play();
+    } catch (e: any) {
+        if (e.name === 'AbortError' || e.message?.includes('interrupted')) {
+        } else {
+            console.error("Playback failed", e);
+        }
+    }
+  };
+
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: title || 'Audio Learning',
+            artist: 'Audio-Sync Reader',
+            album: 'My Collection',
+            artwork: thumbnailUrl ? [
+                { src: thumbnailUrl, sizes: '96x96', type: 'image/png' },
+                { src: thumbnailUrl, sizes: '128x128', type: 'image/png' },
+                { src: thumbnailUrl, sizes: '192x192', type: 'image/png' },
+                { src: thumbnailUrl, sizes: '512x512', type: 'image/png' },
+            ] : undefined
+        });
+
+        navigator.mediaSession.setActionHandler('play', () => {
+            if (audioRef.current) {
+                safePlay(audioRef.current);
+                setIsPlaying(true);
+            }
+        });
+        navigator.mediaSession.setActionHandler('pause', () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                setIsPlaying(false);
+            }
+        });
+        navigator.mediaSession.setActionHandler('seekbackward', msSkipBackward);
+        navigator.mediaSession.setActionHandler('seekforward', msSkipForward);
+        navigator.mediaSession.setActionHandler('previoustrack', msPrevTrack);
+        navigator.mediaSession.setActionHandler('nexttrack', msNextTrack);
+    }
+    
+    return () => {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', null);
+            navigator.mediaSession.setActionHandler('pause', null);
+            navigator.mediaSession.setActionHandler('seekbackward', null);
+            navigator.mediaSession.setActionHandler('seekforward', null);
+            navigator.mediaSession.setActionHandler('previoustrack', null);
+            navigator.mediaSession.setActionHandler('nexttrack', null);
+        }
+    };
+  }, [title, thumbnailUrl, msSkipBackward, msSkipForward, msPrevTrack, msNextTrack]);
+
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          if (globalMemo !== initialGlobalMemo || inlineNotes !== initialInlineNotes) {
+              onUpdateMaterial(materialId, { globalMemo, inlineNotes });
+          }
+      }, 1000);
+      return () => clearTimeout(timer);
+  }, [globalMemo, inlineNotes, materialId, onUpdateMaterial, initialGlobalMemo, initialInlineNotes]);
+
+  const handleTextSelection = useCallback(() => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed) {
+          return;
+      }
+
+      let anchorNode = selection.anchorNode;
+      let focusNode = selection.focusNode;
+
+      if (anchorNode?.nodeType === Node.TEXT_NODE) anchorNode = anchorNode.parentNode;
+      if (focusNode?.nodeType === Node.TEXT_NODE) focusNode = focusNode.parentNode;
+
+      if (!anchorNode || !focusNode) return;
+      
+      const anchorEl = (anchorNode as HTMLElement);
+      const focusEl = (focusNode as HTMLElement);
+
+      const anchorWord = anchorEl.closest('[id^="pacer-word-"]');
+      const focusWord = focusEl.closest('[id^="pacer-word-"]');
+
+      if (anchorWord && focusWord) {
+          const startId = parseInt(anchorWord.id.replace('pacer-word-', ''), 10);
+          const endId = parseInt(focusWord.id.replace('pacer-word-', ''), 10);
+          
+          const start = Math.min(startId, endId);
+          const end = Math.max(startId, endId);
+          
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          
+          setSelectionMenu({
+              top: rect.top + window.scrollY - 40,
+              left: rect.left + (rect.width / 2) - 60,
+              type: 'english',
+              startGlobalIndex: start,
+              endGlobalIndex: end
+          });
+          return;
+      }
+
+      const jpContainer = anchorEl.closest('[id^="sentence-jp-"]');
+      if (jpContainer && jpContainer.contains(focusEl)) {
+           const idParts = jpContainer.id.split('-');
+           const sentenceIndex = parseInt(idParts[2], 10);
+           const range = selection.getRangeAt(0);
+           const preCaretRange = range.cloneRange();
+           preCaretRange.selectNodeContents(jpContainer);
+           preCaretRange.setEnd(range.startContainer, range.startOffset);
+           const startOffset = preCaretRange.toString().length;
+           const endOffset = startOffset + range.toString().length;
+           const rect = range.getBoundingClientRect();
+           setSelectionMenu({
+               top: rect.top + window.scrollY - 40,
+               left: rect.left + (rect.width / 2) - 60,
+               type: 'japanese',
+               sentenceIndex,
+               characterRange: { start: startOffset, end: endOffset }
+           });
+           return;
+      }
+
+      const expContainer = anchorEl.closest('[id^="sentence-exp-"]');
+      if (expContainer && expContainer.contains(focusEl)) {
+           const idParts = expContainer.id.split('-');
+           const sentenceIndex = parseInt(idParts[2], 10);
+           const range = selection.getRangeAt(0);
+           const preCaretRange = range.cloneRange();
+           preCaretRange.selectNodeContents(expContainer);
+           preCaretRange.setEnd(range.startContainer, range.startOffset);
+           const startOffset = preCaretRange.toString().length;
+           const endOffset = startOffset + range.toString().length;
+           const rect = range.getBoundingClientRect();
+           setSelectionMenu({
+               top: rect.top + window.scrollY - 40,
+               left: rect.left + (rect.width / 2) - 60,
+               type: 'explanation',
+               sentenceIndex,
+               characterRange: { start: startOffset, end: endOffset }
+           });
+           return;
+      }
+      setSelectionMenu(null);
+  }, []);
+
+  const handleClearSelection = () => {
+      const selection = window.getSelection();
+      if (selection) selection.removeAllRanges();
+      setSelectionMenu(null);
+      setIsNoteInputOpen(false);
+  };
+
+  const handleAddNoteClick = () => {
+      if (selectionMenu) {
+          setNewNoteText('');
+          setIsNoteInputOpen(true);
+      }
+  };
+
+  const handleSaveNote = () => {
+      if (selectionMenu && newNoteText.trim()) {
+          const newNote: InlineNote = {
+              id: Date.now().toString(),
+              text: newNoteText,
+              createdAt: new Date(),
+              color: 'yellow',
+              target: selectionMenu.type,
+          };
+          if (selectionMenu.type === 'english') {
+              newNote.startGlobalIndex = selectionMenu.startGlobalIndex;
+              newNote.endGlobalIndex = selectionMenu.endGlobalIndex;
+          } else {
+              newNote.sentenceIndex = selectionMenu.sentenceIndex;
+              newNote.characterRange = selectionMenu.characterRange;
+          }
+          setInlineNotes(prev => [...prev, newNote]);
+          setIsNoteInputOpen(false);
+          setSelectionMenu(null);
+          handleClearSelection();
+      }
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+      setInlineNotes(prev => prev.filter(n => n.id !== noteId));
+      setActiveNote(null);
+  };
+
+  const getEnglishNoteForWord = (globalIndex: number) => {
+      return inlineNotes.find(note => 
+          (!note.target || note.target === 'english') && 
+          note.startGlobalIndex !== undefined && 
+          note.endGlobalIndex !== undefined && 
+          globalIndex >= note.startGlobalIndex && 
+          globalIndex <= note.endGlobalIndex
+      );
+  };
+  
+  const handleSingleWordClick = (e: React.MouseEvent<HTMLSpanElement>, globalIndex: number, registeredCard?: Card) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (registeredCard) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setActiveWordPopup({
+              card: registeredCard,
+              position: { top: rect.top, left: rect.left, width: rect.width }
+          });
+          setSelectionMenu(null);
+          if (window.getSelection) {
+              window.getSelection()?.removeAllRanges();
+          }
+          return;
+      }
+      const existingNote = getEnglishNoteForWord(globalIndex);
+      if (existingNote && showInlineNotes) {
+          setActiveNote(existingNote);
+          setSelectionMenu(null);
+          return;
+      }
+  };
+
+  const handleGrammarTermClick = (e: React.MouseEvent<HTMLSpanElement>, term: GrammarTerm) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const rect = e.currentTarget.getBoundingClientRect();
+      setActiveGrammarTerm({
+          term,
+          position: { top: rect.top, left: rect.left, width: rect.width }
+      });
+      setActiveWordPopup(null);
+  };
+
+  const renderGrammarTerms = (text: string) => {
+      if (!grammarTermsRegExp) return text;
+      const parts = text.split(grammarTermsRegExp);
+      return parts.map((part, i) => {
+          const term = sortedGrammarTerms.find(t => t.term === part);
+          if (term) {
+              return (
+                  <span 
+                      key={i} 
+                      className="border-b border-dotted border-gray-400 cursor-help hover:text-sky-400 hover:border-sky-400 transition-colors"
+                      onClick={(e) => handleGrammarTermClick(e, term)}
+                  >
+                      {part}
+                  </span>
+              );
+          }
+          return part;
+      });
+  };
+  
+  const renderTextWithNotes = (text: string, sentenceIndex: number, type: 'japanese' | 'explanation') => {
+      const notes = inlineNotes.filter(n => n.target === type && n.sentenceIndex === sentenceIndex && n.characterRange);
+      if (notes.length === 0 || !showInlineNotes) {
+          return renderGrammarTerms(text);
+      }
+      const sortedNotes = [...notes].sort((a, b) => (a.characterRange?.start || 0) - (b.characterRange?.start || 0));
+      const segments: React.ReactNode[] = [];
+      let currentIndex = 0;
+      sortedNotes.forEach((note, i) => {
+          const start = note.characterRange!.start;
+          const end = note.characterRange!.end;
+          if (start > currentIndex) {
+              segments.push(renderGrammarTerms(text.substring(currentIndex, start)));
+          }
+          segments.push(
+              <span 
+                  key={note.id}
+                  onClick={(e) => { e.stopPropagation(); setActiveNote(note); }}
+                  className="border-b-2 border-dotted border-yellow-400 bg-yellow-400/20 cursor-pointer"
+              >
+                  {text.substring(start, end)}
+              </span>
+          );
+          currentIndex = end;
+      });
+      if (currentIndex < text.length) {
+          segments.push(renderGrammarTerms(text.substring(currentIndex)));
+      }
+      return segments;
+  };
+
+  const hasMedia = mediaUrl !== null;
+  const hasTranscript = transcript && transcript.length > 0;
+  const hasExplanation = transcript.some(t => t.explanation);
+
+  const formatTime = (seconds: number) => {
+    if (!seconds) return "0:00";
+    const absSeconds = Math.abs(seconds);
+    const m = Math.floor(absSeconds / 60);
+    const s = Math.floor(absSeconds % 60);
+    return `${seconds < 0 ? '+' : ''}${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const togglePlay = () => {
+    if (useTTS) {
+      if (isPlaying) {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        setIsPlaying(false);
+      } else {
+        setIsPlaying(true);
+        const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+        const startIdx = curIdx !== -1 ? curIdx : 0;
+        speakSentence(startIdx);
+      }
+    } else {
+      const audio = audioRef.current;
+      if (audio) {
+        if (isPlaying) {
+          audio.pause();
+          setIsPlaying(false);
+        } else {
+          safePlay(audio);
+          setIsPlaying(true);
+        }
+      }
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    setCurrentTime(time);
+    if (useTTS) {
+      if (isPlaying) {
+        const curIdx = transcript.findIndex(t => time >= t.start && time < t.end);
+        if (curIdx !== -1) {
+          speakSentence(curIdx);
+        }
+      }
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+  };
+
+  const skipForward = () => {
+    if (useTTS) {
+      const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+      if (curIdx !== -1 && curIdx + 1 < transcript.length) {
+        const nextTime = transcript[curIdx + 1].start;
+        setCurrentTime(nextTime);
+        if (isPlaying) {
+          speakSentence(curIdx + 1);
+        }
+      }
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 3, duration);
+    }
+  };
+
+  const skipBackward = () => {
+    if (useTTS) {
+      const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+      if (curIdx !== -1 && curIdx > 0) {
+        const prevTime = transcript[curIdx - 1].start;
+        setCurrentTime(prevTime);
+        if (isPlaying) {
+          speakSentence(curIdx - 1);
+        }
+      }
+    } else if (audioRef.current) {
+      audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 3, 0);
+    }
+  };
+
+  const handlePrevSentence = () => {
+    if (!transcript || transcript.length === 0) return;
+    const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+    let targetIdx = 0;
+    if (curIdx !== -1) {
+         if (currentTime - transcript[curIdx].start > 1.5) {
+             targetIdx = curIdx;
+         } else {
+             if (curIdx > 0) targetIdx = curIdx - 1;
+             else targetIdx = 0;
+         }
+    } else {
+         for (let i = transcript.length - 1; i >= 0; i--) {
+             if (transcript[i].start < currentTime - 1.0) {
+                 targetIdx = i;
+                 break;
+             }
+         }
+    }
+    const targetTime = transcript[targetIdx].start;
+    setCurrentTime(targetTime);
+    if (useTTS) {
+        if (isPlaying) {
+            speakSentence(targetIdx);
+        }
+    } else if (audioRef.current) {
+        audioRef.current.currentTime = targetTime;
+    }
+  };
+
+  const handleNextSentence = () => {
+    if (!transcript || transcript.length === 0) return;
+    const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+    let targetIdx = transcript.length - 1;
+    if (curIdx !== -1) {
+        if (curIdx < transcript.length - 1) {
+            targetIdx = curIdx + 1;
+        }
+    } else {
+         const next = transcript.find(t => t.start > currentTime);
+         if (next) targetIdx = transcript.indexOf(next);
+    }
+    const targetTime = transcript[targetIdx].start;
+    setCurrentTime(targetTime);
+    if (useTTS) {
+        if (isPlaying) {
+            speakSentence(targetIdx);
+        }
+    } else if (audioRef.current) {
+        audioRef.current.currentTime = targetTime;
+    }
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = mainVolume;
+    }
+  }, [mainVolume]);
+
+  useEffect(() => {
+    const bgmAudio = bgmAudioRef.current;
+    if (bgmAudio) {
+        bgmAudio.volume = bgmVolume;
+    }
+  }, [bgmVolume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.playbackRate = playbackRate;
+    return () => {
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
+  }, [playbackRate]);
+  
+  useEffect(() => {
+    if (bgmFile) {
+        const url = URL.createObjectURL(bgmFile);
+        setBgmUrl(url);
+    }
+  }, [bgmFile]);
+
+  useEffect(() => {
+    return () => {
+        if (bgmUrl) {
+            URL.revokeObjectURL(bgmUrl);
+        }
+    }
+  }, [bgmUrl]);
+  
+  useEffect(() => {
+    const bgmAudio = bgmAudioRef.current;
+    if (!bgmAudio) return;
+    if (isBgmPlaying) {
+        safePlay(bgmAudio);
+    } else {
+        bgmAudio.pause();
+    }
+  }, [isBgmPlaying]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const animate = () => {
+      const newTime = audio.currentTime;
+      setCurrentTime(newTime);
+      if (abLoop.a !== null && abLoop.b !== null && audio.currentTime >= abLoop.b) {
+        audio.currentTime = abLoop.a;
+      }
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    if (isPlaying) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isPlaying, abLoop.a, abLoop.b]);
+  
+  useEffect(() => {
+      if (speedTimerState === 'running') {
+          speedTimerRef.current = window.setInterval(() => {
+              setTimeRemaining(prev => prev - 1);
+          }, 1000);
+      } else {
+          if (speedTimerRef.current) {
+              clearInterval(speedTimerRef.current);
+              speedTimerRef.current = null;
+          }
+      }
+      return () => {
+          if (speedTimerRef.current) clearInterval(speedTimerRef.current);
+      }
+  }, [speedTimerState]);
+
+  useEffect(() => {
+      let pacerInterval: number | null = null;
+      if (speedTimerState === 'running' && isPacerEnabled) {
+          const msPerWord = (60 / wpmLevel) * 1000;
+          const intervalMs = msPerWord * chunkSize;
+          pacerInterval = window.setInterval(() => {
+              setCurrentPacerIndex(prev => {
+                  const next = prev + chunkSize;
+                  const el = document.getElementById(`pacer-word-${next}`);
+                  if (el && scrollContainerRef.current) {
+                      const rect = el.getBoundingClientRect();
+                      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+                      const triggerZone = containerRect.height * 0.7; 
+                      const relativeTop = rect.top - containerRect.top;
+                      if (relativeTop > triggerZone || relativeTop < 0) {
+                          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                  }
+                  if (next >= totalWordCount) {
+                      handleSpeedStop();
+                      return prev;
+                  }
+                  return next;
+              });
+          }, intervalMs);
+      }
+      return () => {
+          if (pacerInterval) clearInterval(pacerInterval);
+      };
+  }, [speedTimerState, isPacerEnabled, wpmLevel, totalWordCount, chunkSize]);
+
+  const handleSpeedStart = () => {
+      const calculatedSeconds = Math.ceil((totalWordCount / wpmLevel) * 60);
+      setTargetDuration(calculatedSeconds);
+      setTimeRemaining(calculatedSeconds);
+      setSpeedTimerState('running');
+      setIsSpeedSettingsOpen(false);
+      setCurrentPacerIndex(0);
+      setShowJapanese(false);
+      setShowExplanation(false);
+      if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+  };
+  const handleSpeedStop = () => {
+      setSpeedTimerState('finished');
+  };
+  const handleSpeedReset = () => {
+      setSpeedTimerState('idle');
+      setCurrentPacerIndex(-1);
+      setIsSpeedSettingsOpen(true);
+  };
+  const handleCloseSpeedMode = () => {
+      setSpeedTimerState('idle');
+      setCurrentPacerIndex(-1);
+      setIsSpeedMode(false);
+      setIsSpeedSettingsOpen(false);
+  };
+
+  return (
+    <div className={`flex flex-col h-screen max-h-screen overflow-hidden ${T.bg} ${T.textPrimary}`}>
+      {/* RSVP Screen Overlay */}
+      {isRsvpModeOpen && (
+          <RsvpScreen 
+            transcript={transcript} 
+            onClose={() => setIsRsvpModeOpen(false)} 
+          />
+      )}
+
+      {/* Audio Element */}
+      {mediaUrl && (
+        <audio
+          ref={audioRef}
+          src={mediaUrl}
+          onEnded={() => setIsPlaying(false)}
+          onPause={() => setIsPlaying(false)}
+          onPlay={() => setIsPlaying(true)}
+        />
+      )}
+       {bgmUrl && (
+          <audio
+            ref={bgmAudioRef}
+            src={bgmUrl}
+            loop
+          />
+        )}
+
+      {/* Header */}
+      {isHeaderVisible ? (
+      <div className={`flex-shrink-0 h-14 flex items-center justify-between px-4 border-b ${T.border} ${T.panelBg} z-20 transition-all duration-100 relative shadow-sm`}>
+        {isSpeedMode && speedTimerState !== 'idle' ? (
+            // Speed Reading Timer Header
+            <div className="flex-grow flex items-center justify-between animate-fade-in">
+                <button onClick={handleCloseSpeedMode} className={`p-2 rounded-full ${T.button} hover:bg-white/10 mr-2`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                </button>
+                <div className="flex-grow flex flex-col items-center mx-4">
+                    <div className={`text-2xl font-mono font-bold leading-none ${timeRemaining < 0 ? 'text-red-500 animate-pulse' : timeRemaining < targetDuration * 0.2 ? 'text-yellow-400' : T.textPrimary}`}>
+                        {formatTime(timeRemaining)}
+                    </div>
+                    <div className="w-full max-w-xs h-1.5 bg-gray-700 rounded-full mt-1 overflow-hidden">
+                         <div 
+                            className={`h-full transition-all duration-1000 ease-linear ${timeRemaining < 0 ? 'bg-red-500 w-full' : timeRemaining < targetDuration * 0.2 ? 'bg-yellow-400' : 'bg-green-500'}`}
+                            style={{ width: timeRemaining < 0 ? '100%' : `${(timeRemaining / targetDuration) * 100}%` }}
+                         />
+                    </div>
+                </div>
+                {speedTimerState === 'running' ? (
+                    <button onClick={handleSpeedStop} className="px-4 py-1 bg-red-500 text-white rounded-full font-bold shadow-lg hover:brightness-110 text-sm">
+                        STOP
+                    </button>
+                ) : (
+                    <button onClick={handleSpeedReset} className={`px-4 py-1 ${T.buttonStrong} rounded-full font-bold text-sm`}>
+                        設定へ
+                    </button>
+                )}
+            </div>
+        ) : (
+            // Normal Header
+            <>
+                <div className="flex items-center gap-3 overflow-hidden">
+                    <button onClick={onBack} className={`p-2 rounded-full ${T.button} hover:bg-white/10 transition-colors flex-shrink-0`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
+                    </button>
+                    <h1 className="font-bold text-lg truncate">{title}</h1>
+                </div>
+                
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                    <button
+                        onClick={() => setShowInlineNotes(!showInlineNotes)}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${showInlineNotes ? 'text-yellow-400' : 'text-gray-500'}`}
+                        title="メモの表示/非表示"
+                    >
+                        <EyeIcon off={!showInlineNotes} />
+                    </button>
+
+                    <button
+                        onClick={() => setIsGlobalMemoOpen(true)}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-white relative`}
+                        title="全体メモ"
+                    >
+                        <NoteIcon />
+                        {globalMemo.trim() && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>}
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            const nextSide = !isSideBySide;
+                            setIsSideBySide(nextSide);
+                            if (nextSide) {
+                                setShowJapanese(true);
+                                setShowEnglish(true);
+                            }
+                        }}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${isSideBySide ? 'text-sky-400 bg-sky-400/10' : 'text-gray-500'}`}
+                        title="左右対訳表示モード"
+                    >
+                        <ColumnsIcon className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            const nextShow = !showJapanese;
+                            setShowJapanese(nextShow);
+                            if (!nextShow) {
+                                setIsSideBySide(false);
+                            }
+                        }}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${showJapanese ? 'text-sky-400 bg-sky-400/10' : 'text-gray-500'}`}
+                        title="日本語訳の表示/非表示"
+                    >
+                        <TranslateIcon className="w-5 h-5" />
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            if (isPlaying) {
+                                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                                setIsPlaying(false);
+                            } else {
+                                if (!useTTS) {
+                                    setUseTTS(true);
+                                }
+                                setIsPlaying(true);
+                                const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end);
+                                const startIdx = curIdx !== -1 ? curIdx : 0;
+                                speakSentence(startIdx);
+                            }
+                        }}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${isPlaying ? 'text-rose-500 bg-rose-500/10 animate-pulse' : 'text-gray-500'}`}
+                        title={isPlaying ? "自動読み上げ(TTS)を一時停止" : "自動読み上げ(TTS)を再生"}
+                    >
+                        {isPlaying ? (
+                            <PauseIcon className="w-5 h-5" />
+                        ) : (
+                            <VolumeIcon className="w-5 h-5" />
+                        )}
+                    </button>
+
+                    <button
+                        onClick={() => setIsPdfModalOpen(true)}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-rose-500/20 text-rose-400`}
+                        title="教材PDF印刷・B5対訳出力"
+                    >
+                        <PdfIcon />
+                    </button>
+
+                    {/* WPM Timer (Normal Mode) */}
+                    <button
+                        onClick={() => {
+                            setIsSpeedMode(true);
+                            setIsSpeedSettingsOpen(true);
+                        }}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-green-400`}
+                        title="WPM測定 (スピードリーディング)"
+                    >
+                        <StopwatchIcon />
+                    </button>
+
+                    {/* Spartan Reader Mode (RSVP) Toggle */}
+                    <button
+                        onClick={() => setIsRsvpModeOpen(true)}
+                        className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-[#00f0ff] animate-pulse`}
+                        title="速読トレーニング (Spartan Reader)"
+                    >
+                        <FlashIcon />
+                    </button>
+
+                    {personaProfile && (
+                        <button
+                            onClick={() => setIsProfileModalOpen(true)}
+                            className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-purple-400`}
+                            title="解説者プロフィール"
+                        >
+                        <CommentaryIcon />
+                        </button>
+                    )}
+                    {backgroundInfo && (
+                        <button
+                            onClick={() => setIsBackgroundModalOpen(true)}
+                            className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-amber-400`}
+                            title="背景知識・雑学"
+                        >
+                        <InfoIcon />
+                        </button>
+                    )}
+                    {hasQuizFile && (
+                        <button
+                            onClick={() => onStartQuiz(materialId)}
+                            className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-indigo-400`}
+                            title="クイズ"
+                        >
+                        <QuizIcon />
+                        </button>
+                    )}
+                    {!hasQuizFile && (
+                        <button 
+                            onClick={() => setIsQuizModalOpen(true)}
+                            className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 text-gray-400`}
+                            title="クイズを作成"
+                        >
+                            <QuizIcon className="opacity-50" />
+                        </button>
+                    )}
+                </div>
+            </>
+        )}
+        {!isSpeedMode && (
+            <button 
+                onClick={() => setIsHeaderVisible(false)}
+                className={`absolute -bottom-4 left-1/2 -translate-x-1/2 w-16 h-5 rounded-b-lg ${T.panelBg} border-b border-x ${T.border} flex items-center justify-center hover:brightness-110 active:scale-95 transition-all shadow-sm z-0 group opacity-50 hover:opacity-100`}
+                title="ヘッダーを隠す"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${T.textMuted} group-hover:${T.textPrimary}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+        )}
+      </div>
+      ) : (
+        <button 
+            onClick={() => setIsHeaderVisible(true)}
+            className={`fixed top-4 right-4 p-3 rounded-full ${T.accentBg} text-white shadow-xl z-30 hover:scale-110 active:scale-95 transition-all animate-fade-in bg-opacity-90 backdrop-blur-sm`}
+            title="ヘッダーを表示"
+        >
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+      )}
+      
+      {/* Main Content Area */}
+      <div className="flex-grow relative overflow-hidden bg-transparent" ref={contentWrapperRef}>
+          
+          {/* Backdrop for closing popups (Selection Menu / Note Input) */}
+          {(selectionMenu || isNoteInputOpen) && (
+              <div 
+                className="absolute inset-0 z-40 bg-transparent" 
+                onClick={(e) => {
+                    handleClearSelection();
+                }}
+              />
+          )}
+
+          {/* Text Scroll Container */}
+          <div 
+            ref={scrollContainerRef}
+            className={`absolute inset-0 overflow-y-auto p-4 transition-all duration-500 ${isImmersive ? 'px-8 sm:px-16' : ''}`}
+            style={{ 
+                fontSize: `${fontSize}%`, 
+                fontFamily: fontFamily,
+                paddingBottom: isControlsVisible ? '12rem' : '5rem',
+                paddingTop: isHeaderVisible ? '1rem' : '2rem' 
+            }}
+            onMouseUp={handleTextSelection}
+          >
+              {transcript.length === 0 ? (
+                  <div className={`flex flex-col items-center justify-center h-full opacity-50`}>
+                      <p>テキストデータがありません</p>
+                  </div>
+              ) : (
+                  <div className="max-w-4xl mx-auto space-y-6">
+                      {transcript.map((entry, index) => {
+                          const isActive = currentTime >= entry.start && currentTime < entry.end;
+                          const sentenceStartIndex = sentenceStartIndices[index];
+                          const words = cleanText(entry.english).trim().split(/\s+/).filter(w => w.length > 0);
+
+                          return (
+                              <div 
+                                key={index} 
+                                id={`sentence-${index}`}
+                                className={`relative p-4 rounded-xl transition-all duration-100 ${isActive && isPlaying ? `${T.highlightBg} scale-[1.01] shadow-lg ring-1 ${T.accent}` : 'hover:bg-white/5'} group`}
+                              >
+                                   {(hasMedia || useTTS) && (
+                                       <button 
+                                          onClick={() => { 
+                                              if (useTTS) {
+                                                   setIsPlaying(true);
+                                                   speakSentence(index);
+                                               } else if (audioRef.current) {
+                                                  audioRef.current.currentTime = entry.start; 
+                                                  safePlay(audioRef.current);
+                                                  setIsPlaying(true);
+                                              }
+                                          }}
+                                          className="absolute -left-2 top-4 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-sky-400"
+                                       >
+                                          <PlayIcon />
+                                       </button>
+                                   )}
+
+                                   <div className={isSideBySide ? "grid grid-cols-1 md:grid-cols-2 gap-6" : "space-y-2"}>
+                                       {/* English Column */}
+                                       <div className={isSideBySide ? "pr-3 md:border-r md:border-white/10" : ""}>
+                                           {showEnglish && (
+                                       <div className={`font-medium leading-relaxed mb-2 ${isActive ? 'text-white' : T.textPrimary}`}>
+                                           {words.map((word, wIdx) => {
+                                               const globalWordIndex = sentenceStartIndex + wIdx;
+                                               const isPacerActive = speedTimerState === 'running' && 
+                                                                     isPacerEnabled && 
+                                                                     globalWordIndex >= currentPacerIndex && 
+                                                                     globalWordIndex < currentPacerIndex + chunkSize;
+                                               
+                                               const cleanTranscriptWord = normalizeForMatch(word);
+                                               
+                                               const registeredCard = findRegisteredCard(cleanTranscriptWord); /*
+                                               
+                                                   const contentWithoutNotes = c.front.toLowerCase()
+                                                       .replace(/\[.*?\]/g, '')
+                                                       .replace(/\(.*?\)/g, '')
+                                                       .replace(/【.*?】/g, '')
+                                                       .replace(/[^\w\s']/g, ''); 
+                                                   const cardWords: string[] = contentWithoutNotes.match(/[a-z0-9']+/g) || [];
+                                                   if (cardWords.includes(cleanTranscriptWord)) return true;
+                                                   if (cleanTranscriptWord.length >= 5) {
+                                                       const transcriptPrefix = cleanTranscriptWord.substring(0, 5);
+                                                       const hasPrefixMatch = cardWords.some(cw => cw.length >= 5 && cw.substring(0, 5) === transcriptPrefix);
+                                                       if (hasPrefixMatch) return true;
+                                                   }
+                                                   if (cleanTranscriptWord.endsWith('s') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return true;
+                                                   if (cleanTranscriptWord.endsWith('es') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return true;
+                                                   if (cleanTranscriptWord.endsWith('ed') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return true;
+                                                   if (cleanTranscriptWord.endsWith('d') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return true;
+                                                   if (cleanTranscriptWord.endsWith('ing') && cardWords.includes(cleanTranscriptWord.slice(0, -3))) return true;
+                                                   return false;
+
+                                               */ const note = showInlineNotes ? getEnglishNoteForWord(globalWordIndex) : null;
+                                               return (
+                                                   <span 
+                                                      key={wIdx} 
+                                                      id={`pacer-word-${globalWordIndex}`}
+                                                      onClick={(e) => handleSingleWordClick(e, globalWordIndex, registeredCard)}
+                                                      className={`inline-block pr-1.5 transition-all duration-100 rounded-sm cursor-text select-text relative
+                                                        ${isPacerActive ? `border-b-2 ${T.textPrimary}` : ''}
+                                                        ${note ? 'border-b-2 border-dotted border-yellow-400 bg-yellow-400/20 cursor-pointer' : ''}
+                                                        ${registeredCard ? 'text-amber-400 font-bold decoration-dotted decoration-amber-600 underline underline-offset-2 cursor-pointer' : ''}
+                                                      `}
+                                                      style={isPacerActive ? { borderColor: 'var(--accent-color, #38bdf8)', color: 'var(--accent-color, #38bdf8)' } : {}}
+                                                   >
+                                                       {word}
+                                                   </span>
+                                               );
+                                           })}
+                                       </div>
+                                   )}
+                                   
+                                       </div>
+
+                                       {/* Japanese Column */}
+                                       <div>
+                                           {showJapanese && entry.japanese && cleanText(entry.japanese) && (
+                                       <p 
+                                            id={`sentence-jp-${index}`}
+                                            className={`leading-relaxed ${T.textPrimary} ${isSideBySide ? '' : `border-l-2 ${T.accent} pl-3 mb-2`}`}
+                                        >
+                                           {renderTextWithNotes(cleanText(entry.japanese), index, 'japanese')}
+                                       </p>
+                                   )}
+
+                                       </div>
+                                   </div>
+
+                                   {showExplanation && entry.explanation && (
+                                       <div 
+                                            id={`sentence-exp-${index}`}
+                                            className={`mt-3 p-3 rounded-lg bg-black/20 border border-white/5 ${T.textSecondary} whitespace-pre-wrap`}
+                                            style={{ fontSize: '0.7em' }}
+                                        >
+                                           <div className="flex items-center gap-2 mb-2 text-sky-400 font-bold text-xs uppercase tracking-wider">
+                                               <LightBulbIcon className="w-5 h-5" />
+                                           </div>
+                                           {renderTextWithNotes(
+                                               entry.explanation
+                                                .replace(/__PERSONA_PROFILE__[\s\S]*?__END_PERSONA__/, '')
+                                                .replace(/__BACKGROUND_INFO__[\s\S]*?__END_BACKGROUND__/, '')
+                                                .replace(/(?:命名した|名前)[:：]\s*/g, '')
+                                                .replace(/命名した/g, '')
+                                                .replace(/\[(?:その日本語訳|英文の第[0-9一二三四五六七八九十]+文)\]/g, '')
+                                                .trim(),
+                                               index, 
+                                               'explanation'
+                                           )}
+                                       </div>
+                                   )}
+                              </div>
+                          );
+                      })}
+                  </div>
+              )}
+          </div>
+          
+          {selectionMenu && !isNoteInputOpen && (
+              <div 
+                className="absolute z-50 animate-fade-in flex gap-2"
+                style={{ top: selectionMenu.top, left: selectionMenu.left }}
+              >
+                  <button 
+                    onClick={handleAddNoteClick}
+                    className={`${T.containerBg} text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl border ${T.border} flex items-center gap-2 hover:bg-white/20`}
+                  >
+                      <NoteIcon className="w-4 h-4" />
+                      メモを追加
+                  </button>
+              </div>
+          )}
+          
+          {isNoteInputOpen && selectionMenu && (
+               <div 
+                className="absolute z-50 animate-fade-in"
+                style={{ top: selectionMenu.top, left: selectionMenu.left - 100 }}
+              >
+                  <div className={`${T.containerBg} p-3 rounded-lg shadow-xl border ${T.border} w-64`}>
+                      <textarea 
+                        autoFocus
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        placeholder="メモを入力..."
+                        rows={3}
+                        className={`w-full p-2 text-sm ${T.button} ${T.textSecondary} rounded-md resize-none mb-2 focus:outline-none`}
+                      />
+                      <div className="flex justify-end gap-2">
+                          <button onClick={handleClearSelection} className={`px-2 py-1 text-xs ${T.button} rounded`}>キャンセル</button>
+                          <button onClick={handleSaveNote} className={`px-2 py-1 text-xs ${T.accentBg} text-white rounded font-bold`}>保存</button>
+                      </div>
+                  </div>
+              </div>
+          )}
+          
+          {activeNote && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setActiveNote(null)}>
+                  <div className={`${T.containerBg} p-4 rounded-lg shadow-xl max-w-sm w-full border ${T.border} animate-fade-in`} onClick={(e) => e.stopPropagation()}>
+                      <h4 className={`font-bold ${T.textPrimary} mb-2 border-b ${T.border} pb-2 flex justify-between items-center`}>
+                          <span>メモ</span>
+                          <button onClick={() => handleDeleteNote(activeNote.id)} className="text-red-400 hover:text-red-300">
+                              <TrashIcon className="w-4 h-4" />
+                          </button>
+                      </h4>
+                      <p className={`${T.textSecondary} whitespace-pre-wrap mb-4 text-sm`}>{activeNote.text}</p>
+                      <div className="flex justify-end">
+                          <button onClick={() => setActiveNote(null)} className={`px-3 py-1 text-sm ${T.button} rounded`}>閉じる</button>
+                      </div>
+                  </div>
+              </div>
+          )}
+
+      </div>
+
+      {!isSpeedMode && (
+        <>
+            {isControlsVisible ? (
+                <div className={`flex-shrink-0 flex flex-col gap-1 px-3 py-2 ${T.panelBg} border-t ${T.border} transition-all duration-100 z-20 relative pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.3)]`}>
+                    <button 
+                        onClick={() => setIsControlsVisible(false)}
+                        className={`absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-5 rounded-t-lg ${T.panelBg} border-t border-x ${T.border} flex items-center justify-center hover:brightness-110 active:scale-95 transition-all shadow-sm z-0 group`}
+                        title="プレイヤーを隠す"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 ${T.textMuted} group-hover:${T.textPrimary}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    {(hasMedia || useTTS) && (
+                        <div className="flex items-center gap-3 select-none w-full">
+                            <span className="text-[10px] font-mono opacity-70 w-10 text-right tabular-nums flex-shrink-0">
+                                {formatTime(currentTime)}
+                            </span>
+                            <input 
+                                type="range" 
+                                min={0} 
+                                max={duration || 100} 
+                                value={currentTime}
+                                onChange={handleSeek}
+                                className={`flex-grow h-1 rounded-full appearance-none cursor-pointer bg-gray-700 accent-sky-500`}
+                                style={{ backgroundImage: `linear-gradient(to right, var(--tw-gradient-from) 0%, var(--tw-gradient-to) ${(currentTime / (duration || 1)) * 100}%, rgb(55 65 81) ${(currentTime / (duration || 1)) * 100}%, rgb(55 65 81) 100%)` }}
+                            />
+                             <span className="text-[10px] font-mono opacity-70 w-10 tabular-nums flex-shrink-0">
+                                {formatTime(duration)}
+                            </span>
+                        </div>
+                    )}
+
+                     <div className="flex items-center justify-between pt-1">
+                         <div className="flex items-center gap-2">
+                            {(hasMedia || useTTS) && (
+                                <>
+                                 <div className="relative">
+                                    <div className={`flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${T.button} hover:bg-white/20`}>
+                                        {playbackRate}x
+                                    </div>
+                                    <select
+                                        value={playbackRate}
+                                        onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    >
+                                        <option value={0.8}>0.8x</option>
+                                        <option value={0.9}>0.9x</option>
+                                        <option value={1.0}>1.0x</option>
+                                        <option value={1.2}>1.2x</option>
+                                        <option value={1.5}>1.5x</option>
+                                    </select>
+                                 </div>
+                                 {hasMedia && (
+                                     <button 
+                                         onClick={() => {
+                                             if (isPlaying) {
+                                                 if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                                                 if (!useTTS) {
+                                                     setIsPlaying(false);
+                                                 } else {
+                                                     const audio = audioRef.current;
+                                                     if (audio) {
+                                                         audio.currentTime = currentTime;
+                                                         safePlay(audio);
+                                                     }
+                                                 }
+                                             }
+                                             setUseTTS(prev => !prev);
+                                         }}
+                                         className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors border ${useTTS ? 'text-sky-400 bg-sky-400/10 border-sky-400/30' : 'text-gray-400 border-white/5 hover:bg-white/10'}`}
+                                         title="端末の自動読み上げ機能(TTS)に切り替えます"
+                                     >
+                                         TTS
+                                     </button>
+                                 )}
+                                <div className={`flex items-center rounded-md ${T.containerBg} border ${T.border} overflow-hidden h-6`}>
+                                    <button onClick={() => setAbLoop(p => ({...p, a: p.a === null ? currentTime : null}))} className={`px-2 h-full text-[10px] font-bold hover:bg-white/5 transition-colors ${abLoop.a !== null ? 'text-sky-400 bg-sky-400/10' : T.textMuted}`}>
+                                        A
+                                    </button>
+                                    <div className={`w-px h-3 bg-white/10`}></div>
+                                    <button onClick={() => setAbLoop(p => ({...p, b: p.b === null ? currentTime : null}))} className={`px-2 h-full text-[10px] font-bold hover:bg-white/5 transition-colors ${abLoop.b !== null ? 'text-sky-400 bg-sky-400/10' : T.textMuted}`}>
+                                        B
+                                    </button>
+                                </div>
+                                </>
+                            )}
+                         </div>
+
+                         <div className="flex items-center gap-1 sm:gap-3">
+                            {(hasMedia || useTTS) && (
+                                <>
+                                    <button onClick={handlePrevSentence} className={`p-1.5 rounded-full ${T.button} hover:bg-white/10 transition-colors text-gray-400 scale-90`} title="前の文へ">
+                                        <SkipPrevIcon className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={skipBackward} className={`p-1.5 rounded-full ${T.button} hover:bg-white/10 transition-colors scale-90`} title="-3秒">
+                                        <RewindIcon /> 
+                                    </button>
+                                    
+                                    <button onClick={togglePlay} className={`p-2 rounded-full ${T.accentBg} text-white shadow-md hover:brightness-110 active:scale-95 transition-transform w-10 h-10 flex items-center justify-center`}>
+                                        <div className="scale-90">{isPlaying ? <PauseIcon /> : <PlayIcon />}</div>
+                                    </button>
+                                    
+                                    <button onClick={skipForward} className={`p-1.5 rounded-full ${T.button} hover:bg-white/10 transition-colors scale-90`} title="+3秒">
+                                        <ForwardIcon />
+                                    </button>
+                                    <button onClick={handleNextSentence} className={`p-1.5 rounded-full ${T.button} hover:bg-white/10 transition-colors text-gray-400 scale-90`} title="次の文へ">
+                                        <SkipNextIcon className="w-4 h-4" />
+                                    </button>
+                                </>
+                            )}
+                         </div>
+
+                         <div className="flex justify-end gap-2 items-center">
+                             {/* Font Controls (Moved from Header) */}
+                             <div className="hidden sm:flex items-center gap-1 mr-2 bg-black/20 p-1 rounded-lg flex-shrink-0">
+                                 <select
+                                    value={fontFamily}
+                                    onChange={(e) => setFontFamily(e.target.value)}
+                                    className={`h-6 text-[10px] rounded ${T.button} border-none focus:ring-0 cursor-pointer max-w-[70px] opacity-70 hover:opacity-100`}
+                                >
+                                    {fontOptions.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+                                <div className="flex items-center gap-1 px-1">
+                                        <span className="text-[9px] font-bold opacity-50 tracking-wider">SIZE</span>
+                                        <input
+                                            type="range"
+                                            min="80"
+                                            max="200"
+                                            step="10"
+                                            value={fontSize}
+                                            onChange={(e) => setFontSize(Number(e.target.value))}
+                                            className={`w-12 h-1 rounded-lg appearance-none cursor-pointer bg-gray-700 accent-sky-500`}
+                                        />
+                                </div>
+                             </div>
+
+                             <button 
+                                onClick={() => {
+                                    const nextShow = !showJapanese;
+                                    setShowJapanese(nextShow);
+                                    if (!nextShow) {
+                                        setIsSideBySide(false);
+                                    }
+                                }}
+                                className={`p-1.5 rounded-full transition-colors ${showJapanese ? 'text-white bg-white/10' : `${T.textMuted} hover:text-white`}`}
+                                title="日本語訳を表示"
+                             >
+                                 <TranslateIcon /> 
+                             </button>
+                             <button 
+                                onClick={() => {
+                                    const nextSide = !isSideBySide;
+                                    setIsSideBySide(nextSide);
+                                    if (nextSide) {
+                                        setShowJapanese(true);
+                                    }
+                                }}
+                                className={`p-1.5 rounded-full transition-colors ${isSideBySide ? 'text-white bg-white/10' : `${T.textMuted} hover:text-white`}`}
+                                title="左右対訳表示"
+                             >
+                                 <ColumnsIcon /> 
+                             </button>
+                             <button 
+                                onClick={() => setShowExplanation(!showExplanation)}
+                                className={`p-1.5 rounded-full transition-colors ${showExplanation ? 'text-yellow-400 bg-yellow-400/10' : `${T.textMuted} hover:text-yellow-400`}`}
+                                title="解説を表示"
+                             >
+                                 <LightBulbIcon className="w-5 h-5" />
+                             </button>
+                         </div>
+                     </div>
+                </div>
+            ) : (
+                 <button 
+                    onClick={() => setIsControlsVisible(true)}
+                    className={`fixed bottom-6 right-6 p-3 rounded-full ${T.accentBg} text-white shadow-xl z-30 hover:scale-110 active:scale-95 transition-all animate-fade-in bg-opacity-90 backdrop-blur-sm`}
+                    title="プレイヤーを表示"
+                >
+                    <MusicIcon className="w-6 h-6" />
+                </button>
+            )}
+        </>
+      )}
+
+      {isGlobalMemoOpen && (
+           <div className="fixed inset-0 z-50 flex justify-end">
+               <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsGlobalMemoOpen(false)} />
+               <div className={`relative w-full max-w-md h-full ${T.containerBg} border-l ${T.border} shadow-2xl flex flex-col animate-slide-in-right`}>
+                   <div className={`p-4 border-b ${T.border} flex items-center justify-between`}>
+                       <div className="flex items-center gap-2">
+                           <NoteIcon className="w-5 h-5 text-white" />
+                           <h3 className={`font-bold ${T.textPrimary}`}>全体メモ</h3>
+                       </div>
+                       <button onClick={() => setIsGlobalMemoOpen(false)} className={`p-1 rounded-full ${T.button} hover:bg-white/20`}>
+                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                       </button>
+                   </div>
+                   <div className="flex-grow p-4">
+                       <textarea 
+                           value={globalMemo}
+                           onChange={(e) => setGlobalMemo(e.target.value)}
+                           placeholder="全体的な感想、目標、To-Doなどを自由に書いてください。"
+                           className={`w-full h-full p-4 text-base ${T.button} ${T.textPrimary} rounded-lg resize-none border ${T.border} focus:outline-none focus:ring-2 ${T.ring}`}
+                       />
+                   </div>
+               </div>
+           </div>
+      )}
+
+      {isProfileModalOpen && personaProfile && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsProfileModalOpen(false)}>
+              <div className={`${T.containerBg} p-6 rounded-xl shadow-2xl max-w-lg w-full border ${T.border} animate-fade-in`} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-3 mb-4 text-purple-400">
+                      <CommentaryIcon />
+                      <h3 className="text-xl font-bold">解説者プロフィール</h3>
+                  </div>
+                  <div className={`prose prose-invert max-w-none text-sm leading-relaxed ${T.textSecondary} whitespace-pre-wrap`}>
+                      {personaProfile}
+                  </div>
+                  <button onClick={() => setIsProfileModalOpen(false)} className={`mt-6 w-full py-2 rounded-lg ${T.button} font-bold`}>閉じる</button>
+              </div>
+          </div>
+      )}
+      
+      {isBackgroundModalOpen && backgroundInfo && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsBackgroundModalOpen(false)}>
+              <div className={`${T.containerBg} p-6 rounded-xl shadow-2xl max-w-lg w-full border ${T.border} animate-fade-in`} onClick={e => e.stopPropagation()}>
+                   <div className="flex items-center gap-3 mb-4 text-amber-400">
+                      <InfoIcon />
+                      <h3 className="text-xl font-bold">背景知識・雑学</h3>
+                  </div>
+                  <div className={`prose prose-invert max-w-none text-sm leading-relaxed ${T.textSecondary} whitespace-pre-wrap`}>
+                      {backgroundInfo}
+                  </div>
+                  <button onClick={() => setIsBackgroundModalOpen(false)} className={`mt-6 w-full py-2 rounded-lg ${T.button} font-bold`}>閉じる</button>
+              </div>
+          </div>
+      )}
+      
+      {isQuizModalOpen && (
+          <QuizCreationModal 
+            T={T} 
+            transcript={transcript}
+            personaProfile={personaProfile}
+            onClose={() => setIsQuizModalOpen(false)}
+            onSave={async (file) => {
+                await onUpdateMaterial(materialId, { quizFile: file });
+                setIsQuizModalOpen(false);
+                onStartQuiz(materialId);
+            }}
+          />
+      )}
+
+      {isPdfModalOpen && (
+        <PdfExportModal
+            T={T}
+            onClose={() => setIsPdfModalOpen(false)}
+            materialId={materialId}
+            title={title}
+            transcript={transcript}
+            hasWordFile={hasWordFile}
+            hasQuizFile={!!hasQuizFile}
+        />
+      )}
+      
+      {/* Speed Reading Settings Modal */}
+      {isSpeedSettingsOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseSpeedMode}>
+              <div className={`${T.containerBg} p-6 rounded-xl shadow-2xl max-w-md w-full border ${T.border} animate-fade-in`} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-3 mb-6 text-green-400">
+                      <StopwatchIcon className="w-8 h-8" />
+                      <div>
+                          <h3 className="text-xl font-bold">目標タイム設定</h3>
+                          <p className="text-xs text-gray-400">Speed Reading Challenge</p>
+                      </div>
+                  </div>
+                  <div className="space-y-6">
+                      <div className="bg-white/5 p-4 rounded-lg border border-white/10">
+                          <div className="flex justify-between text-sm mb-1 text-gray-300">
+                              <span>総単語数:</span>
+                              <span className="font-bold">{totalWordCount} words</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm text-gray-300 mt-2 pt-2 border-t border-white/10">
+                              <span>ガイドバー (Pacer Guide):</span>
+                              <button 
+                                  onClick={() => setIsPacerEnabled(!isPacerEnabled)}
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isPacerEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
+                              >
+                                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPacerEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                              </button>
+                          </div>
+                          {isPacerEnabled && (
+                              <div className="mt-3 pt-2 border-t border-white/10">
+                                   <div className="flex justify-between items-center text-sm text-gray-300 mb-2">
+                                        <span>チャンクサイズ (単語数):</span>
+                                        <span className="font-bold">{chunkSize} words</span>
+                                   </div>
+                                   <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map(size => (
+                                            <button 
+                                                key={size}
+                                                onClick={() => setChunkSize(size)}
+                                                className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${chunkSize === size ? 'bg-sky-500 text-white shadow-md' : 'bg-white/10 hover:bg-white/20 text-gray-300'}`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
+                                   </div>
+                              </div>
+                          )}
+                      </div>
+                      <div>
+                          <label className="block text-sm font-bold mb-3 text-gray-300">レベル選択 (WPM)</label>
+                          <div className="grid gap-2">
+                              <button 
+                                onClick={() => setWpmLevel(120)} 
+                                className={`p-3 rounded-lg border text-left transition-all ${wpmLevel === 120 ? `${T.accentBg} border-transparent text-white shadow-lg` : `${T.button} border-white/10 hover:border-white/30`}`}
+                              >
+                                  <div className="font-bold text-sm">Level 1: 基礎 (120 WPM)</div>
+                                  <div className="text-xs opacity-80">とりあえず読み切る目標</div>
+                              </button>
+                              <button 
+                                onClick={() => setWpmLevel(150)} 
+                                className={`p-3 rounded-lg border text-left transition-all ${wpmLevel === 150 ? `${T.accentBg} border-transparent text-white shadow-lg` : `${T.button} border-white/10 hover:border-white/30`}`}
+                              >
+                                  <div className="flex justify-between items-center">
+                                      <div className="font-bold text-sm">Level 2: 共通テスト (150 WPM)</div>
+                                      <span className="bg-white/20 text-[10px] px-2 py-0.5 rounded-full">推奨</span>
+                                  </div>
+                                  <div className="text-xs opacity-80">時間内に解き終わる必須スピード</div>
+                              </button>
+                              <button 
+                                onClick={() => setWpmLevel(180)} 
+                                className={`p-3 rounded-lg border text-left transition-all ${wpmLevel === 180 ? `${T.accentBg} border-transparent text-white shadow-lg` : `${T.button} border-white/10 hover:border-white/30`}`}
+                              >
+                                  <div className="font-bold text-sm">Level 3: 上級 (180 WPM)</div>
+                                  <div className="text-xs opacity-80">余裕を持って見直しまで</div>
+                              </button>
+                          </div>
+                      </div>
+                      <div className="text-center py-2">
+                           <span className="text-gray-400 text-sm">目標タイム: </span>
+                           <span className="text-2xl font-mono font-bold text-white ml-2">
+                               {formatTime(Math.ceil((totalWordCount / wpmLevel) * 60))}
+                           </span>
+                      </div>
+                      <button onClick={handleSpeedStart} className={`w-full py-3 rounded-lg ${T.accentBg} hover:brightness-110 text-white font-bold text-lg shadow-lg transform transition-all hover:scale-[1.02] active:scale-95`}>
+                          START
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {speedTimerState === 'finished' && (
+           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleCloseSpeedMode}>
+              <div className={`${T.containerBg} p-8 rounded-lg shadow-2xl max-w-md w-full border ${T.border} animate-fade-in text-center`} onClick={e => e.stopPropagation()}>
+                  <h3 className="text-3xl font-bold mb-2 text-white">Finish!</h3>
+                  <div className="my-6 relative">
+                      <div className="text-gray-400 text-sm mb-1">Time</div>
+                      <div className={`text-5xl font-mono font-bold ${timeRemaining < 0 ? 'text-red-400' : 'text-green-400'}`}>
+                          {formatTime(targetDuration - timeRemaining)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">
+                          (Target: {formatTime(targetDuration)})
+                      </div>
+                  </div>
+                  <div className="bg-white/5 p-4 rounded-lg border border-white/10 mb-6">
+                      <div className="text-sm text-gray-300 mb-1">実績スピード</div>
+                      <div className="text-2xl font-bold text-white">
+                          {Math.round(totalWordCount / ((targetDuration - timeRemaining) / 60))} <span className="text-sm font-normal text-gray-400">WPM</span>
+                      </div>
+                  </div>
+                  <div className="flex gap-3">
+                      <button onClick={handleCloseSpeedMode} className={`flex-1 py-3 ${T.button} rounded-lg font-bold`}>
+                          閉じる
+                      </button>
+                      <button onClick={handleSpeedReset} className={`flex-1 py-3 ${T.accentBg} text-white rounded-lg font-bold hover:brightness-110`}>
+                          もう一度
+                      </button>
+                  </div>
+              </div>
+           </div>
+      )}
+      
+      {activeWordPopup && (
+        <>
+          <div 
+              className="fixed inset-0 z-40 bg-transparent" 
+              onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveWordPopup(null);
+              }}
+          />
+          <div 
+              className="fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
+              style={{ 
+                  top: Math.round(activeWordPopup.position.top < 300 ? activeWordPopup.position.top + 30 : activeWordPopup.position.top - 10), 
+                  left: Math.round(activeWordPopup.position.left + (activeWordPopup.position.width / 2)),
+                  transform: activeWordPopup.position.top < 300 ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+                  minWidth: '220px',
+                  maxWidth: '320px',
+                  maxHeight: '300px',
+                  overflowY: 'auto',
+                  WebkitFontSmoothing: 'antialiased',
+                  MozOsxFontSmoothing: 'grayscale',
+                  textAlign: 'left',
+                  zIndex: 60
+              }}
+              onClick={(e) => e.stopPropagation()}
+          >
+              <div className="border-b border-slate-600/50 pb-2 mb-2">
+                  <div className="font-bold text-lg text-sky-300 leading-tight">{activeWordPopup.card.front}</div>
+                  {activeWordPopup.card.pronunciation && (
+                      <div className="text-xs text-slate-400 mt-0.5 font-mono">[{activeWordPopup.card.pronunciation}]</div>
+                  )}
+              </div>
+              
+              <div className="font-bold text-base text-amber-400 mb-2 leading-snug">{activeWordPopup.card.back}</div>
+              
+              {activeWordPopup.card.memo && (
+                  <div className="text-xs text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-2 mt-2 leading-relaxed opacity-90">
+                      {activeWordPopup.card.memo}
+                  </div>
+              )}
+
+              <span 
+                  className={`absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-r border-b border-slate-600 transform rotate-45 ${activeWordPopup.position.top < 300 ? '-top-1.5 border-t border-l border-r-0 border-b-0' : '-bottom-1.5'}`}
+              ></span>
+          </div>
+        </>
+      )}
+
+      {activeGrammarTerm && (
+        <>
+          <div 
+              className="fixed inset-0 z-40 bg-transparent" 
+              onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveGrammarTerm(null);
+              }}
+          />
+          <div 
+              className="fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
+              style={{ 
+                  top: Math.round(activeGrammarTerm.position.top + 30), 
+                  left: Math.round(activeGrammarTerm.position.left),
+                  maxWidth: '300px',
+                  width: 'max-content',
+                  WebkitFontSmoothing: 'antialiased',
+                  MozOsxFontSmoothing: 'grayscale',
+              }}
+              onClick={(e) => e.stopPropagation()}
+          >
+              <div className="font-bold text-sky-300 mb-1 pb-1 border-b border-slate-600">
+                  {activeGrammarTerm.term.term}
+              </div>
+              <div className="text-gray-300 leading-relaxed text-xs">
+                  {activeGrammarTerm.term.description}
+              </div>
+              <span 
+                  className="absolute -top-1.5 left-4 w-3 h-3 bg-slate-800 border-t border-l border-slate-600 transform rotate-45"
+              ></span>
+          </div>
+        </>
+      )}
+
+    </div>
+  );
+};
+
+export default ReaderScreen;

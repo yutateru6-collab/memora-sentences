@@ -1,0 +1,5 @@
+{
+  "name": "Remix: 🍇🍎 🍎🍉　テスト２",
+  "description": "An application for English learners to practice listening comprehension by synchronizing audio with a timestamped transcript and its translation. Features include playback speed control, A-B loop, text masking, and translation toggling. All processing is done locally on your device.",
+  "requestFramePermissions": []
+}
