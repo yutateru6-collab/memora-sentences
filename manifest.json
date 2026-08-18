@@ -1,18 +1,7 @@
-
 {
-  "short_name": "Sync Reader",
-  "name": "Audio-Sync Reader",
+  "short_name": "Sentences",
+  "name": "MEMORA Sentences",
   "icons": [
-    {
-      "src": "https://img.icons8.com/fluency/48/headphones.png",
-      "sizes": "48x48",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/96/headphones.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
     {
       "src": "https://img.icons8.com/fluency/192/headphones.png",
       "sizes": "192x192",
@@ -26,6 +15,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1e293b",
+  "theme_color": "#0f172a",
   "background_color": "#0f172a"
 }

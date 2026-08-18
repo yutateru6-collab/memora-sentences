@@ -7,6 +7,7 @@ import TrashIcon from './icons/TrashIcon';
 interface PromptLibraryScreenProps {
   onBack: () => void;
   T: Theme;
+  onNavigateToPasteJSON?: () => void;
 }
 
 const DiceIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -1125,7 +1126,7 @@ ${mnemonicRules}
     );
 };
 
-const CustomPromptCard: React.FC<{ T: Theme }> = ({ T }) => {
+const CustomPromptCard: React.FC<{ T: Theme; onNavigateToPasteJSON?: () => void }> = ({ T, onNavigateToPasteJSON }) => {
     const [topic, setTopic] = useState('');
     const [exampleKeyword, setExampleKeyword] = useState('');
     const [level, setLevel] = useState('日本の「英検準1級」レベル');
@@ -1135,9 +1136,8 @@ const CustomPromptCard: React.FC<{ T: Theme }> = ({ T }) => {
     const [copied, setCopied] = useState(false);
     const [explanationLevel, setExplanationLevel] = useState(3);
     
-    // Default value changed from 'JK' to '熱血コーチ' to avoid user confusion
     const [personas, setPersonas] = useState([
-        { id: 1, name: '', role: '熱血コーチ', trait: 'とにかく褒めてくれる（激甘モード）' }
+        { id: 1, name: '', role: 'ギャル', trait: '口がものすごく悪い' }
     ]);
 
     const levelOptions = {
@@ -1184,7 +1184,7 @@ const CustomPromptCard: React.FC<{ T: Theme }> = ({ T }) => {
     
     const addPersona = () => {
         if (personas.length < 3) {
-            setPersonas([...personas, { id: Date.now(), name: '', role: '熱血コーチ', trait: 'とにかく褒めてくれる（激甘モード）' }]);
+            setPersonas([...personas, { id: Date.now(), name: '', role: 'ギャル', trait: '口がものすごく悪い' }]);
         }
     };
 
@@ -1238,7 +1238,22 @@ const CustomPromptCard: React.FC<{ T: Theme }> = ({ T }) => {
             explanationLevel === 3 ? "【レベル3：解説量 50%】（標準的な構造説明）\n標準的な文法構造（S+VOCなど）の解説と、キャラクターの会話・リアクションを半々のバランスで行ってください。" :
             "【レベル4：解説量 70%】（詳細な文法分解）\n文法用語（形式主語、関係代名詞、同格など）を多用し、構造を詳細に分解・解説することをメインにしてください。リアクションは控えめにし、知的な分析を重視してください。";
 
-        const prompt = `命令書
+        // パーソナル設定の取得と反映
+        const usePersonalSettings = localStorage.getItem('use_personal_settings') !== 'false';
+        const inspirationSeed = localStorage.getItem('inspiration_seed') || '';
+        const angerSeed = localStorage.getItem('anger_seed') || '';
+
+        let personalInstructions = '';
+        if (usePersonalSettings) {
+            if (inspirationSeed.trim()) {
+                personalInstructions += `\n【重要：ひらめきの種（パーソナライズ指示）】\nユーザーの好きなことや近況として以下の情報があります。作成する英語長文の内容や、キャラクターたちの解説、例文の中に、これらの要素を散りばめるか、またはこれらにマニアックに言及してください：\n${inspirationSeed}\n`;
+            }
+            if (angerSeed.trim()) {
+                personalInstructions += `\n【重要：怒りの種（毒舌・皮肉指示）】\nユーザーの嫌いなことや絶対に許せないこととして以下の情報があります。キャラクターたちが英文の解説やツッコミを行う際、以下の内容についてユーモアを交えた強烈な皮肉や毒舌、憤りとして散りばめてください：\n${angerSeed}\n`;
+            }
+        }
+
+        const prompt = `命令書${personalInstructions ? '\nまた、以下のパーソナライズ指示に絶対に従ってください：' + personalInstructions : ''}
 あなたは、英語文章を作成する際は「${topic || '日本のラーメン文化'}」についてユーザーの理解に合わせたレベルでその内容について書いてください。一方で、文章の解説を行う際は、後述するキャラクターたちになりきって、掛け合い形式（チャット形式）で解説を行ってください。
 
 これから、以下の絶対的制約条件に従って、このテーマに関する英語の文章を作成し、解説を付与してください。
@@ -1529,18 +1544,29 @@ My bathroom looks like a toothbrush museum. 🔬
             </div>
 
             <div className="flex items-center gap-2 mt-auto border-t border-white/10 pt-4">
-                <button onClick={handleCopy} className={`w-full px-3 py-2 text-sm ${T.buttonStrong} rounded-md font-semibold transition-colors`}>
+                <button onClick={handleCopy} className={`flex-1 px-3 py-2 text-sm ${T.buttonStrong} rounded-md font-semibold transition-colors`}>
                     {copied ? 'コピーしました！' : 'プロンプトをコピー'}
                 </button>
-                <a href={'https://aistudio.google.com/app/u/0/prompts/new_chat?model=gemini-3-pro-preview'} target="_blank" rel="noopener noreferrer" className={`w-full px-3 py-2 text-sm ${T.accentBg} ${T.accentBgHover} text-white text-center rounded-md font-semibold transition-colors`}>
+                <button 
+                    onClick={() => {
+                        handleCopy();
+                        window.open('https://aistudio.google.com/app/u/0/prompts/new_chat?model=gemini-3-pro-preview', '_blank', 'noopener,noreferrer');
+                    }}
+                    className={`flex-1 px-3 py-2 text-sm ${T.accentBg} ${T.accentBgHover} text-white text-center rounded-md font-semibold transition-colors`}
+                >
                     AI Studioで作成
-                </a>
+                </button>
+                {onNavigateToPasteJSON && (
+                    <button onClick={onNavigateToPasteJSON} className={`flex-1 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white text-center rounded-md font-semibold transition-colors`} title="作成したJSONデータを貼り付けます">
+                        JSONを貼る
+                    </button>
+                )}
             </div>
         </PromptAccordion>
     );
 };
 
-export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack, T }) => {
+export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack, T, onNavigateToPasteJSON }) => {
   return (
     <div className={`min-h-screen ${T.bg} flex flex-col font-sans`}>
       {/* Header */}
@@ -1566,7 +1592,7 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
                     <LegendPromptCard T={T} />
                     
                     {/* 2. 好きな内容の長文 */}
-                    <CustomPromptCard T={T} />
+                    <CustomPromptCard T={T} onNavigateToPasteJSON={onNavigateToPasteJSON} />
                     
                     {/* 3. 英文解説 */}
                     <EnglishExplanationCard T={T} />

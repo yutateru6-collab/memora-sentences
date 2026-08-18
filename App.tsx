@@ -117,6 +117,7 @@ const themes: Themes = {
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('upload');
+  const [openPasteJsonMode, setOpenPasteJsonMode] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -183,7 +184,24 @@ const App: React.FC = () => {
   };
 
   const cleanJsonString = (str: string) => {
-    return str.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+    let cleaned = str.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+    // 余分なテキストがJSONの前にある場合への対策（例: "snsすれっどめーかー"）
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+    const lastBrace = cleaned.lastIndexOf('}');
+    const lastBracket = cleaned.lastIndexOf(']');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace && (firstBracket === -1 || firstBrace < firstBracket)) {
+        if (!cleaned.startsWith('{')) {
+            cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+        }
+    } else if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        if (!cleaned.startsWith('[')) {
+            cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+        }
+    }
+    
+    return cleaned;
   };
 
   const handleLoad = async (data: {
@@ -856,6 +874,8 @@ const App: React.FC = () => {
           themes={themes}
           dueCardCount={dueCardCount}
           onStartDailyReview={handleStartDailyReview}
+          initialOpenPasteJson={openPasteJsonMode}
+          onClearPasteJson={() => setOpenPasteJsonMode(false)}
         />
       )}
       {view === 'reader' && (
@@ -986,6 +1006,10 @@ const App: React.FC = () => {
       {view === 'promptLibrary' && (
           <PromptLibraryScreen 
             onBack={() => setView('upload')}
+            onNavigateToPasteJSON={() => {
+                setOpenPasteJsonMode(true);
+                setView('upload');
+            }}
             T={T}
           />
       )}
