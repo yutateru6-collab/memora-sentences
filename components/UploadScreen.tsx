@@ -39,6 +39,8 @@ interface UploadScreenProps {
   themes: Themes;
   dueCardCount?: number;
   onStartDailyReview?: () => void;
+  initialOpenPasteJson?: boolean;
+  onClearPasteJson?: () => void;
 }
 
 const EditableTitle: React.FC<{ initialTitle: string; onSave: (newTitle: string) => void; T: Theme, isFolder?: boolean }> = ({ initialTitle, onSave, T, isFolder=false }) => {
@@ -495,7 +497,7 @@ const ConfirmDeleteButton: React.FC<{ onDelete: () => void; itemType: 'file' | '
     return <button type="button" onClick={handleClick} className={`relative z-50 p-2 rounded-full transition-all duration-200 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-md ${confirming ? 'bg-red-600 text-white w-auto px-3' : 'bg-red-500 text-white w-8 h-8 hover:bg-red-600'}`} title={confirming ? "クリックして削除" : "削除"}>{confirming ? <span className="text-xs font-bold whitespace-nowrap">削除?</span> : <TrashIcon className="w-4 h-4 pointer-events-none" />}</button>;
 };
 
-const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onGoToPromptLibrary, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview }) => {
+const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onGoToPromptLibrary, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview, initialOpenPasteJson, onClearPasteJson }) => {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [textFile, setTextFile] = useState<File | null>(null);
   const [wordFile, setWordFile] = useState<File | null>(null);
@@ -509,11 +511,30 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
   const wordInputRef = useRef<HTMLInputElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null); 
+  const plainTextInputRef = useRef<HTMLTextAreaElement>(null);
 
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isPersonalSettingsOpen, setIsPersonalSettingsOpen] = useState(false);
+  const [inspirationSeed, setInspirationSeed] = useState('');
+  const [angerSeed, setAngerSeed] = useState('');
+  const [personalSettingsEnabled, setPersonalSettingsEnabled] = useState(true);
+
+  useEffect(() => {
+      setInspirationSeed(localStorage.getItem('inspiration_seed') || '');
+      setAngerSeed(localStorage.getItem('anger_seed') || '');
+      setPersonalSettingsEnabled(localStorage.getItem('use_personal_settings') !== 'false');
+  }, []);
+  
+  const handleSavePersonalSettings = () => {
+      localStorage.setItem('inspiration_seed', inspirationSeed);
+      localStorage.setItem('anger_seed', angerSeed);
+      localStorage.setItem('use_personal_settings', String(personalSettingsEnabled));
+      setIsPersonalSettingsOpen(false);
+  };
+
   const [newFolderName, setNewFolderName] = useState("");
   const settingsContainerRef = useRef<HTMLDivElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
@@ -531,6 +552,16 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
     return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, [isSettingsOpen]);
   
+  useEffect(() => {
+    if (initialOpenPasteJson) {
+        setIsAddModalOpen(true);
+        setTimeout(() => {
+            plainTextInputRef.current?.focus();
+        }, 100);
+        onClearPasteJson?.();
+    }
+  }, [initialOpenPasteJson, onClearPasteJson]);
+
   useEffect(() => { if (isCreatingFolder) newFolderInputRef.current?.focus(); }, [isCreatingFolder]);
 
   const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { setMediaFile(file); if (!materialName) setMaterialName(file.name.replace(/\.[^/.]+$/, "")); } };
@@ -622,6 +653,12 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
             {!isDeleteMode && (
                 <button onClick={() => setIsCreatingFolder(true)} className={`flex items-center gap-2 px-2 py-1.5 md:px-4 md:py-2 text-xs md:text-sm ${T.button} rounded-full transition-colors`} title="新しいフォルダ">
                     <FolderIcon className="h-4 w-4 md:h-5 md:w-5" />
+                </button>
+            )}
+
+            {!isDeleteMode && (
+                <button onClick={() => setIsPersonalSettingsOpen(true)} className={`p-2 rounded-full transition-colors ${T.button} text-white/80 hover:bg-white/20`} title="パーソナル設定">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 </button>
             )}
              <div className="relative" ref={settingsContainerRef}>
@@ -732,7 +769,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
                     
                     <div>
                         <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-2`}>1. Plain Text / Prompt</label>
-                        <textarea value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="テキスト、または匿名掲示板/AmazonメーカーのJSONデータをここに貼り付けてください" rows={5} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                        <textarea ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="テキスト、または匿名掲示板/AmazonメーカーのJSONデータをここに貼り付けてください" rows={5} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div>
@@ -793,6 +830,50 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
                 </div>
                 <div className={`p-6 border-t ${T.border} bg-black/10`}>
                     <button onClick={handleLoadClick} disabled={!isLoadable && !thumbnailFile} className={`w-full py-4 ${T.buttonStrong} disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg`}>データを読み込んで作成</button>
+                </div>
+            </div>
+        </div>
+      )}
+      {isPersonalSettingsOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsPersonalSettingsOpen(false)}>
+            <div className={`${T.containerBg} w-full max-w-xl rounded-2xl shadow-2xl border ${T.border} overflow-hidden animate-fade-in flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
+                <div className={`flex items-center justify-between p-6 border-b ${T.border}`}>
+                    <h2 className={`text-2xl font-bold ${T.textPrimary} flex items-center gap-2`}><svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>パーソナル設定</h2>
+                    <button onClick={() => setIsPersonalSettingsOpen(false)} className={`p-2 rounded-full ${T.button} hover:bg-red-500 hover:text-white transition-colors`}><XMarkIcon className="w-5 h-5"/></button>
+                </div>
+                <div className="p-6 overflow-y-auto space-y-6">
+                    {/* 長文への反映オン・オフ切り替え */}
+                    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                        <span className={`text-sm font-bold ${T.textPrimary}`}>好きなこと・嫌いなことを長文に反映する</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={personalSettingsEnabled} 
+                                onChange={(e) => setPersonalSettingsEnabled(e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                     <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                        <label className={`text-sm font-bold flex items-center gap-2 ${T.textPrimary} mb-2`}>
+                            <span>🖋️ ひらめきの種</span>
+                        </label>
+                        <p className={`text-xs ${T.textMuted} mb-3`}>暗記を「自分事」に変えるためのパーソナル設定。好きなものや最近の出来事を入力するだけで、AIが生成する例文の解像度がマニアックに向上します。</p>
+                        <textarea value={inspirationSeed} onChange={(e) => setInspirationSeed(e.target.value)} placeholder="好きなもの、近況、趣味など...AIが生成する例文の「隠し味」になります。" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring}`}/>
+                    </div>
+                    
+                    <div className="bg-red-900/10 p-4 rounded-xl border border-red-500/20">
+                        <label className={`text-sm font-bold flex items-center gap-2 text-red-400 mb-2`}>
+                            <span>🔥 怒りの種</span>
+                        </label>
+                        <p className={`text-xs ${T.textMuted} mb-3`}>感情の負エネルギーを暗記のブーストに変換します。許せないものを指定すると、AIが最高に性格の悪い皮肉屋となり、脳を揺さぶる例文を生成します。</p>
+                        <textarea value={angerSeed} onChange={(e) => setAngerSeed(e.target.value)} placeholder="絶対に許せないこと、嫌いなもの、親の仇など...AIの「毒舌スイッチ」が入ります。" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border border-red-500/30 focus:outline-none focus:ring-2 ring-red-500`}/>
+                    </div>
+                </div>
+                <div className={`p-4 border-t ${T.border} flex justify-end bg-black/20`}>
+                     <button onClick={handleSavePersonalSettings} className={`px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-xl shadow-lg transition-all`}>登録完了！</button>
                 </div>
             </div>
         </div>

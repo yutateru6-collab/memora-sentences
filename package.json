@@ -1,12 +1,12 @@
 {
-  "name": "copy-of-copy-of-copy-of-copy-of-copy-of-🍇🍎-🍎🍉-テスト２",
+  "name": "memora-sentences",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "react": "^19.2.0",
