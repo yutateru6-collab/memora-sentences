@@ -1,0 +1,128 @@
+name: Apply welcome empty state
+
+on:
+  push:
+    branches: [agent/welcome-empty-state]
+    paths: [.github/workflows/apply-welcome-empty-state.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply focused UI patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('components/UploadScreen.tsx')
+          text = path.read_text()
+
+          old_empty = '''          <div className={`flex flex-col items-center justify-center py-24 rounded-3xl border-2 border-dashed ${T.border} bg-white/5`}>
+            <div className="w-24 h-24 mb-6 opacity-50"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className={`${T.textMuted}`}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg></div>
+            <p className={`text-xl font-semibold ${T.textPrimary}`}>No Materials Yet</p>
+            <p className={`${T.textMuted} mt-2`}>右下の＋ボタンから学習コンテンツを追加しましょう</p>
+          </div>'''
+
+          new_empty = '''          <div className={`relative overflow-hidden rounded-3xl border ${T.border} ${T.containerBg} px-5 py-9 sm:px-10 sm:py-12 shadow-2xl`}>
+            <div className="pointer-events-none absolute -top-20 -left-16 w-56 h-56 rounded-full bg-sky-500/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 -right-16 w-64 h-64 rounded-full bg-violet-500/10 blur-3xl" />
+            <div className="relative z-10 mx-auto max-w-2xl text-center">
+              <div className={`relative mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl border ${T.border} ${T.button} shadow-lg`}>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-10 h-10 text-sky-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span className="absolute -top-2 -right-2 text-xl" aria-hidden="true">✨</span>
+              </div>
+
+              <p className="mb-3 text-[11px] sm:text-xs font-bold tracking-[0.22em] text-sky-400">WELCOME TO MEMORA</p>
+              <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${T.textPrimary}`}>最初の教材をつくろう</h2>
+              <p className={`mt-3 text-sm sm:text-base leading-7 ${T.textMuted}`}>
+                好きなテーマの英語長文をつくって、<br className="hidden sm:block" />
+                「読む・聴く・覚える」まで、ひとつに。
+              </p>
+
+              <div className="mt-7 flex flex-col sm:flex-row items-stretch justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={onGoToPromptLibrary}
+                  className={`min-h-12 px-6 py-3 ${T.accentBg} hover:brightness-110 text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]`}
+                >
+                  <span className="mr-2" aria-hidden="true">✨</span>長文をつくる
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(true)}
+                  className={`min-h-12 px-6 py-3 ${T.buttonStrong} rounded-xl font-bold shadow-sm transition-all hover:-translate-y-0.5 active:scale-[0.98]`}
+                >
+                  <span className="mr-2" aria-hidden="true">＋</span>手持ちの教材を追加
+                </button>
+              </div>
+              <p className={`mt-3 text-xs ${T.textMuted}`}>好きなテーマから、すぐ始められます。</p>
+
+              <div className="mt-8 grid grid-cols-3 gap-2 sm:gap-3">
+                <div className={`rounded-2xl border ${T.border} ${T.button} px-2 py-3`}>
+                  <div className="mb-1 text-xl" aria-hidden="true">📖</div>
+                  <div className={`text-xs font-bold ${T.textSecondary}`}>読む</div>
+                </div>
+                <div className={`rounded-2xl border ${T.border} ${T.button} px-2 py-3`}>
+                  <div className="mb-1 text-xl" aria-hidden="true">🎧</div>
+                  <div className={`text-xs font-bold ${T.textSecondary}`}>聴く</div>
+                </div>
+                <div className={`rounded-2xl border ${T.border} ${T.button} px-2 py-3`}>
+                  <div className="mb-1 text-xl" aria-hidden="true">🧠</div>
+                  <div className={`text-xs font-bold ${T.textSecondary}`}>覚える</div>
+                </div>
+              </div>
+            </div>
+          </div>'''
+
+          old_fab = '''      <button onClick={() => setIsAddModalOpen(true)} className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl ${T.accentBg} text-white flex items-center justify-center hover:scale-110 transition-transform z-30 group`} title="新規追加">
+        <PlusIcon className="w-6 h-6 md:w-8 md:h-8 group-hover:rotate-90 transition-transform duration-300" />
+      </button>'''
+
+          new_fab = '''      {(storedMaterials.length > 0 || storedFolders.length > 0) && (
+        <button onClick={() => setIsAddModalOpen(true)} className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl ${T.accentBg} text-white flex items-center justify-center hover:scale-110 transition-transform z-30 group`} title="新規追加">
+          <PlusIcon className="w-6 h-6 md:w-8 md:h-8 group-hover:rotate-90 transition-transform duration-300" />
+        </button>
+      )}'''
+
+          if text.count(old_empty) != 1:
+              raise SystemExit(f'Expected one empty-state block, found {text.count(old_empty)}')
+          if text.count(old_fab) != 1:
+              raise SystemExit(f'Expected one floating add button, found {text.count(old_fab)}')
+
+          text = text.replace(old_empty, new_empty, 1)
+          text = text.replace(old_fab, new_fab, 1)
+          path.write_text(text)
+          PY
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified UI change
+        shell: bash
+        run: |
+          rm .github/workflows/apply-welcome-empty-state.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/UploadScreen.tsx .github/workflows/apply-welcome-empty-state.yml
+          git commit -m "feat: improve first-run empty state"
+          git push origin HEAD:${GITHUB_REF_NAME}
