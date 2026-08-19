@@ -19,6 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Preserve existing JSON failure behavior
         run: |
+          # Keep legacy .json parse failures from falling through to slash parsing.
           python <<'PY'
           from pathlib import Path
           path = Path('App.tsx')
