@@ -1,0 +1,30 @@
+name: Localize targeted fixes on PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-mobile-reader-welcome
+          fetch-depth: 0
+      - name: Apply targeted patches from main
+        run: |
+          git checkout origin/main -- components/ReaderScreen.tsx components/PromptLibraryScreen.tsx
+          python .github/agent-localize-fixes.py
+          npm install
+          npm run build
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add components/ReaderScreen.tsx components/PromptLibraryScreen.tsx
+          git commit -m "fix: localize mobile reader and prompt format changes"
+          git push origin HEAD:agent/fix-mobile-reader-welcome
