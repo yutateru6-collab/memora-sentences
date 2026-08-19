@@ -14,6 +14,42 @@ interface QuizCreationModalProps {
 
 type QuizType = 'grammar' | 'content';
 
+const stripQuizCodeFences = (content: string) => content
+    .trim()
+    .replace(/^```(?:json|text)?\s*/i, '')
+    .replace(/\s*```$/, '')
+    .trim();
+
+export const parseQuizContent = (content: string): QuizQuestion[] => {
+    const cleaned = stripQuizCodeFences(content);
+    let parsed: unknown;
+
+    try {
+        parsed = JSON.parse(cleaned);
+    } catch (e) {
+        throw new Error('無効なJSON形式です。AI StudioのJSONコードブロック全体をそのまま貼り付けても保存できます。');
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error('JSONが配列形式ではありません、または問題が空です。');
+    }
+
+    parsed.forEach((item, index) => {
+        const question = item as Partial<QuizQuestion>;
+        if (typeof question.question !== 'string' || !question.question.trim()) {
+            throw new Error(`問題${index + 1}の question が正しくありません。`);
+        }
+        if (!Array.isArray(question.choices) || question.choices.length !== 4 || question.choices.some(choice => typeof choice !== 'string' || !choice.trim())) {
+            throw new Error(`問題${index + 1}の choices は4つの文字列にしてください。`);
+        }
+        if (!Number.isInteger(question.correctAnswerIndex) || question.correctAnswerIndex! < 0 || question.correctAnswerIndex! > 3) {
+            throw new Error(`問題${index + 1}の correctAnswerIndex は0〜3の整数にしてください。`);
+        }
+    });
+
+    return parsed as QuizQuestion[];
+};
+
 const QuizCreationModal: React.FC<QuizCreationModalProps> = ({ T, transcript, personaProfile, onClose, onSave, isAdding = false }) => {
     const [quizContent, setQuizContent] = useState('');
     const [isCopied, setIsCopied] = useState(false);
@@ -102,16 +138,14 @@ ${quizType === 'grammar' ? grammarInstructions : contentInstructions}
             return;
         }
         try {
-            const parsed = JSON.parse(quizContent) as QuizQuestion[];
-            if (!Array.isArray(parsed) || parsed.length === 0) {
-                throw new Error('JSONが配列形式ではありません、または空です。');
-            }
-            const file = new File([quizContent], 'quiz.json', { type: 'application/json' });
+            const parsed = parseQuizContent(quizContent);
+            const normalizedQuizContent = JSON.stringify(parsed, null, 2);
+            const file = new File([normalizedQuizContent], 'quiz.json', { type: 'application/json' });
             setIsSaving(true);
             await onSave(file);
         } catch (e) {
             console.error(e);
-            setError('無効なJSON形式です。AI Studioからの出力をそのまま貼り付けてください。');
+            setError(e instanceof Error ? e.message : 'クイズデータの解析に失敗しました。');
             setIsSaving(false);
         }
     };
