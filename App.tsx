@@ -183,6 +183,12 @@ const App: React.FC = () => {
       }
   };
 
+  const stripStandaloneCodeFences = (str: string) => str
+    .split('\n')
+    .filter(line => !/^\s*```(?:markdown|text|json)?\s*$/i.test(line))
+    .join('\n')
+    .trim();
+
   const cleanJsonString = (str: string) => {
     let cleaned = str.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
     // 余分なテキストがJSONの前にある場合への対策（例: "snsすれっどめーかー"）
@@ -317,12 +323,12 @@ const App: React.FC = () => {
 
              if (data.plainTextContent.includes('----------')) {
                  const parts = data.plainTextContent.split('----------');
-                 const transcriptText = parts[0];
-                 wordsText = parts[1] || '';
-                 backgroundText = parts[2] || '';
+                 const transcriptText = stripStandaloneCodeFences(parts[0]);
+                 wordsText = stripStandaloneCodeFences(parts[1] || '');
+                 backgroundText = stripStandaloneCodeFences(parts[2] || '');
                  textContent = parsePlainTextToTranscript(transcriptText);
              } else {
-                 textContent = parsePlainTextToTranscript(data.plainTextContent);
+                 textContent = parsePlainTextToTranscript(stripStandaloneCodeFences(data.plainTextContent));
              }
 
              if (backgroundText && textContent.length > 0) {
@@ -359,7 +365,7 @@ const App: React.FC = () => {
   };
 
   const parsePlainTextToTranscript = (text: string): TranscriptEntry[] => {
-      text = text.trim();
+      text = stripStandaloneCodeFences(text);
       if (text.startsWith('{') || text.startsWith('[')) {
           try {
               const json = JSON.parse(text);
@@ -369,7 +375,7 @@ const App: React.FC = () => {
           } catch (e) { }
       }
       
-       const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l && !/^```(?:markdown|text|json)?$/i.test(l));
       const entries: TranscriptEntry[] = [];
       
       let metadataBuffer = '';
@@ -406,7 +412,11 @@ const App: React.FC = () => {
           const line = contentLines[i];
           if (line.startsWith('[解説]')) {
               if (entries.length > 0) {
-                 entries[entries.length - 1].explanation = line.replace('[解説]', '').trim();
+                  const explanation = line.replace('[解説]', '').trim();
+                  const currentEntry = entries[entries.length - 1];
+                  currentEntry.explanation = currentEntry.explanation
+                    ? currentEntry.explanation + '\n' + explanation
+                    : explanation;
               }
               continue;
           }
@@ -563,8 +573,27 @@ const App: React.FC = () => {
   };
   
   const parseCards = async (file: File): Promise<Card[]> => {
-      const text = await file.text();
+      const text = stripStandaloneCodeFences(await file.text());
       let parsedCards: Card[] = [];
+
+      // Prompt Library now emits a JSON array inside an otherwise plain-text material.
+      // Parse valid card JSON by content first, regardless of the stored file extension/MIME type.
+      if (text.trim().startsWith('[')) {
+          try {
+              const json = JSON.parse(text);
+              if (Array.isArray(json)) {
+                  return json.map((item: any, index: number) => ({
+                      id: index,
+                      front: item.front || item.word || '',
+                      back: item.back || item.meaning || '',
+                      pronunciation: item.pronunciation,
+                      memo: item.memo
+                  }));
+              }
+          } catch (e) {
+              // Keep backward compatibility with slash-delimited word data below.
+          }
+      }
       
       if (file.name.endsWith('.json') || file.type === 'application/json') {
            try {
@@ -577,20 +606,42 @@ const App: React.FC = () => {
                        pronunciation: item.pronunciation,
                        memo: item.memo
                    }));
+                   return parsedCards;
                }
            } catch(e) { console.error("JSON parse error", e); }
-      } else {
-          parsedCards = text.split('\n').filter(l => l.trim()).map((line, i) => {
-              const parts = line.split('/').map(p => p.trim());
-              return {
-                  id: i,
-                  front: parts[0] || '',
-                  back: parts[1] || '',
-                  pronunciation: parts[2],
-                  memo: parts[3]
-              };
-          });
       }
+
+      parsedCards = text.split('\n').filter(l => l.trim()).map((line, i) => {
+          const spacedParts = line.split(/\s+\/\s+/).map(p => p.trim());
+          const parts = spacedParts.length >= 2 ? spacedParts : line.split('/').map(p => p.trim());
+          const firstPart = parts[0] || '';
+          const richPromptFormat = parts.length >= 4 && /語源|雑学|【覚え方】/.test(parts[2] || '');
+
+          if (richPromptFormat) {
+              const withoutLeadingEmoji = firstPart.replace(/^[^A-Za-z0-9]+/, '').trim();
+              const pronunciationMatch = withoutLeadingEmoji.match(/^(.+?)\s+([ァ-ヶー]*[［\[][ァ-ヶー]+[］\]][ァ-ヶー]*|[ァ-ヶー]+)\s*$/);
+              if (pronunciationMatch) {
+                  const etymology = parts[2] || '';
+                  const example = parts.slice(3).join(' / ');
+                  return {
+                      id: i,
+                      front: pronunciationMatch[1].trim(),
+                      back: parts[1] || '',
+                      pronunciation: pronunciationMatch[2].replace(/［/g, '[').replace(/］/g, ']'),
+                      memo: `${etymology.startsWith('【語源・雑学】') ? '' : '【語源・雑学】\n'}${etymology}${example ? `\n\n【例文】\n${example}` : ''}`
+                  };
+              }
+          }
+
+          // Original four-column slash format remains unchanged.
+          return {
+              id: i,
+              front: parts[0] || '',
+              back: parts[1] || '',
+              pronunciation: parts[2],
+              memo: parts[3]
+          };
+      });
       return parsedCards;
   };
 

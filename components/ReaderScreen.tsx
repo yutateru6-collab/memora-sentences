@@ -297,6 +297,12 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       .trim();
   };
 
+  const formatPronunciation = (value?: string) => {
+      if (!value) return '';
+      const normalized = value.replace(/［/g, '[').replace(/］/g, ']');
+      return normalized.includes('[') || normalized.includes(']') ? normalized : `[${normalized}]`;
+  };
+
   const normalizeForMatch = (str: string) => str.toLowerCase().replace(/[^a-z0-9']/g, '');
 
   const { sentenceStartIndices, totalWordCount } = useMemo(() => {
@@ -936,7 +942,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   };
 
   return (
-    <div className={`flex flex-col h-screen max-h-screen overflow-hidden ${T.bg} ${T.textPrimary}`}>
+    <div className={`flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
       {/* RSVP Screen Overlay */}
       {isRsvpModeOpen && (
           <RsvpScreen 
@@ -1001,6 +1007,17 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
                     </button>
                     <h1 className="font-bold text-lg truncate">{title}</h1>
+                    {hasExplanation && (
+                        <button
+                            onClick={() => setShowExplanation(prev => !prev)}
+                            aria-pressed={showExplanation}
+                            className={`sm:hidden flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${showExplanation ? 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
+                            title="解説を表示"
+                        >
+                            <LightBulbIcon className="w-4 h-4" />
+                            <span>解説</span>
+                        </button>
+                    )}
                 </div>
                 
                 <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
@@ -1775,17 +1792,20 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       {activeWordPopup && (
         <>
           <div 
-              className="fixed inset-0 z-40 bg-transparent" 
+              className="fixed inset-0 z-40 bg-black/30 sm:bg-transparent" 
               onClick={(e) => {
                   e.stopPropagation();
                   setActiveWordPopup(null);
               }}
           />
           <div 
-              className="fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
+              className="hidden sm:block fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
               style={{ 
                   top: Math.round(activeWordPopup.position.top < 300 ? activeWordPopup.position.top + 30 : activeWordPopup.position.top - 10), 
-                  left: Math.round(activeWordPopup.position.left + (activeWordPopup.position.width / 2)),
+                  left: Math.min(
+                      Math.max(Math.round(activeWordPopup.position.left + (activeWordPopup.position.width / 2)), 176),
+                      (typeof window !== 'undefined' ? window.innerWidth : 1024) - 176
+                  ),
                   transform: activeWordPopup.position.top < 300 ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
                   minWidth: '220px',
                   maxWidth: '320px',
@@ -1801,7 +1821,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               <div className="border-b border-slate-600/50 pb-2 mb-2">
                   <div className="font-bold text-lg text-sky-300 leading-tight">{activeWordPopup.card.front}</div>
                   {activeWordPopup.card.pronunciation && (
-                      <div className="text-xs text-slate-400 mt-0.5 font-mono">[{activeWordPopup.card.pronunciation}]</div>
+                      <div className="text-xs text-slate-400 mt-0.5 font-mono">{formatPronunciation(activeWordPopup.card.pronunciation)}</div>
                   )}
               </div>
               
@@ -1816,6 +1836,40 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               <span 
                   className={`absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-r border-b border-slate-600 transform rotate-45 ${activeWordPopup.position.top < 300 ? '-top-1.5 border-t border-l border-r-0 border-b-0' : '-bottom-1.5'}`}
               ></span>
+          </div>
+
+          <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${activeWordPopup.card.front} の単語情報`}
+              className="sm:hidden fixed z-50 left-3 right-3 bottom-3 max-h-[72dvh] overflow-hidden rounded-2xl bg-slate-800 text-white border border-slate-600 shadow-2xl animate-fade-in"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+              onClick={(e) => e.stopPropagation()}
+          >
+              <div className="max-h-[72dvh] overflow-y-auto p-4 pb-2">
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-600/50 pb-3 mb-3">
+                      <div className="min-w-0">
+                          <div className="font-bold text-xl text-sky-300 leading-tight break-words">{activeWordPopup.card.front}</div>
+                          {activeWordPopup.card.pronunciation && (
+                              <div className="text-sm text-slate-400 mt-1 font-mono">{formatPronunciation(activeWordPopup.card.pronunciation)}</div>
+                          )}
+                      </div>
+                      <button
+                          type="button"
+                          onClick={() => setActiveWordPopup(null)}
+                          className="flex-shrink-0 w-9 h-9 rounded-full bg-white/10 text-slate-200 flex items-center justify-center"
+                          aria-label="単語情報を閉じる"
+                      >
+                          <span className="text-xl leading-none" aria-hidden="true">×</span>
+                      </button>
+                  </div>
+                  <div className="font-bold text-base text-amber-400 mb-3 leading-snug whitespace-pre-wrap">{activeWordPopup.card.back}</div>
+                  {activeWordPopup.card.memo && (
+                      <div className="text-sm text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-3 mt-3 leading-relaxed">
+                          {activeWordPopup.card.memo}
+                      </div>
+                  )}
+              </div>
           </div>
         </>
       )}
