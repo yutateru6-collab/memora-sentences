@@ -1434,7 +1434,10 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       {!isSpeedMode && (
         <>
             {isControlsVisible ? (
-                <div className={`flex-shrink-0 flex flex-col gap-1 px-3 py-2 ${T.panelBg} border-t ${T.border} transition-all duration-100 z-20 relative pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.3)]`}>
+                <div
+                    className={`fixed inset-x-0 bottom-0 sm:relative sm:inset-x-auto sm:bottom-auto flex-shrink-0 flex flex-col gap-1 px-3 py-2 ${T.panelBg} border-t ${T.border} transition-all duration-100 z-30 sm:z-20 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.3)]`}
+                    style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+                >
                     <button 
                         onClick={() => setIsControlsVisible(false)}
                         className={`absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-5 rounded-t-lg ${T.panelBg} border-t border-x ${T.border} flex items-center justify-center hover:brightness-110 active:scale-95 transition-all shadow-sm z-0 group`}

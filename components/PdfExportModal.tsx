@@ -34,6 +34,74 @@ const CloseIcon = () => (
   </svg>
 );
 
+const stripWordCodeFences = (text: string) => text
+  .trim()
+  .replace(/^```(?:json|text)?\s*/i, '')
+  .replace(/\s*```$/, '')
+  .trim();
+
+const mapCardJsonArray = (json: any[]): Card[] => json.map((item: any, index: number) => ({
+  id: index,
+  front: item.front || item.word || '',
+  back: item.back || item.meaning || '',
+  pronunciation: item.pronunciation,
+  memo: item.memo,
+}));
+
+export const formatPdfPronunciation = (value?: string) => {
+  if (!value) return '';
+  const normalized = value.replace(/［/g, '[').replace(/］/g, ']');
+  return normalized.includes('[') || normalized.includes(']') ? normalized : `[${normalized}]`;
+};
+
+export const parsePdfWordCards = (rawText: string, fileName = '', fileType = ''): Card[] => {
+  const text = stripWordCodeFences(rawText);
+  const isDeclaredJson = fileName.toLowerCase().endsWith('.json') || fileType === 'application/json';
+
+  if (text.startsWith('[')) {
+    try {
+      const json = JSON.parse(text);
+      if (Array.isArray(json)) return mapCardJsonArray(json);
+      if (isDeclaredJson) return [];
+    } catch (e) {
+      if (isDeclaredJson) return [];
+    }
+  } else if (isDeclaredJson) {
+    return [];
+  }
+
+  return text.split('\n').filter(line => line.trim()).map((line, index) => {
+    const spacedParts = line.split(/\s+\/\s+/).map(part => part.trim());
+    const parts = spacedParts.length >= 2 ? spacedParts : line.split('/').map(part => part.trim());
+    const firstPart = parts[0] || '';
+    const richPromptFormat = parts.length >= 4 && /語源|雑学|【覚え方】/.test(parts[2] || '');
+
+    if (richPromptFormat) {
+      const withoutLeadingEmoji = firstPart.replace(/^[^A-Za-z0-9]+/, '').trim();
+      const pronunciationMatch = withoutLeadingEmoji.match(/^(.+?)\s+([ァ-ヶー]*[［\[][ァ-ヶー]+[］\]][ァ-ヶー]*|[ァ-ヶー]+)\s*$/);
+      if (pronunciationMatch) {
+        const etymology = parts[2] || '';
+        const example = parts.slice(3).join(' / ');
+        return {
+          id: index,
+          front: pronunciationMatch[1].trim(),
+          back: parts[1] || '',
+          pronunciation: pronunciationMatch[2].replace(/［/g, '[').replace(/］/g, ']'),
+          memo: `${etymology.startsWith('【語源・雑学】') ? '' : '【語源・雑学】\n'}${etymology}${example ? `\n\n【例文】\n${example}` : ''}`,
+        };
+      }
+    }
+
+    return {
+      id: index,
+      front: parts[0] || '',
+      back: parts[1] || '',
+      pronunciation: parts[2],
+      memo: parts[3],
+    };
+  });
+};
+
 const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId, title, transcript, hasWordFile, hasQuizFile }) => {
   const [options, setOptions] = useState({
     english: true,
@@ -74,26 +142,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
             // Load Words
             if (material.wordFile) {
                 const text = await material.wordFile.text();
-                let parsedCards: Card[] = [];
-                if (material.wordFile.name.endsWith('.json') || material.wordFile.type === 'application/json') {
-                   try {
-                       const json = JSON.parse(text);
-                       if (Array.isArray(json)) {
-                           parsedCards = json.map((item: any, index: number) => ({
-                               id: index,
-                               front: item.front || item.word || '',
-                               back: item.back || item.meaning || '',
-                               pronunciation: item.pronunciation,
-                               memo: item.memo
-                           }));
-                       }
-                   } catch(e){}
-                } else {
-                    parsedCards = text.split('\n').filter(l => l.trim()).map((line, i) => {
-                        const parts = line.split('/').map(p => p.trim());
-                        return { id: i, front: parts[0] || '', back: parts[1] || '', pronunciation: parts[2], memo: parts[3] };
-                    });
-                }
+                const parsedCards = parsePdfWordCards(text, material.wordFile.name, material.wordFile.type);
                 setWords(parsedCards);
             }
 
@@ -169,7 +218,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
           text += '【単語リスト】\n\n';
           words.forEach((w, i) => {
               text += `${i + 1}. ${w.front}`;
-              if (w.pronunciation) text += ` [${w.pronunciation}]`;
+              if (w.pronunciation) text += ` ${formatPdfPronunciation(w.pronunciation)}`;
               text += ` : ${w.back}\n`;
           });
            text += '\n----------------------------------------\n\n';
@@ -535,7 +584,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
                           <div key={w.id} className="flex items-start gap-1.5 py-0.5 truncate border-b border-stone-100 last:border-b-0">
                             <span className="text-stone-400 select-none">☐</span>
                             <span className="font-semibold text-stone-900 min-w-[50px]">{w.front}</span>
-                            {w.pronunciation && <span className="text-[10px] text-stone-500 font-mono">[{w.pronunciation}]</span>}
+                            {w.pronunciation && <span className="text-[10px] text-stone-500 font-mono">{formatPdfPronunciation(w.pronunciation)}</span>}
                             <span className="text-stone-500 truncate ml-auto">{w.back}</span>
                           </div>
                         ))}
