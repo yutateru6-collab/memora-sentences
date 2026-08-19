@@ -238,8 +238,11 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   const [chunkSize, setChunkSize] = useState(1);
 
   // Visibility State
-  const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [isControlsVisible, setIsControlsVisible] = useState(() =>
+      typeof window === 'undefined' || window.matchMedia('(min-width: 640px)').matches
+  );
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   
   const sortedGrammarTerms = useMemo(() => {
@@ -1002,25 +1005,53 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
         ) : (
             // Normal Header
             <>
-                <div className="flex items-center gap-3 overflow-hidden">
+                <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
                     <button onClick={onBack} className={`p-2 rounded-full ${T.button} hover:bg-white/10 transition-colors flex-shrink-0`}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
                     </button>
-                    <h1 className="font-bold text-lg truncate">{title}</h1>
-                    {hasExplanation && (
+                    <h1 className="font-bold text-lg truncate min-w-0 flex-1">{title}</h1>
+                    <div className="sm:hidden flex items-center gap-1 flex-shrink-0">
                         <button
-                            onClick={() => setShowExplanation(prev => !prev)}
-                            aria-pressed={showExplanation}
-                            className={`sm:hidden flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-bold border ${showExplanation ? 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
-                            title="解説を表示"
+                            onClick={() => {
+                                const nextShow = !showJapanese;
+                                setShowJapanese(nextShow);
+                                if (!nextShow) setIsSideBySide(false);
+                            }}
+                            aria-pressed={showJapanese}
+                            className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showJapanese ? 'text-sky-300 border-sky-400/40 bg-sky-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
+                            title="日本語訳を表示"
                         >
-                            <LightBulbIcon className="w-4 h-4" />
-                            <span>解説</span>
+                            <TranslateIcon className="w-4 h-4" />
+                            <span>訳</span>
                         </button>
-                    )}
+                        {hasExplanation && (
+                            <button
+                                onClick={() => setShowExplanation(prev => !prev)}
+                                aria-pressed={showExplanation}
+                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showExplanation ? 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
+                                title="解説を表示"
+                            >
+                                <LightBulbIcon className="w-4 h-4" />
+                                <span>解説</span>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => setIsMoreMenuOpen(true)}
+                            className={`p-1.5 rounded-full border ${T.border} ${T.textMuted} bg-white/5`}
+                            title="その他の機能"
+                            aria-label="その他の機能を開く"
+                        >
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <circle cx="5" cy="12" r="1.8" />
+                                <circle cx="12" cy="12" r="1.8" />
+                                <circle cx="19" cy="12" r="1.8" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 
-                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                <div className="hidden sm:flex items-center gap-2 overflow-x-auto scrollbar-hide flex-shrink-0">
                     <button
                         onClick={() => setShowInlineNotes(!showInlineNotes)}
                         className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${showInlineNotes ? 'text-yellow-400' : 'text-gray-500'}`}
@@ -1579,13 +1610,92 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
             ) : (
                  <button 
                     onClick={() => setIsControlsVisible(true)}
-                    className={`fixed bottom-6 right-6 p-3 rounded-full ${T.accentBg} text-white shadow-xl z-30 hover:scale-110 active:scale-95 transition-all animate-fade-in bg-opacity-90 backdrop-blur-sm`}
+                    className={`fixed right-4 sm:right-6 px-3 py-2 sm:p-3 rounded-full ${T.accentBg} text-white shadow-xl z-30 hover:scale-110 active:scale-95 transition-all animate-fade-in bg-opacity-90 backdrop-blur-sm flex items-center gap-1.5`}
+                    style={{ bottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
                     title="プレイヤーを表示"
                 >
-                    <MusicIcon className="w-6 h-6" />
+                    <MusicIcon className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="sm:hidden text-xs font-bold">再生</span>
                 </button>
             )}
         </>
+      )}
+
+      {isMoreMenuOpen && (
+          <div
+              className="sm:hidden fixed inset-0 z-50 flex items-end bg-black/55 backdrop-blur-sm"
+              onClick={() => setIsMoreMenuOpen(false)}
+          >
+              <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="その他の機能"
+                  className={`relative w-full max-h-[78dvh] overflow-y-auto rounded-t-3xl border-t ${T.border} ${T.containerBg} shadow-2xl`}
+                  style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+                  onClick={(e) => e.stopPropagation()}
+              >
+                  <div className="px-4 pt-3 pb-2">
+                      <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-3" />
+                      <div className="flex items-center justify-between">
+                          <div>
+                              <h3 className={`font-bold text-base ${T.textPrimary}`}>その他の機能</h3>
+                              <p className={`text-[11px] mt-0.5 ${T.textMuted}`}>読むときに常用しない機能をまとめています</p>
+                          </div>
+                          <button type="button" onClick={() => setIsMoreMenuOpen(false)} className={`w-9 h-9 rounded-full flex items-center justify-center ${T.button}`} aria-label="その他の機能を閉じる">
+                              <span className="text-xl leading-none" aria-hidden="true">×</span>
+                          </button>
+                      </div>
+                  </div>
+
+                  <div className="px-4 pb-4 space-y-5">
+                      <section>
+                          <h4 className={`text-[11px] font-bold tracking-wider mb-2 ${T.textMuted}`}>表示・メモ</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                              <button type="button" onClick={() => { setShowInlineNotes(prev => !prev); setIsMoreMenuOpen(false); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button}`}>
+                                  <EyeIcon off={!showInlineNotes} className={`w-5 h-5 ${showInlineNotes ? 'text-yellow-400' : ''}`} />
+                                  <span className="min-w-0"><span className="block text-sm font-bold">メモ表示</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{showInlineNotes ? '表示中' : '非表示'}</span></span>
+                              </button>
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsGlobalMemoOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button}`}>
+                                  <NoteIcon className="w-5 h-5" />
+                                  <span className="min-w-0"><span className="block text-sm font-bold">全体メモ</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{globalMemo.trim() ? 'メモあり' : 'メモを開く'}</span></span>
+                              </button>
+                              <button type="button" onClick={() => { const nextSide = !isSideBySide; setIsSideBySide(nextSide); if (nextSide) { setShowJapanese(true); setShowEnglish(true); } setIsMoreMenuOpen(false); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} ${isSideBySide ? 'text-sky-400' : ''}`}>
+                                  <ColumnsIcon className="w-5 h-5" />
+                                  <span className="min-w-0"><span className="block text-sm font-bold">左右対訳</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{isSideBySide ? 'ON' : 'OFF'}</span></span>
+                              </button>
+                          </div>
+                      </section>
+
+                      <section>
+                          <h4 className={`text-[11px] font-bold tracking-wider mb-2 ${T.textMuted}`}>学習モード</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsControlsVisible(true); if (isPlaying) { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); setIsPlaying(false); } else { if (!useTTS) setUseTTS(true); setIsPlaying(true); const curIdx = transcript.findIndex(t => currentTime >= t.start && currentTime < t.end); const startIdx = curIdx !== -1 ? curIdx : 0; speakSentence(startIdx); } }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} ${isPlaying && useTTS ? 'text-rose-400' : ''}`}>
+                                  {isPlaying && useTTS ? <PauseIcon className="w-5 h-5" /> : <VolumeIcon className="w-5 h-5" />}
+                                  <span className="min-w-0"><span className="block text-sm font-bold">自動読み上げ</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{isPlaying && useTTS ? '再生中' : 'TTS'}</span></span>
+                              </button>
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsSpeedMode(true); setIsSpeedSettingsOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-green-400`}>
+                                  <StopwatchIcon className="w-5 h-5" />
+                                  <span className="min-w-0"><span className="block text-sm font-bold">WPM測定</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>読む速さを測る</span></span>
+                              </button>
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsRsvpModeOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-[#00f0ff]`}>
+                                  <FlashIcon className="w-5 h-5" />
+                                  <span className="min-w-0"><span className="block text-sm font-bold">速読トレーニング</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>Spartan Reader</span></span>
+                              </button>
+                          </div>
+                      </section>
+
+                      <section>
+                          <h4 className={`text-[11px] font-bold tracking-wider mb-2 ${T.textMuted}`}>教材</h4>
+                          <div className="grid grid-cols-2 gap-2">
+                              {personaProfile && <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsProfileModalOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-purple-400`}><CommentaryIcon /><span className="text-sm font-bold">解説者</span></button>}
+                              {backgroundInfo && <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsBackgroundModalOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-amber-400`}><InfoIcon /><span className="text-sm font-bold">背景知識</span></button>}
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsPdfModalOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-rose-400`}><PdfIcon /><span className="text-sm font-bold">PDF</span></button>
+                              <button type="button" onClick={() => { setIsMoreMenuOpen(false); if (hasQuizFile) onStartQuiz(materialId); else setIsQuizModalOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button} text-indigo-400`}><QuizIcon className={!hasQuizFile ? 'opacity-60' : ''} /><span className="text-sm font-bold">{hasQuizFile ? 'クイズ' : 'クイズ作成'}</span></button>
+                          </div>
+                      </section>
+                  </div>
+              </div>
+          </div>
       )}
 
       {isGlobalMemoOpen && (
