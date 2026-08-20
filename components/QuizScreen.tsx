@@ -85,13 +85,26 @@ const QuestionCard: React.FC<{
 
             {isAnswered && (
                 <div className={`mt-4 p-4 rounded-md animate-fade-in border ${selectedChoice === question.correctAnswerIndex ? `bg-green-500/10 border-green-500/30 ${T.textPrimary}` : `bg-red-500/10 border-red-500/30 ${T.textPrimary}`}`}>
-                    <h4 className="font-bold mb-2">{selectedChoice === question.correctAnswerIndex ? '正解！' : '残念！'}</h4>
-                    <p className="whitespace-pre-wrap font-sans text-sm">
-                        {selectedChoice === question.correctAnswerIndex
-                            ? (question.explanationCorrect || question.explanation)
-                            : (question.explanationIncorrect || question.explanation)
-                        }
-                    </p>
+                    <div className="flex items-start gap-3">
+                        <img
+                            src="/mascots/07_黄_チェックリストラプター.png"
+                            alt=""
+                            aria-hidden="true"
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                            className="w-12 h-12 sm:w-14 sm:h-14 object-contain flex-shrink-0 drop-shadow-md select-none pointer-events-none"
+                        />
+                        <div className="min-w-0">
+                            <h4 className="font-bold mb-2">{selectedChoice === question.correctAnswerIndex ? '正解！' : '残念！'}</h4>
+                            <p className="whitespace-pre-wrap font-sans text-sm">
+                                {selectedChoice === question.correctAnswerIndex
+                                    ? (question.explanationCorrect || question.explanation)
+                                    : (question.explanationIncorrect || question.explanation)
+                                }
+                            </p>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

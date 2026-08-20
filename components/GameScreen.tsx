@@ -72,7 +72,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ cards, deckName, onBack, T }) =
           &larr; 戻る
         </button>
         <div className={`font-mono ${T.textSecondary}`}>{currentIndex + 1} / {cards.length}</div>
-        <div className={`font-bold ${T.textPrimary}`}>Score: {score}</div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <img
+            src="/mascots/03_オレンジ_ジャンプ恐竜.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="w-9 h-9 sm:w-11 sm:h-11 object-contain drop-shadow-md select-none pointer-events-none"
+          />
+          <div className={`font-bold ${T.textPrimary}`}>Score: {score}</div>
+        </div>
       </header>
       
       <main className="flex-grow flex flex-col items-center justify-center p-4 md:p-8 space-y-8">
