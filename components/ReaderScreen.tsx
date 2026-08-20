@@ -109,7 +109,13 @@ interface SelectionData {
 interface PersonaAvatarProfile {
     name: string;
     role: string;
-    avatar: string;
+    avatar?: string;
+}
+
+interface ExplanationSpeaker {
+    name: string;
+    role?: string;
+    avatar?: string;
 }
 
 const PERSONA_AVATAR_BY_ROLE: Record<string, string> = {
@@ -125,13 +131,38 @@ const PERSONA_AVATAR_BY_ROLE: Record<string, string> = {
     '異世界から来た騎士': '/personas/10_異世界から来た騎士.png',
 };
 
-const normalizePersonaName = (value: string) => value
+const PERSONA_ROLE_KEYS = Object.keys(PERSONA_AVATAR_BY_ROLE);
+
+const stripPersonaFormatting = (value: string) => value
     .trim()
-    .replace(/^[・\-\s]+/, '')
+    .replace(/^#{1,6}\s*/, '')
+    .replace(/^[-*+]\s+/, '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/`/g, '')
+    .trim();
+
+const cleanPersonaDisplayName = (value: string) => stripPersonaFormatting(value)
+    .replace(/^\[解説\]\s*/, '')
     .replace(/^(?:命名した|名前)\s*[:：]?\s*/, '')
+    .replace(/[（(][^）)]*[）)]\s*$/, '')
     .replace(/^[（(【\[]+/, '')
     .replace(/[）)】\]]+$/, '')
     .trim();
+
+const normalizePersonaName = (value: string) => cleanPersonaDisplayName(value)
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/(?:さん|先生|先輩|くん|君|ちゃん|氏|様)$/u, '')
+    .replace(/[\s・･._-]/g, '')
+    .replace(/[ァ-ヶ]/g, char => String.fromCharCode(char.charCodeAt(0) - 0x60))
+    .toLowerCase();
+
+const resolvePersonaRole = (value: string): string | undefined => {
+    const cleaned = stripPersonaFormatting(value)
+        .replace(/^(?:役割|職業|キャラ(?:クター)?|role)\s*[:：]\s*/i, '')
+        .trim();
+    return PERSONA_ROLE_KEYS.find(role => cleaned === role || cleaned.includes(role));
+};
 
 const parsePersonaAvatarProfiles = (profile: string | null): PersonaAvatarProfile[] => {
     if (!profile) return [];
@@ -140,34 +171,56 @@ const parsePersonaAvatarProfiles = (profile: string | null): PersonaAvatarProfil
     let current: { name?: string; role?: string } = {};
 
     const flush = () => {
-        if (current.name && current.role) {
-            const avatar = PERSONA_AVATAR_BY_ROLE[current.role];
-            if (avatar) {
-                parsed.push({ name: current.name, role: current.role, avatar });
-            }
+        if (current.name) {
+            const role = current.role || '';
+            parsed.push({
+                name: cleanPersonaDisplayName(current.name),
+                role,
+                avatar: role ? PERSONA_AVATAR_BY_ROLE[role] : undefined,
+            });
         }
         current = {};
     };
 
     profile.split(/\r?\n/).forEach(rawLine => {
-        const line = rawLine.trim();
-        if (!line) return;
+        const line = stripPersonaFormatting(rawLine);
+        if (!line || /^【(?:解説担当|解説者プロフィール)/.test(line)) return;
 
-        const nameMatch = line.match(/^(?:\d+\.\s*)?名前\s*[:：]\s*(.+)$/);
+        const nameMatch = line.match(/^(?:\d+[.)]\s*)?(?:名前|name)\s*[:：]\s*(.+)$/i);
         if (nameMatch) {
             flush();
-            current.name = normalizePersonaName(nameMatch[1]);
+            current.name = cleanPersonaDisplayName(nameMatch[1]);
             return;
         }
 
-        const roleMatch = line.match(/^役割\s*[:：]\s*(.+)$/);
-        if (roleMatch && current.name) {
-            current.role = roleMatch[1].trim();
+        const roleMatch = line.match(/^(?:役割|職業|キャラ(?:クター)?|role)\s*[:：]\s*(.+)$/i);
+        if (roleMatch) {
+            current.role = resolvePersonaRole(roleMatch[1]) || stripPersonaFormatting(roleMatch[1]);
+            return;
+        }
+
+        const combinedMatch = line.match(/^(.{1,40}?)[（(]([^）)]+)[）)](?:\s*[:：].*)?$/);
+        if (combinedMatch) {
+            const role = resolvePersonaRole(combinedMatch[2]);
+            if (role) {
+                flush();
+                parsed.push({
+                    name: cleanPersonaDisplayName(combinedMatch[1]),
+                    role,
+                    avatar: PERSONA_AVATAR_BY_ROLE[role],
+                });
+                return;
+            }
+        }
+
+        if (current.name && !current.role) {
+            const role = resolvePersonaRole(line);
+            if (role) current.role = role;
         }
     });
 
     flush();
-    return parsed;
+    return parsed.filter(persona => persona.name);
 };
 
 const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBack, title, thumbnailUrl, duration: totalDuration, bgmFile, annotationFile, materialId, hasWordFile, registeredWords = [], onStartStudy, T, personaProfile, backgroundInfo, hasQuizFile, onStartQuiz, onUpdateMaterial, globalMemo: initialGlobalMemo, inlineNotes: initialInlineNotes }) => {
@@ -308,18 +361,55 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
+  const personaProfiles = useMemo(
+      () => parsePersonaAvatarProfiles(personaProfile),
+      [personaProfile]
+  );
+
   const personaAvatarByName = useMemo(() => {
       const avatars = new Map<string, PersonaAvatarProfile>();
-      parsePersonaAvatarProfiles(personaProfile).forEach(persona => {
-          avatars.set(normalizePersonaName(persona.name), persona);
+      personaProfiles.forEach(persona => {
+          const key = normalizePersonaName(persona.name);
+          if (key) avatars.set(key, persona);
       });
       return avatars;
-  }, [personaProfile]);
+  }, [personaProfiles]);
 
-  const getPersonaForExplanationLine = (line: string) => {
-      const speakerMatch = line.match(/^\s*(?:\[解説\]\s*)?([^:：\n]{1,50})\s*[:：]/);
+  const getPersonaForExplanationLine = (line: string): ExplanationSpeaker | undefined => {
+      const speakerMatch = line.match(/^\s*(?:\[解説\]\s*)?([^:：\n]{1,60})\s*[:：]/);
       if (!speakerMatch) return undefined;
-      return personaAvatarByName.get(normalizePersonaName(speakerMatch[1]));
+
+      const descriptor = stripPersonaFormatting(speakerMatch[1]);
+      const roleFromLine = resolvePersonaRole(descriptor);
+      const speakerName = cleanPersonaDisplayName(descriptor.replace(/[（(][^）)]*[）)]/g, ''));
+      const normalizedSpeaker = normalizePersonaName(speakerName);
+      if (!normalizedSpeaker) return undefined;
+
+      let persona = personaAvatarByName.get(normalizedSpeaker);
+      if (!persona) {
+          persona = personaProfiles.find(candidate => {
+              const normalizedCandidate = normalizePersonaName(candidate.name);
+              return normalizedCandidate.length >= 2
+                  && normalizedSpeaker.length >= 2
+                  && (normalizedCandidate.includes(normalizedSpeaker) || normalizedSpeaker.includes(normalizedCandidate));
+          });
+      }
+      if (!persona && roleFromLine) {
+          persona = personaProfiles.find(candidate => resolvePersonaRole(candidate.role) === roleFromLine);
+      }
+      if (!persona && personaProfiles.length === 1) {
+          persona = personaProfiles[0];
+      }
+
+      const blockedLabels = new Set(['例', '例文', '意味', '文法', 'ポイント', '注意', '補足', '主語', '動詞', '目的語', 's', 'v', 'o', 'c']);
+      if (!persona && !roleFromLine && blockedLabels.has(normalizedSpeaker)) return undefined;
+
+      const role = roleFromLine || (persona ? resolvePersonaRole(persona.role) || persona.role : undefined);
+      return {
+          name: speakerName || persona?.name || descriptor,
+          role,
+          avatar: (role ? PERSONA_AVATAR_BY_ROLE[role] : undefined) || persona?.avatar,
+      };
   };
 
   
@@ -790,7 +880,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               {lines.map((line, lineIndex) => {
                   const lineBaseOffset = baseOffset;
                   baseOffset += line.length + (lineIndex < lines.length - 1 ? 1 : 0);
-                  const persona = getPersonaForExplanationLine(line);
+                  const speaker = getPersonaForExplanationLine(line);
                   const lineContent = (
                       <div
                           data-exp-base={lineBaseOffset}
@@ -803,21 +893,33 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                       </div>
                   );
 
-                  if (!persona) {
+                  if (!speaker) {
                       return <div key={`exp-line-${lineIndex}`}>{lineContent}</div>;
                   }
 
+                  const initial = Array.from(speaker.name.trim())[0] || '？';
+                  const avatarTitle = speaker.role ? `${speaker.name}・${speaker.role}` : speaker.name;
+
                   return (
                       <div key={`exp-line-${lineIndex}`} className="flex items-start gap-2.5">
-                          <img
-                              src={persona.avatar}
-                              alt=""
-                              aria-hidden="true"
-                              title={persona.role}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover flex-shrink-0 border border-white/10 shadow-md bg-white/10"
-                          />
+                          <div
+                              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex-shrink-0 border border-white/15 shadow-md bg-gradient-to-br from-sky-500/70 to-violet-500/70 flex items-center justify-center"
+                              title={avatarTitle}
+                              aria-label={`${speaker.name}のアイコン`}
+                          >
+                              <span className="text-sm font-black text-white" aria-hidden="true">{initial}</span>
+                              {speaker.avatar && (
+                                  <img
+                                      src={speaker.avatar}
+                                      alt=""
+                                      aria-hidden="true"
+                                      loading="lazy"
+                                      decoding="async"
+                                      onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                      className="absolute inset-0 w-full h-full object-cover"
+                                  />
+                              )}
+                          </div>
                           {lineContent}
                       </div>
                   );

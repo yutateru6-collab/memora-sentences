@@ -21,6 +21,19 @@ const DiceIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const OFFICIAL_PERSONA_OPTIONS = [
+    'ギャル',
+    '大学生',
+    '高校教師',
+    '司書',
+    '主婦',
+    '経営者',
+    'おじいちゃん',
+    'ゲーム実況者',
+    'ミステリー小説の探偵',
+    '異世界から来た騎士',
+];
+
 // --- Accordion Wrapper Component ---
 const PromptAccordion: React.FC<{
   T: Theme;
@@ -681,12 +694,7 @@ const BoardPromptCard: React.FC<{ T: Theme }> = ({ T }) => {
 
     const [englishLevel, setEnglishLevel] = useState(levelOptions[0]);
 
-    const personaOptions = [
-        'ギャル', '大学生', '小学生', '部長', '主婦', '浪人生', '政治家', 'インフルエンサー', 'バンドマン', 'サッカー選手', 
-        'ミステリー小説の探偵', 'おじいちゃん', 'おばあちゃん', '中学生', '司書', '経営者', 'オカルト好き', 
-        '異世界から来た騎士', '歴史上の人物', '就活中の大学生', 'アイドルオタク', 'スピリチュアルカウンセラー', 
-        'ゲーム実況者', '漫画家', '高校教師', '美容師', '新米ママ', '花屋の店主', '帰国子女', 'トラック運転手'
-    ];
+    const personaOptions = OFFICIAL_PERSONA_OPTIONS;
     
     const personaTraitOptions = [
         '口がものすごく悪い', 'ものすごく真面目', '極端にOCD気味', '極端に不安性', '完全なるポジティブ', 
@@ -840,7 +848,7 @@ ${personaList}
             T={T}
             title="匿名掲示板メーカー（学習機能付き）"
             icon="💬"
-            description="JSONマジック：記事の内容に合わせてサイトのデザインごと生成します。"
+            description="好きなテーマを匿名掲示板風の英語教材にします。"
         >
             <div className="space-y-4 mb-4">
                  <div>
@@ -1155,12 +1163,7 @@ const CustomPromptCard: React.FC<{ T: Theme; onNavigateToPasteJSON?: () => void 
         '600': '長め (約600語)',
     };
     
-    const personaOptions = [
-        'ギャル', '大学生', '小学生', '部長', '主婦', '浪人生', '政治家', 'インフルエンサー', 'バンドマン', 'サッカー選手', 
-        'ミステリー小説の探偵', 'おじいちゃん', 'おばあちゃん', '中学生', '司書', '経営者', 'オカルト好き', 
-        '異世界から来た騎士', '歴史上の人物', '就活中の大学生', 'アイドルオタク', 'スピリチュアルカウンセラー', 
-        'ゲーム実況者', '漫画家', '高校教師', '美容師', '新米ママ', '花屋の店主', '帰国子女', 'トラック運転手'
-    ];
+    const personaOptions = OFFICIAL_PERSONA_OPTIONS;
     
     const personaTraitOptions = [
         '口がものすごく悪い', 'ものすごく真面目', '極端にOCD気味', '極端に不安性', '完全なるポジティブ', 
@@ -1222,7 +1225,7 @@ const CustomPromptCard: React.FC<{ T: Theme; onNavigateToPasteJSON?: () => void 
         ).join('\n');
         
         const outputFormatExample = personas.map(p => 
-            `[解説] ${p.name || '（AIが決めた名前）'}: [${p.trait}な${p.role}としてのコメント]`
+            `[解説] ${p.name || '（AIが決めた名前）'}（${p.role}）: [${p.trait}な${p.role}としてのコメント]`
         ).join('\n');
 
         const examplePersonaProfile = personas.map(p => 
@@ -1290,7 +1293,8 @@ ${outputFormatExample}
 
 【最重要：対訳・解説のルール】
 ・英語は必ず一文ずつ出力し、その直後にその一文だけの自然な日本語訳を置いてください。
-・各解説コメントは必ず「[解説] 名前: コメント」の1行形式で開始してください。
+・各解説コメントは必ず「[解説] 名前（役割）: コメント」の1行形式で開始してください。
+・各[解説]行の「名前」と「役割」は、【解説担当】プロフィール内の同じ人物の表記と一字一句同じにしてください。
 ・複数の解説担当がいる場合、同じ英文の日本語訳の直後に担当者ごとの[解説]行を連続して置いてください。
 ・コメントには文法構造（主語S・動詞Vなどを実際の英単語と共に示す）、重要語句、内容の要約、関連雑学を、設定された解説量に応じて入れてください。
 ・キャラクターの口調と個性を反映しつつ、解説として意味が通る内容にしてください。
@@ -1538,7 +1542,7 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
         <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
           &larr; 戻る
         </button>
-        <h1 className={`text-xl font-bold ${T.textPrimary}`}>プロンプト ライブラリ</h1>
+        <h1 className={`text-xl font-bold ${T.textPrimary}`}>教材をつくる</h1>
         <div className="w-16"></div>
       </header>
 
@@ -1546,12 +1550,16 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
       <main className="flex-grow overflow-y-auto p-4 md:p-8">
         <div className="max-w-3xl mx-auto space-y-8">
             
-            {/* Section: Reading */}
             <div>
-                <div className="mb-4 border-b border-gray-700 pb-2 flex items-end justify-between gap-3">
-                    <h2 className={`text-xl font-bold ${T.textPrimary}`}>
-                        長文読解
-                    </h2>
+                <div className="mb-4 border-b border-gray-700 pb-3 flex items-end justify-between gap-3">
+                    <div>
+                        <h2 className={`text-xl font-bold ${T.textPrimary}`}>
+                            作成モードを選ぶ
+                        </h2>
+                        <p className={`mt-1 text-sm ${T.textMuted}`}>
+                            長文教材か、匿名掲示板風教材のどちらかを選んでください。
+                        </p>
+                    </div>
                     <img
                         src="/mascots/06_紫_ノートを書くステゴサウルス.png"
                         alt=""
@@ -1563,23 +1571,8 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
                     />
                 </div>
                 <div className="grid gap-4">
-                    {/* 1. 伝説の始まり */}
-                    <LegendPromptCard T={T} />
-                    
-                    {/* 2. 好きな内容の長文 */}
                     <CustomPromptCard T={T} onNavigateToPasteJSON={onNavigateToPasteJSON} />
-                    
-                    {/* 3. 英文解説 */}
-                    <EnglishExplanationCard T={T} />
-                    
-                    {/* 4. SNSスレッドメーカー */}
-                    <SnsThreadPromptCard T={T} />
-                    
-                    {/* 5. 匿名掲示板メーカー */}
                     <BoardPromptCard T={T} />
-                    
-                    {/* 6. Amazon商品レビュー メーカー */}
-                    <AmazonPromptCard T={T} />
                 </div>
             </div>
 

@@ -1,8 +1,5 @@
 name: Build MEMORA Sentences
 
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -18,71 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Apply targeted persona icon repair
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/fix-persona-icons-and-focus-prompts'
-        shell: bash
-        run: |
-          git fetch origin "$GITHUB_HEAD_REF"
-          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('.github/agent-fix-persona-icons-and-focus-prompts.py')
-          text = path.read_text(encoding='utf-8')
-          text = text.replace(
-              "for asset in PERSONA_ASSETS := [",
-              "PERSONA_ASSETS = [",
-              1,
-          )
-          text = text.replace(
-              "]:\n    if asset not in reader_text:",
-              "]\nfor asset in PERSONA_ASSETS:\n    if asset not in reader_text:",
-              1,
-          )
-          path.write_text(text, encoding='utf-8')
-          PY
-          python -m py_compile .github/agent-fix-persona-icons-and-focus-prompts.py
-          python .github/agent-fix-persona-icons-and-focus-prompts.py
-          rm .github/agent-fix-persona-icons-and-focus-prompts.py
-          rm .github/workflows/agent-fix-persona-icons-and-focus-prompts.yml
-          cat > .github/workflows/build.yml <<'EOF'
-          name: Build MEMORA Sentences
-
-          on:
-            push:
-              branches:
-                - main
-                - agent/standalone-refresh
-            pull_request:
-              branches:
-                - main
-
-          jobs:
-            build:
-              runs-on: ubuntu-latest
-              steps:
-                - name: Checkout
-                  uses: actions/checkout@v4
-
-                - name: Setup Node
-                  uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                    cache-dependency-path: package.json
-
-                - name: Install dependencies
-                  run: npm install
-
-                - name: Build
-                  run: npm run build
-          EOF
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git diff --cached --check
-          git commit -m "Fix persona avatars and focus creation modes"
-          git push origin HEAD:"$GITHUB_HEAD_REF"
 
       - name: Setup Node
         uses: actions/setup-node@v4
