@@ -189,6 +189,15 @@ const App: React.FC = () => {
     .join('\n')
     .trim();
 
+  const stripStructuralMarkdown = (line: string) => line
+    .trim()
+    .replace(/^#{1,6}\s*/, '')
+    .replace(/^[-*+]\s+/, '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/^`+|`+$/g, '')
+    .trim();
+
   const cleanJsonString = (str: string) => {
     let cleaned = str.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
     // 余分なテキストがJSONの前にある場合への対策（例: "snsすれっどめーかー"）
@@ -384,32 +393,41 @@ const App: React.FC = () => {
       const contentLines: string[] = [];
       
       for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          
-          // Detect profile start
-          if (line.startsWith('【解説担当') || line.startsWith('【解説者プロフィール') || (i === 0 && line.startsWith('【'))) {
+          const structuralLine = stripStructuralMarkdown(lines[i]);
+          const isProfileHeader = /^【(?:解説担当|解説者プロフィール)[^】]*】/.test(structuralLine);
+          const isProfileField = /^(?:\d+[.)]\s*)?(?:名前|役割|性格|職業|キャラ(?:クター)?)\s*[:：]/.test(structuralLine);
+
+          if (isProfileHeader || (!isReadingProfile && contentLines.length === 0 && isProfileField)) {
               isReadingProfile = true;
-              metadataBuffer += line + '\n';
+              metadataBuffer += structuralLine + '\n';
               continue;
           }
           
           if (isReadingProfile) {
-               const hasJapanese = /[ぁ-んァ-ン一-龯]/.test(line);
-               if (!hasJapanese && line.length > 0 && !line.startsWith('【')) {
+               if (structuralLine.includes('----------')) {
                    isReadingProfile = false;
-                   contentLines.push(line);
-               } else if (line.includes('----------')) {
+                   continue;
+               }
+
+               const hasJapanese = /[ぁ-んァ-ン一-龯]/.test(structuralLine);
+               const looksLikeEnglishSentence = /[A-Za-z]/.test(structuralLine)
+                   && !hasJapanese
+                   && !/^(?:Name|Role|Trait)\s*[:：]/i.test(structuralLine)
+                   && !structuralLine.startsWith('【');
+
+               if (looksLikeEnglishSentence) {
                    isReadingProfile = false;
+                   contentLines.push(structuralLine);
                } else {
-                   metadataBuffer += line + '\n';
+                   metadataBuffer += structuralLine + '\n';
                }
           } else {
-              contentLines.push(line);
+              contentLines.push(structuralLine);
           }
       }
       
       for (let i = 0; i < contentLines.length; i++) {
-          const line = contentLines[i];
+          const line = stripStructuralMarkdown(contentLines[i]);
           if (line.startsWith('[解説]')) {
               if (entries.length > 0) {
                   const explanation = line.replace('[解説]', '').trim();
