@@ -203,6 +203,15 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
       <main className={`flex-grow flex flex-col items-center justify-center p-4 relative ${T.containerBg}`}>
         {/* Main Card Content */}
         <div className="w-full max-w-3xl flex flex-col items-center justify-center relative flex-grow">
+            <img
+                src="/mascots/01_青_VOCADONフラッシュカード.png"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="absolute top-0 right-0 w-14 sm:w-20 max-h-20 object-contain drop-shadow-lg select-none pointer-events-none z-[1]"
+            />
             <div className={`absolute top-0 left-0 text-sm ${T.textMuted} font-mono`}>
                 ID {currentCard.id} 
                 {currentCard.srsState && (

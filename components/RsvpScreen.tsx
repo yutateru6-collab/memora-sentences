@@ -173,6 +173,17 @@ export const RsvpScreen: React.FC<RsvpScreenProps> = ({ transcript, onClose, ini
 
       {/* Main Display Area */}
       <div className="relative flex-grow flex flex-col items-center justify-center w-full max-w-7xl px-4">
+        {!isPlaying && (
+          <img
+            src="/mascots/04_ピンク_空飛ぶ翼竜.png"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            className="absolute left-3 bottom-3 w-14 sm:w-20 max-h-20 object-contain opacity-75 drop-shadow-lg select-none pointer-events-none"
+          />
+        )}
         
         {/* The Word(s) */}
         <div className={`relative z-10 flex flex-wrap justify-center items-baseline gap-4 ${isLandscape ? 'w-full px-12 mb-0' : 'mb-4'}`}>

@@ -60,13 +60,22 @@ export const CardListScreen: React.FC<CardListScreenProps> = ({ cards, deckName,
     <div className={`flex flex-col h-screen ${T.bg}`}>
       {/* Header */}
       <header className={`flex-shrink-0 flex items-center justify-between p-3 ${T.containerBg} shadow-md z-10 border-b ${T.border}`}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
              <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
               &larr; 戻る
             </button>
-            <h1 className={`text-xl font-bold ${T.textPrimary}`}>{deckName} <span className="text-sm font-normal opacity-70">({cards.length}枚)</span></h1>
+            <img
+                src="/mascots/05_ティール_Vノート恐竜.png"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                className="w-7 h-7 sm:w-9 sm:h-9 object-contain flex-shrink-0 drop-shadow-md select-none pointer-events-none"
+            />
+            <h1 className={`text-base sm:text-xl font-bold ${T.textPrimary} truncate`}>{deckName} <span className="text-xs sm:text-sm font-normal opacity-70">({cards.length}枚)</span></h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
             <button onClick={handleResetAll} className={`px-3 py-2 text-xs sm:text-sm ${T.button} rounded-md whitespace-nowrap`}>
                 すべて表へ
             </button>

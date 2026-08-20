@@ -1548,9 +1548,20 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
             
             {/* Section: Reading */}
             <div>
-                <h2 className={`text-xl font-bold ${T.textPrimary} mb-4 border-b border-gray-700 pb-2`}>
-                    長文読解
-                </h2>
+                <div className="mb-4 border-b border-gray-700 pb-2 flex items-end justify-between gap-3">
+                    <h2 className={`text-xl font-bold ${T.textPrimary}`}>
+                        長文読解
+                    </h2>
+                    <img
+                        src="/mascots/06_紫_ノートを書くステゴサウルス.png"
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        className="w-14 h-14 sm:w-16 sm:h-16 object-contain drop-shadow-lg select-none pointer-events-none"
+                    />
+                </div>
                 <div className="grid gap-4">
                     {/* 1. 伝説の始まり */}
                     <LegendPromptCard T={T} />

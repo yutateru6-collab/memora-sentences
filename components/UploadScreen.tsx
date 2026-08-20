@@ -754,6 +754,15 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
                 <span className="absolute -top-2 -right-2 text-lg sm:text-xl" aria-hidden="true">✨</span>
               </div>
 
+              <img
+                src="/mascots/02_緑_本を読むトリケラトプス.png"
+                alt=""
+                aria-hidden="true"
+                loading="eager"
+                decoding="async"
+                draggable={false}
+                className="mx-auto mb-3 w-28 sm:w-36 max-h-36 object-contain drop-shadow-xl select-none pointer-events-none"
+              />
               <p className="mb-2 text-[10px] sm:text-xs font-bold tracking-[0.22em] text-sky-400">WELCOME TO MEMORA</p>
               <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${T.textPrimary}`}>最初の教材をつくろう</h2>
               <p className={`mt-2 text-sm sm:text-base leading-6 sm:leading-7 ${T.textMuted}`}>
