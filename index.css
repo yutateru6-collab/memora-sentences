@@ -136,6 +136,11 @@ body.bg-slate-900 select:focus {
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
 }
 
+/* First-run screen: keep the app focused on generated learning content only. */
+section[aria-label="MEMORAをはじめる"] .mt-5 > button + button {
+  display: none !important;
+}
+
 @media (max-width: 640px) {
   body.bg-slate-900,
   body.bg-slate-900 .bg-slate-900 {
