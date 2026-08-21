@@ -141,6 +141,32 @@ section[aria-label="MEMORAをはじめる"] .mt-5 > button + button {
   display: none !important;
 }
 
+/*
+ * Prompt library: mobile-first visual hierarchy.
+ * Scope the rules to the prompt-library screen via its unique mascot image so
+ * the rest of the app keeps its existing layout and theme behavior.
+ */
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"]) > div > div > div:last-child > :first-child {
+  overflow: hidden;
+}
+
+body.bg-slate-900 main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) {
+  background-color: rgba(15, 23, 42, 0.34) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) {
+  box-shadow: none !important;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > div:nth-child(3) {
+  gap: 0.65rem !important;
+}
+
 @media (max-width: 640px) {
   body.bg-slate-900,
   body.bg-slate-900 .bg-slate-900 {
@@ -148,5 +174,155 @@ section[aria-label="MEMORAをはじめる"] .mt-5 > button + button {
       radial-gradient(circle at 8% 0%, rgba(56, 189, 248, 0.18), transparent 30%),
       radial-gradient(circle at 94% 12%, rgba(168, 85, 247, 0.16), transparent 30%),
       linear-gradient(155deg, #0f172a 0%, #172554 52%, #1e1b4b 100%) !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"]) {
+    padding: 0.75rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > * + * {
+    margin-top: 0.8rem !important;
+  }
+
+  /* Four compact generation controls become a readable 2 x 2 block. */
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(3) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.7rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(3) > div {
+    min-width: 0;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(3) select {
+    min-height: 2.8rem;
+  }
+
+  /* Persona cards: keep the name readable, but put role and trait side-by-side. */
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) {
+    padding: 0.7rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.55rem !important;
+    position: relative;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div > div:nth-child(1) {
+    grid-column: 1 / -1;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div > div:nth-child(4) {
+    position: absolute;
+    right: -0.15rem;
+    top: -0.2rem;
+    padding: 0 !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) select,
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) input {
+    min-width: 0;
+    min-height: 2.65rem;
+  }
+
+  /* The explanation slider has four actual states, so show four visual anchors. */
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.2rem;
+    align-items: start;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) span {
+    font-size: 0 !important;
+    line-height: 1.2;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) span::after {
+    font-size: 0.68rem;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) span:nth-child(1)::after {
+    content: "反応重視";
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) span:nth-child(2)::after {
+    content: "軽め";
+    display: block;
+    text-align: center;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2) span:nth-child(3)::after {
+    content: "標準";
+    display: block;
+    text-align: center;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(5) > div > div:nth-child(2)::after {
+    content: "文法重視";
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-align: right;
+  }
+
+  /* Give the creation flow a single obvious primary action on narrow screens. */
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.55rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 > * {
+    width: 100% !important;
+    min-height: 3rem;
+    border-radius: 0.75rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 > :nth-child(1) {
+    order: 3;
+    opacity: 0.88;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 > :nth-child(2) {
+    order: 1;
+    min-height: 3.35rem;
+    font-size: 0.95rem;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 > :nth-child(3) {
+    order: 2;
+    box-shadow: none !important;
+    filter: saturate(0.72);
   }
 }
