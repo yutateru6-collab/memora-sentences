@@ -1,0 +1,67 @@
+name: Remove handheld material CTA
+
+on:
+  push:
+    branches:
+      - agent/remove-handheld-material-cta
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/remove-handheld-material-cta
+          fetch-depth: 0
+
+      - name: Remove handheld material button only
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('components/UploadScreen.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = '''                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(true)}
+                  className={`min-h-12 flex-1 px-6 py-3 ${T.buttonStrong} rounded-xl font-bold shadow-sm transition-all hover:-translate-y-0.5 active:scale-[0.98]`}
+                >
+                  <span className="mr-2" aria-hidden="true">＋</span>手持ちの教材を追加
+                </button>
+'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one handheld CTA, found {text.count(old)}')
+          text = text.replace(old, '', 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify focused diff
+        shell: bash
+        run: |
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="components/UploadScreen.tsx"
+          test "$changed" = "$expected"
+          ! grep -q '手持ちの教材を追加' components/UploadScreen.tsx
+
+      - name: Commit source change
+        shell: bash
+        run: |
+          rm .github/workflows/agent-remove-handheld-material.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git diff --cached --check
+          git commit -m "Remove handheld material CTA from first screen"
+          git push origin HEAD:agent/remove-handheld-material-cta
