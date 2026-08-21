@@ -451,7 +451,8 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       const blockedLabels = new Set(['例', '例文', '意味', '文法', 'ポイント', '注意', '補足', '主語', '動詞', '目的語', 's', 'v', 'o', 'c']);
       if (!persona && !roleFromLine && !overrideRole && blockedLabels.has(normalizedSpeaker)) return undefined;
 
-      const role = roleFromLine || overrideRole || (persona ? resolvePersonaRole(persona.role) || persona.role : undefined);
+      const profileRole = persona ? resolvePersonaRole(persona.role) || persona.role : undefined;
+      const role = overrideRole || profileRole || roleFromLine;
       return {
           name: speakerName || persona?.name || descriptor,
           role,

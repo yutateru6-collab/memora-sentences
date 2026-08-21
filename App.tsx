@@ -12,7 +12,7 @@ import QuizScreen from './components/QuizScreen';
 import BoardScreen from './components/BoardScreen';
 import AmazonScreen from './components/AmazonScreen';
 import { SnsScreen } from './components/SnsScreen'; // Import SnsScreen
-import { PromptLibraryScreen } from './components/PromptLibraryScreen';
+import { PromptLibraryScreen, PromptPersonaSelection } from './components/PromptLibraryScreen';
 import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
@@ -118,6 +118,7 @@ const themes: Themes = {
 const App: React.FC = () => {
   const [view, setView] = useState<View>('upload');
   const [openPasteJsonMode, setOpenPasteJsonMode] = useState(false);
+  const [pendingPromptPersonas, setPendingPromptPersonas] = useState<PromptPersonaSelection[] | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -198,6 +199,48 @@ const App: React.FC = () => {
     .replace(/^`+|`+$/g, '')
     .trim();
 
+  const applySelectedPersonaMetadata = (
+      entries: TranscriptEntry[],
+      selections: PromptPersonaSelection[] | null
+  ): TranscriptEntry[] => {
+      if (!selections || selections.length === 0 || entries.length === 0) return entries;
+
+      const nextEntries = entries.map(entry => ({ ...entry }));
+      const firstExplanation = nextEntries[0].explanation || '';
+      const existingProfileMatch = firstExplanation.match(/__PERSONA_PROFILE__([\s\S]*?)__END_PERSONA__/);
+      const existingProfile = existingProfileMatch ? existingProfileMatch[1] : '';
+
+      const profileNames = existingProfile
+          .split(/\r?\n/)
+          .map(line => stripStructuralMarkdown(line).match(/^(?:\d+[.)]\s*)?(?:名前|name)\s*[:：]\s*(.+)$/i)?.[1]?.trim())
+          .filter((name): name is string => !!name);
+
+      const speakerNames: string[] = [];
+      for (const entry of nextEntries) {
+          const explanation = (entry.explanation || '')
+              .replace(/__PERSONA_PROFILE__[\s\S]*?__END_PERSONA__/, '')
+              .replace(/__BACKGROUND_INFO__[\s\S]*?__END_BACKGROUND__/, '');
+          for (const rawLine of explanation.split(/\r?\n/)) {
+              const line = stripStructuralMarkdown(rawLine);
+              const match = line.match(/^\s*(?:\[解説\]\s*)?([^:：\n]{1,60})\s*[:：]/);
+              if (!match) continue;
+              const name = match[1].replace(/[（(][^）)]*[）)]\s*$/, '').trim();
+              if (name && !speakerNames.includes(name)) speakerNames.push(name);
+              if (speakerNames.length >= selections.length) break;
+          }
+          if (speakerNames.length >= selections.length) break;
+      }
+
+      const canonicalProfile = selections.map((selection, index) => {
+          const name = speakerNames[index] || profileNames[index] || selection.name.trim() || `解説者${index + 1}`;
+          return `名前: ${name}\n役割: ${selection.role}\n性格: ${selection.trait}`;
+      }).join('\n\n');
+
+      const withoutOldProfile = firstExplanation.replace(/__PERSONA_PROFILE__[\s\S]*?__END_PERSONA__/, '');
+      nextEntries[0].explanation = `__PERSONA_PROFILE__【解説担当】\n${canonicalProfile}\n__END_PERSONA__${withoutOldProfile}`;
+      return nextEntries;
+  };
+
   const cleanJsonString = (str: string) => {
     let cleaned = str.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
     // 余分なテキストがJSONの前にある場合への対策（例: "snsすれっどめーかー"）
@@ -229,6 +272,10 @@ const App: React.FC = () => {
     thumbnail?: string;
   }) => {
     setError(null);
+    const selectedPromptPersonas = data.plainTextContent ? pendingPromptPersonas : null;
+    if (data.plainTextContent && pendingPromptPersonas) {
+        setPendingPromptPersonas(null);
+    }
     try {
         // Check for Board/Amazon/Legend/SNS Data in plainTextContent first
         if (data.plainTextContent) {
@@ -339,6 +386,8 @@ const App: React.FC = () => {
              } else {
                  textContent = parsePlainTextToTranscript(stripStandaloneCodeFences(data.plainTextContent));
              }
+
+             textContent = applySelectedPersonaMetadata(textContent, selectedPromptPersonas);
 
              if (backgroundText && textContent.length > 0) {
                  const existingExpl = textContent[0].explanation || '';
@@ -1075,7 +1124,8 @@ const App: React.FC = () => {
       {view === 'promptLibrary' && (
           <PromptLibraryScreen 
             onBack={() => setView('upload')}
-            onNavigateToPasteJSON={() => {
+            onNavigateToPasteJSON={(personas) => {
+                setPendingPromptPersonas(personas);
                 setOpenPasteJsonMode(true);
                 setView('upload');
             }}

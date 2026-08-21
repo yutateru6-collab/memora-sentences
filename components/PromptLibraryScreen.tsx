@@ -4,10 +4,16 @@ import { Theme } from '../App';
 import PlusIcon from './icons/PlusIcon';
 import TrashIcon from './icons/TrashIcon';
 
+export interface PromptPersonaSelection {
+  name: string;
+  role: string;
+  trait: string;
+}
+
 interface PromptLibraryScreenProps {
   onBack: () => void;
   T: Theme;
-  onNavigateToPasteJSON?: () => void;
+  onNavigateToPasteJSON?: (personas: PromptPersonaSelection[]) => void;
 }
 
 const DiceIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -1134,7 +1140,7 @@ ${mnemonicRules}
     );
 };
 
-const CustomPromptCard: React.FC<{ T: Theme; onNavigateToPasteJSON?: () => void }> = ({ T, onNavigateToPasteJSON }) => {
+const CustomPromptCard: React.FC<{ T: Theme; onNavigateToPasteJSON?: (personas: PromptPersonaSelection[]) => void }> = ({ T, onNavigateToPasteJSON }) => {
     const [topic, setTopic] = useState('');
     const [exampleKeyword, setExampleKeyword] = useState('');
     const [level, setLevel] = useState('日本の「英検準1級」レベル');
@@ -1525,7 +1531,11 @@ ${levelInstruction}
                     AI Studioで作成
                 </button>
                 {onNavigateToPasteJSON && (
-                    <button onClick={onNavigateToPasteJSON} className={`flex-1 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white text-center rounded-md font-semibold transition-colors`} title="作成したJSONデータを貼り付けます">
+                    <button
+                        onClick={() => onNavigateToPasteJSON(personas.map(({ name, role, trait }) => ({ name, role, trait })))}
+                        className={`flex-1 px-3 py-2 text-sm bg-green-600 hover:bg-green-500 text-white text-center rounded-md font-semibold transition-colors`}
+                        title="選択した解説キャラ情報と一緒に生成データを貼り付けます"
+                    >
                         JSONを貼る
                     </button>
                 )}

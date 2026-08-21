@@ -1,8 +1,5 @@
 name: Build MEMORA Sentences
 
-permissions:
-  contents: write
-
 on:
   push:
     branches:
@@ -18,16 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Apply selected-persona metadata patch
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/auto-persona-from-generator'
-        shell: bash
-        run: |
-          git fetch origin "$GITHUB_HEAD_REF"
-          git checkout -B "$GITHUB_HEAD_REF" "origin/$GITHUB_HEAD_REF"
-          python .github/agent-auto-persona-selection.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -41,51 +28,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Commit targeted source changes
-        if: github.event_name == 'pull_request' && github.head_ref == 'agent/auto-persona-from-generator'
-        shell: bash
-        run: |
-          git diff --check
-          rm .github/agent-auto-persona-selection.py
-          cat > .github/workflows/build.yml <<'EOF'
-          name: Build MEMORA Sentences
-
-          on:
-            push:
-              branches:
-                - main
-                - agent/standalone-refresh
-            pull_request:
-              branches:
-                - main
-
-          jobs:
-            build:
-              runs-on: ubuntu-latest
-              steps:
-                - name: Checkout
-                  uses: actions/checkout@v4
-
-                - name: Setup Node
-                  uses: actions/setup-node@v4
-                  with:
-                    node-version: 22
-                    cache: npm
-                    cache-dependency-path: package.json
-
-                - name: Install dependencies
-                  run: npm install
-
-                - name: Build
-                  run: npm run build
-          EOF
-          changed="$(git diff --name-only | sort)"
-          expected="$(printf '%s\n' .github/agent-auto-persona-selection.py .github/workflows/build.yml App.tsx components/PromptLibraryScreen.tsx components/ReaderScreen.tsx | sort)"
-          test "$changed" = "$expected"
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
-          git diff --cached --check
-          git commit -m "Carry selected persona roles into reader avatars"
-          git push origin HEAD:"$GITHUB_HEAD_REF"
