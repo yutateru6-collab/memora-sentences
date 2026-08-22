@@ -33,6 +33,19 @@ jobs:
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
 
+      - name: Configure iPhone 16 QA profile
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/capture-screenshots.mjs')
+          source = path.read_text()
+          old = "name: 'iphone-15',\n    context: { ...devices['iPhone 15'], deviceScaleFactor: 1 },"
+          new = "name: 'iphone-16',\n    // iPhone 16 and iPhone 15 share the same 393x852pt @3x display geometry.\n    // Reuse Playwright's iPhone 15 mobile browser profile, but capture at the real iPhone 16 DPR.\n    context: { ...devices['iPhone 15'], deviceScaleFactor: 3 },"
+          if old not in source:
+              raise SystemExit('Expected iPhone QA profile was not found')
+          path.write_text(source.replace(old, new))
+          PY
+
       - name: Start Vite app
         run: |
           npm run dev > /tmp/memora-vite.log 2>&1 &
