@@ -1,0 +1,66 @@
+name: QA Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    # Every day at 03:00 JST (18:00 UTC)
+    - cron: '0 18 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  capture-screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install app dependencies
+        run: npm install
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Start Vite app
+        run: |
+          npm run dev > /tmp/memora-vite.log 2>&1 &
+          echo $! > /tmp/memora-vite.pid
+
+      - name: Wait for app
+        run: |
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000 > /dev/null; then
+              echo "App is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "App did not become ready"
+          cat /tmp/memora-vite.log || true
+          exit 1
+
+      - name: Capture desktop and iPhone screenshots
+        run: node tools/capture-screenshots.mjs
+        env:
+          APP_URL: http://127.0.0.1:3000
+
+      - name: Upload screenshots and QA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: memora-sentences-qa-${{ github.run_number }}
+          path: qa-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
