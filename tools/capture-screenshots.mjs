@@ -16,6 +16,7 @@ const targets = [
       viewport: { width: 1440, height: 900 },
       deviceScaleFactor: 1,
     },
+    aiPreviewWidth: 360,
   },
   {
     name: 'iphone-15',
@@ -23,6 +24,7 @@ const targets = [
       ...devices['iPhone 15'],
       deviceScaleFactor: 1,
     },
+    aiPreviewWidth: 196,
   },
 ];
 
@@ -54,15 +56,39 @@ try {
     const viewportPath = `${outDir}/${target.name}-viewport.png`;
     const fullPath = `${outDir}/${target.name}-full.png`;
     const previewPath = `${outDir}/${target.name}-preview.jpg`;
+    const aiPreviewPath = `${outDir}/${target.name}-ai-preview.jpg`;
 
     await page.screenshot({ path: viewportPath, fullPage: false });
     await page.screenshot({ path: fullPath, fullPage: true });
-    await page.screenshot({
+
+    const previewBuffer = await page.screenshot({
       path: previewPath,
       fullPage: false,
       type: 'jpeg',
       quality: 20,
     });
+
+    const previewPage = await context.newPage();
+    const dataUrl = `data:image/jpeg;base64,${previewBuffer.toString('base64')}`;
+    await previewPage.setContent(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <style>
+            html, body { margin: 0; padding: 0; background: #fff; }
+            img { display: block; width: ${target.aiPreviewWidth}px; height: auto; }
+          </style>
+        </head>
+        <body><img src="${dataUrl}" /></body>
+      </html>
+    `);
+    await previewPage.locator('img').screenshot({
+      path: aiPreviewPath,
+      type: 'jpeg',
+      quality: 20,
+    });
+    await previewPage.close();
 
     results.push({
       target: target.name,
@@ -78,6 +104,7 @@ try {
         viewport: viewportPath,
         fullPage: fullPath,
         preview: previewPath,
+        aiPreview: aiPreviewPath,
       },
     });
 
