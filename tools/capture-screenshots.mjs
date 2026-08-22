@@ -16,7 +16,7 @@ const targets = [
       viewport: { width: 1440, height: 900 },
       deviceScaleFactor: 1,
     },
-    aiPreviewWidth: 360,
+    aiPreviewWidth: 640,
   },
   {
     name: 'iphone-15',
@@ -24,7 +24,7 @@ const targets = [
       ...devices['iPhone 15'],
       deviceScaleFactor: 1,
     },
-    aiPreviewWidth: 196,
+    aiPreviewWidth: 320,
   },
 ];
 
@@ -65,7 +65,7 @@ try {
       path: previewPath,
       fullPage: false,
       type: 'jpeg',
-      quality: 20,
+      quality: 50,
     });
 
     const previewPage = await context.newPage();
@@ -86,7 +86,7 @@ try {
     await previewPage.locator('img').screenshot({
       path: aiPreviewPath,
       type: 'jpeg',
-      quality: 20,
+      quality: 50,
     });
     await previewPage.close();
 
