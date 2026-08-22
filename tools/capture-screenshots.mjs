@@ -41,6 +41,7 @@ const targets = [
     },
     aiPreviewWidth: 640,
     visionTransferWidth: 340,
+    cropHeight: 500,
   },
   {
     name: 'iphone-15',
@@ -50,6 +51,7 @@ const targets = [
     },
     aiPreviewWidth: 320,
     visionTransferWidth: 220,
+    cropHeight: 360,
   },
 ];
 
@@ -59,9 +61,25 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
   const previewPath = `${outDir}/${target.name}-${prefix}-preview.jpg`;
   const aiPreviewPath = `${outDir}/${target.name}-${prefix}-ai-preview.jpg`;
   const visionPath = `${outDir}/${target.name}-${prefix}-vision.jpg`;
+  const cropPath = `${outDir}/${target.name}-${prefix}-top-crop.jpg`;
 
   await page.screenshot({ path: viewportPath, fullPage: false });
   await page.screenshot({ path: fullPath, fullPage: true });
+
+  const viewport = page.viewportSize();
+  if (viewport) {
+    await page.screenshot({
+      path: cropPath,
+      type: 'jpeg',
+      quality: 25,
+      clip: {
+        x: 0,
+        y: 0,
+        width: viewport.width,
+        height: Math.min(target.cropHeight, viewport.height),
+      },
+    });
+  }
 
   const previewBuffer = await page.screenshot({
     path: previewPath,
@@ -105,6 +123,7 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
     preview: previewPath,
     aiPreview: aiPreviewPath,
     vision: visionPath,
+    topCrop: cropPath,
   };
 }
 
