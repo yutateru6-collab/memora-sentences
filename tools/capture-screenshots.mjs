@@ -35,20 +35,14 @@ For her, the most important achievement is that people who once entered as stran
 const targets = [
   {
     name: 'desktop-1440x900',
-    context: {
-      viewport: { width: 1440, height: 900 },
-      deviceScaleFactor: 1,
-    },
+    context: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
     aiPreviewWidth: 640,
     visionTransferWidth: 340,
     cropHeight: 500,
   },
   {
     name: 'iphone-15',
-    context: {
-      ...devices['iPhone 15'],
-      deviceScaleFactor: 1,
-    },
+    context: { ...devices['iPhone 15'], deviceScaleFactor: 1 },
     aiPreviewWidth: 320,
     visionTransferWidth: 220,
     cropHeight: 360,
@@ -72,70 +66,27 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
       path: cropPath,
       type: 'jpeg',
       quality: 25,
-      clip: {
-        x: 0,
-        y: 0,
-        width: viewport.width,
-        height: Math.min(target.cropHeight, viewport.height),
-      },
+      clip: { x: 0, y: 0, width: viewport.width, height: Math.min(target.cropHeight, viewport.height) },
     });
   }
 
-  const previewBuffer = await page.screenshot({
-    path: previewPath,
-    fullPage,
-    type: 'jpeg',
-    quality: 50,
-  });
-
+  const previewBuffer = await page.screenshot({ path: previewPath, fullPage, type: 'jpeg', quality: 50 });
   const previewPage = await context.newPage();
   const dataUrl = `data:image/jpeg;base64,${previewBuffer.toString('base64')}`;
-  await previewPage.setContent(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <style>
-          html, body { margin: 0; padding: 0; background: #fff; }
-          img { display: block; width: ${target.aiPreviewWidth}px; height: auto; }
-        </style>
-      </head>
-      <body><img src="${dataUrl}" /></body>
-    </html>
-  `);
+  await previewPage.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"/><style>html,body{margin:0;padding:0;background:#fff}img{display:block;width:${target.aiPreviewWidth}px;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
   const img = previewPage.locator('img');
-  await img.screenshot({
-    path: aiPreviewPath,
-    type: 'jpeg',
-    quality: 50,
-  });
+  await img.screenshot({ path: aiPreviewPath, type: 'jpeg', quality: 50 });
   await img.evaluate((el, width) => { el.style.width = `${width}px`; }, target.visionTransferWidth);
-  await img.screenshot({
-    path: visionPath,
-    type: 'jpeg',
-    quality: 20,
-  });
+  await img.screenshot({ path: visionPath, type: 'jpeg', quality: 20 });
   await previewPage.close();
 
-  return {
-    viewport: viewportPath,
-    fullPage: fullPath,
-    preview: previewPath,
-    aiPreview: aiPreviewPath,
-    vision: visionPath,
-    topCrop: cropPath,
-  };
+  return { viewport: viewportPath, fullPage: fullPath, preview: previewPath, aiPreview: aiPreviewPath, vision: visionPath, topCrop: cropPath };
 }
 
 async function openAddMaterialModal(page) {
   await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
-
-  const allButtons = (await page.locator('button').allTextContents())
-    .map(text => text.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-  const visibleButtons = (await page.locator('button:visible').allTextContents())
-    .map(text => text.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
+  const allButtons = (await page.locator('button').allTextContents()).map(text => text.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const visibleButtons = (await page.locator('button:visible').allTextContents()).map(text => text.replace(/\s+/g, ' ').trim()).filter(Boolean);
   console.log('All buttons on Library:', JSON.stringify(allButtons));
   console.log('Visible buttons on Library:', JSON.stringify(visibleButtons));
 
@@ -154,8 +105,30 @@ async function openAddMaterialModal(page) {
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
     return;
   }
-
   throw new Error(`Add-material button was not found. All buttons: ${allButtons.join(' | ')}`);
+}
+
+async function captureFirstSentence(page, target, normalizedFirstSentence) {
+  const selector = 'data-qa-first-sentence-crop';
+  const found = await page.evaluate(({ selector, needle }) => {
+    const normalize = (value) => (value || '').replace(/\s+/g, '');
+    const candidates = [...document.querySelectorAll('body *')]
+      .filter(el => normalize(el.textContent).includes(needle))
+      .map(el => ({ el, rect: el.getBoundingClientRect() }))
+      .filter(item => item.rect.width > 20 && item.rect.height > 10)
+      .sort((a, b) => (a.rect.width * a.rect.height) - (b.rect.width * b.rect.height));
+    const best = candidates[0]?.el;
+    if (!best) return false;
+    best.setAttribute(selector, 'true');
+    return true;
+  }, { selector, needle: normalizedFirstSentence });
+
+  if (!found) return null;
+  const locator = page.locator(`[${selector}="true"]`).first();
+  await locator.scrollIntoViewIfNeeded();
+  const sentencePath = `${outDir}/${target.name}-reader-first-sentence.jpg`;
+  await locator.screenshot({ path: sentencePath, type: 'jpeg', quality: 55 });
+  return sentencePath;
 }
 
 try {
@@ -164,11 +137,8 @@ try {
     const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
-
-    page.on('console', (msg) => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-    page.on('pageerror', (err) => pageErrors.push(String(err)));
+    page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+    page.on('pageerror', err => pageErrors.push(String(err)));
 
     const startedAt = new Date().toISOString();
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
@@ -176,20 +146,13 @@ try {
 
     const title = await page.title();
     const viewport = page.viewportSize();
-    const libraryDimensions = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      scrollHeight: document.documentElement.scrollHeight,
-      clientWidth: document.documentElement.clientWidth,
-      clientHeight: document.documentElement.clientHeight,
-    }));
-
+    const libraryDimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight }));
     const libraryScreenshots = await captureAiPreview(page, context, target, 'library');
 
     await openAddMaterialModal(page);
     await page.getByPlaceholder('教材名 (任意)').fill(sampleTitle);
     await page.getByPlaceholder(/テキスト、または匿名掲示板/).fill(samplePassage);
     await page.getByRole('button', { name: 'データを読み込んで作成' }).click();
-
     await page.waitForTimeout(2000);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
@@ -200,41 +163,17 @@ try {
     const readerDetected = normalizedBody.includes(normalizedFirstSentence);
     console.log(`${target.name} post-submit readerDetected=${readerDetected}`);
     console.log(`${target.name} post-submit body excerpt: ${bodyText.slice(0, 1200)}`);
-    if (consoleErrors.length) console.log(`${target.name} console errors:`, JSON.stringify(consoleErrors));
-    if (pageErrors.length) console.log(`${target.name} page errors:`, JSON.stringify(pageErrors));
 
-    const readerDimensions = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      scrollHeight: document.documentElement.scrollHeight,
-      clientWidth: document.documentElement.clientWidth,
-      clientHeight: document.documentElement.clientHeight,
-    }));
-
+    const readerDimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight }));
     const readerScreenshots = await captureAiPreview(page, context, target, 'reader', { fullPage: false });
+    readerScreenshots.firstSentence = await captureFirstSentence(page, target, normalizedFirstSentence);
 
     results.push({
-      target: target.name,
-      url: page.url(),
-      title,
-      startedAt,
-      viewport,
-      library: {
-        dimensions: libraryDimensions,
-        horizontalOverflow: libraryDimensions.scrollWidth > libraryDimensions.clientWidth,
-        screenshots: libraryScreenshots,
-      },
-      reader: {
-        sampleTitle,
-        readerDetected,
-        bodyExcerpt: bodyText.slice(0, 1200),
-        dimensions: readerDimensions,
-        horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth,
-        screenshots: readerScreenshots,
-      },
-      consoleErrors,
-      pageErrors,
+      target: target.name, url: page.url(), title, startedAt, viewport,
+      library: { dimensions: libraryDimensions, horizontalOverflow: libraryDimensions.scrollWidth > libraryDimensions.clientWidth, screenshots: libraryScreenshots },
+      reader: { sampleTitle, readerDetected, bodyExcerpt: bodyText.slice(0, 1200), dimensions: readerDimensions, horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth, screenshots: readerScreenshots },
+      consoleErrors, pageErrors,
     });
-
     await context.close();
   }
 } finally {
@@ -242,19 +181,5 @@ try {
 }
 
 await fs.mkdir('qa-artifacts', { recursive: true });
-await fs.writeFile(
-  'qa-artifacts/report.json',
-  JSON.stringify(
-    {
-      generatedAt: new Date().toISOString(),
-      baseUrl,
-      sampleTitle,
-      results,
-    },
-    null,
-    2,
-  ),
-  'utf8',
-);
-
-console.log(`Saved screenshots and report under qa-artifacts/`);
+await fs.writeFile('qa-artifacts/report.json', JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, sampleTitle, results }, null, 2), 'utf8');
+console.log('Saved screenshots and report under qa-artifacts/');
