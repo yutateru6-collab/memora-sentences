@@ -9,7 +9,7 @@ on:
     - cron: '0 18 * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   capture-screenshots:
@@ -57,6 +57,7 @@ jobs:
           APP_URL: http://127.0.0.1:3000
 
       - name: Upload screenshots and QA report
+        id: upload
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -64,3 +65,39 @@ jobs:
           path: qa-artifacts/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish latest QA pointer for ChatGPT
+        if: always()
+        env:
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
+        run: |
+          mkdir -p /tmp/qa-latest
+
+          if [ -f qa-artifacts/report.json ]; then
+            cp qa-artifacts/report.json /tmp/qa-latest/report.json
+          fi
+
+          cat > /tmp/qa-latest/latest.json <<EOF
+          {
+            "repository": "${GITHUB_REPOSITORY}",
+            "workflow": "QA Screenshots",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_number": "${GITHUB_RUN_NUMBER}",
+            "commit_sha": "${GITHUB_SHA}",
+            "artifact_id": "${ARTIFACT_ID}",
+            "artifact_url": "${ARTIFACT_URL}",
+            "artifact_name": "memora-sentences-qa-${GITHUB_RUN_NUMBER}",
+            "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout --orphan qa-latest-temp
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -R /tmp/qa-latest/. .
+          git add .
+          git commit -m "Update latest QA screenshot pointer"
+          git push --force origin HEAD:qa-latest
