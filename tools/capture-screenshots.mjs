@@ -40,6 +40,7 @@ const targets = [
       deviceScaleFactor: 1,
     },
     aiPreviewWidth: 640,
+    visionTransferWidth: 400,
   },
   {
     name: 'iphone-15',
@@ -48,6 +49,7 @@ const targets = [
       deviceScaleFactor: 1,
     },
     aiPreviewWidth: 320,
+    visionTransferWidth: 240,
   },
 ];
 
@@ -56,6 +58,7 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
   const fullPath = `${outDir}/${target.name}-${prefix}-full.png`;
   const previewPath = `${outDir}/${target.name}-${prefix}-preview.jpg`;
   const aiPreviewPath = `${outDir}/${target.name}-${prefix}-ai-preview.jpg`;
+  const visionPath = `${outDir}/${target.name}-${prefix}-vision.jpg`;
 
   await page.screenshot({ path: viewportPath, fullPage: false });
   await page.screenshot({ path: fullPath, fullPage: true });
@@ -82,10 +85,17 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
       <body><img src="${dataUrl}" /></body>
     </html>
   `);
-  await previewPage.locator('img').screenshot({
+  const img = previewPage.locator('img');
+  await img.screenshot({
     path: aiPreviewPath,
     type: 'jpeg',
     quality: 50,
+  });
+  await img.evaluate((el, width) => { el.style.width = `${width}px`; }, target.visionTransferWidth);
+  await img.screenshot({
+    path: visionPath,
+    type: 'jpeg',
+    quality: 30,
   });
   await previewPage.close();
 
@@ -94,6 +104,7 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
     fullPage: fullPath,
     preview: previewPath,
     aiPreview: aiPreviewPath,
+    vision: visionPath,
   };
 }
 
@@ -165,7 +176,9 @@ try {
     await page.waitForTimeout(300);
 
     const bodyText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
-    const readerDetected = bodyText.includes(firstSentence);
+    const normalizedBody = bodyText.replace(/\s+/g, '');
+    const normalizedFirstSentence = firstSentence.replace(/\s+/g, '');
+    const readerDetected = normalizedBody.includes(normalizedFirstSentence);
     console.log(`${target.name} post-submit readerDetected=${readerDetected}`);
     console.log(`${target.name} post-submit body excerpt: ${bodyText.slice(0, 1200)}`);
     if (consoleErrors.length) console.log(`${target.name} console errors:`, JSON.stringify(consoleErrors));
@@ -178,8 +191,6 @@ try {
       clientHeight: document.documentElement.clientHeight,
     }));
 
-    // Always capture the screen after submitting the passage. If Reader failed to appear,
-    // this image becomes the evidence needed to diagnose the navigation/rendering issue.
     const readerScreenshots = await captureAiPreview(page, context, target, 'reader', { fullPage: false });
 
     results.push({
