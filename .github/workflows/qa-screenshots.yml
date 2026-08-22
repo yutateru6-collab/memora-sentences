@@ -56,26 +56,17 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:3000
 
-      - name: Upload screenshots and QA report
-        id: upload
+      - name: Publish latest screenshots for ChatGPT
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: memora-sentences-qa-${{ github.run_number }}
-          path: qa-artifacts/
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Publish latest QA pointer for ChatGPT
-        if: always()
-        env:
-          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
-          ARTIFACT_URL: ${{ steps.upload.outputs.artifact-url }}
         run: |
-          mkdir -p /tmp/qa-latest
+          mkdir -p /tmp/qa-latest/screenshots
 
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
+          fi
+
+          if [ -d qa-artifacts/screenshots ]; then
+            cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
           fi
 
           cat > /tmp/qa-latest/latest.json <<EOF
@@ -85,9 +76,8 @@ jobs:
             "run_id": "${GITHUB_RUN_ID}",
             "run_number": "${GITHUB_RUN_NUMBER}",
             "commit_sha": "${GITHUB_SHA}",
-            "artifact_id": "${ARTIFACT_ID}",
-            "artifact_url": "${ARTIFACT_URL}",
-            "artifact_name": "memora-sentences-qa-${GITHUB_RUN_NUMBER}",
+            "storage": "qa-latest branch",
+            "screenshots_path": "screenshots/",
             "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
@@ -99,5 +89,5 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
           git add .
-          git commit -m "Update latest QA screenshot pointer"
+          git commit -m "Update latest QA screenshots"
           git push --force origin HEAD:qa-latest
