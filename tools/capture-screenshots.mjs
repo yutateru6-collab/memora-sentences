@@ -96,6 +96,29 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
   };
 }
 
+async function openAddMaterialModal(page) {
+  await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
+
+  const visibleButtons = (await page.locator('button:visible').allTextContents())
+    .map(text => text.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  console.log('Visible buttons on Library:', JSON.stringify(visibleButtons));
+
+  const firstRunButton = page.locator('button:visible').filter({ hasText: '手持ちの教材を追加' }).first();
+  if (await firstRunButton.count()) {
+    await firstRunButton.click();
+    return;
+  }
+
+  const floatingAdd = page.locator('button[title="新規追加"]:visible').first();
+  if (await floatingAdd.count()) {
+    await floatingAdd.click();
+    return;
+  }
+
+  throw new Error(`Add-material button was not found. Visible buttons: ${visibleButtons.join(' | ')}`);
+}
+
 try {
   for (const target of targets) {
     const context = await browser.newContext(target.context);
@@ -125,7 +148,7 @@ try {
 
     // Real user flow: open the add-material modal, enter a long passage, create it,
     // wait for ReaderScreen, then capture the actual reading view.
-    await page.getByRole('button', { name: /手持ちの教材を追加/ }).click();
+    await openAddMaterialModal(page);
     await page.getByPlaceholder('教材名 (任意)').fill(sampleTitle);
     await page.getByPlaceholder(/テキスト、または匿名掲示板/).fill(samplePassage);
     await page.getByRole('button', { name: 'データを読み込んで作成' }).click();
