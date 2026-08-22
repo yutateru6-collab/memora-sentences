@@ -19,7 +19,10 @@ const targets = [
   },
   {
     name: 'iphone-15',
-    context: devices['iPhone 15'],
+    context: {
+      ...devices['iPhone 15'],
+      deviceScaleFactor: 1,
+    },
   },
 ];
 
@@ -58,7 +61,7 @@ try {
       path: previewPath,
       fullPage: false,
       type: 'jpeg',
-      quality: 30,
+      quality: 20,
     });
 
     results.push({
