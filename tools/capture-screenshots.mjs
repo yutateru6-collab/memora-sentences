@@ -10,7 +10,8 @@ const browser = await chromium.launch({ headless: true });
 const results = [];
 
 const sampleTitle = 'QA Long Reading Sample';
-const samplePassage = `Every morning, a small bakery near the station opens before sunrise.
+const firstSentence = 'Every morning, a small bakery near the station opens before sunrise.';
+const samplePassage = `${firstSentence}
 毎朝、駅の近くにある小さなパン屋は日の出前に開店します。
 The owner, Maya, started the shop after working for a large company for more than ten years.
 店主のマヤは、大企業で10年以上働いた後にその店を始めました。
@@ -110,22 +111,16 @@ async function openAddMaterialModal(page) {
 
   const firstRunButton = page.locator('button').filter({ hasText: '手持ちの教材を追加' }).first();
   if (await firstRunButton.count()) {
-    if (await firstRunButton.isVisible()) {
-      await firstRunButton.click();
-    } else {
-      await firstRunButton.evaluate((el) => el.click());
-    }
+    if (await firstRunButton.isVisible()) await firstRunButton.click();
+    else await firstRunButton.evaluate((el) => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
     return;
   }
 
   const floatingAdd = page.locator('button[title="新規追加"]').first();
   if (await floatingAdd.count()) {
-    if (await floatingAdd.isVisible()) {
-      await floatingAdd.click();
-    } else {
-      await floatingAdd.evaluate((el) => el.click());
-    }
+    if (await floatingAdd.isVisible()) await floatingAdd.click();
+    else await floatingAdd.evaluate((el) => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
     return;
   }
@@ -165,13 +160,16 @@ try {
     await page.getByPlaceholder(/テキスト、または匿名掲示板/).fill(samplePassage);
     await page.getByRole('button', { name: 'データを読み込んで作成' }).click();
 
-    await page.getByText('Every morning, a small bakery near the station opens before sunrise.', { exact: false }).first().waitFor({
-      state: 'visible',
-      timeout: 60_000,
-    });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.waitForTimeout(300);
+
+    const bodyText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+    const readerDetected = bodyText.includes(firstSentence);
+    console.log(`${target.name} post-submit readerDetected=${readerDetected}`);
+    console.log(`${target.name} post-submit body excerpt: ${bodyText.slice(0, 1200)}`);
+    if (consoleErrors.length) console.log(`${target.name} console errors:`, JSON.stringify(consoleErrors));
+    if (pageErrors.length) console.log(`${target.name} page errors:`, JSON.stringify(pageErrors));
 
     const readerDimensions = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
@@ -180,6 +178,8 @@ try {
       clientHeight: document.documentElement.clientHeight,
     }));
 
+    // Always capture the screen after submitting the passage. If Reader failed to appear,
+    // this image becomes the evidence needed to diagnose the navigation/rendering issue.
     const readerScreenshots = await captureAiPreview(page, context, target, 'reader', { fullPage: false });
 
     results.push({
@@ -195,6 +195,8 @@ try {
       },
       reader: {
         sampleTitle,
+        readerDetected,
+        bodyExcerpt: bodyText.slice(0, 1200),
         dimensions: readerDimensions,
         horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth,
         screenshots: readerScreenshots,
