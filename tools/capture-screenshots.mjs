@@ -50,9 +50,16 @@ try {
 
     const viewportPath = `${outDir}/${target.name}-viewport.png`;
     const fullPath = `${outDir}/${target.name}-full.png`;
+    const previewPath = `${outDir}/${target.name}-preview.jpg`;
 
     await page.screenshot({ path: viewportPath, fullPage: false });
     await page.screenshot({ path: fullPath, fullPage: true });
+    await page.screenshot({
+      path: previewPath,
+      fullPage: false,
+      type: 'jpeg',
+      quality: 30,
+    });
 
     results.push({
       target: target.name,
@@ -67,6 +74,7 @@ try {
       screenshots: {
         viewport: viewportPath,
         fullPage: fullPath,
+        preview: previewPath,
       },
     });
 
