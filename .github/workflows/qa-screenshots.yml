@@ -87,6 +87,7 @@ jobs:
 
           git checkout --orphan qa-latest-temp
           git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
           git add .
           git commit -m "Update latest QA screenshots"
