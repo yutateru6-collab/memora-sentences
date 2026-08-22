@@ -40,7 +40,7 @@ const targets = [
       deviceScaleFactor: 1,
     },
     aiPreviewWidth: 640,
-    visionTransferWidth: 400,
+    visionTransferWidth: 340,
   },
   {
     name: 'iphone-15',
@@ -49,7 +49,7 @@ const targets = [
       deviceScaleFactor: 1,
     },
     aiPreviewWidth: 320,
-    visionTransferWidth: 240,
+    visionTransferWidth: 220,
   },
 ];
 
@@ -95,7 +95,7 @@ async function captureAiPreview(page, context, target, prefix, { fullPage = fals
   await img.screenshot({
     path: visionPath,
     type: 'jpeg',
-    quality: 30,
+    quality: 20,
   });
   await previewPage.close();
 
