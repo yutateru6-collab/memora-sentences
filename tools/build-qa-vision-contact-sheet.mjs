@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 
 const screenshotsDir = process.env.SCREENSHOT_DIR || 'qa-artifacts/screenshots';
 const visionDir = process.env.VISION_DIR || 'qa-artifacts/vision';
+const BASE64_WRAP = 76;
+const BASE64_CHECKSUM_LINES = 20;
 
 const sources = [
   { label: 'Desktop · Library', file: 'desktop-1440x900-library-ai-preview.jpg' },
@@ -41,12 +43,29 @@ const manifest = {
 const writeWrappedBase64 = async (inputPath, outputPath) => {
   const bytes = await fs.readFile(inputPath);
   const encoded = bytes.toString('base64');
-  const wrapped = encoded.match(/.{1,76}/g)?.join('\n') || '';
-  await fs.writeFile(outputPath, `${wrapped}\n`, 'utf8');
+  const lines = encoded.match(new RegExp(`.{1,${BASE64_WRAP}}`, 'g')) || [];
+  await fs.writeFile(outputPath, `${lines.join('\n')}\n`, 'utf8');
+
+  const base64Chunks = [];
+  for (let index = 0; index < lines.length; index += BASE64_CHECKSUM_LINES) {
+    const chunkLines = lines.slice(index, index + BASE64_CHECKSUM_LINES);
+    const compact = chunkLines.join('');
+    base64Chunks.push({
+      startLine: index + 1,
+      endLine: index + chunkLines.length,
+      charLength: compact.length,
+      sha256: crypto.createHash('sha256').update(compact, 'utf8').digest('hex'),
+    });
+  }
+
   return {
     file: outputPath.replace(/^qa-artifacts\//, ''),
     byteLength: bytes.length,
     sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+    base64LineLength: BASE64_WRAP,
+    base64LineCount: lines.length,
+    base64ChecksumLines: BASE64_CHECKSUM_LINES,
+    base64Chunks,
   };
 };
 
@@ -97,6 +116,10 @@ if (available.length > 0) {
       byteLength: overviewBase64.byteLength,
       sha256: overviewBase64.sha256,
       viewport: { width: 720, height: 540 },
+      base64LineLength: overviewBase64.base64LineLength,
+      base64LineCount: overviewBase64.base64LineCount,
+      base64ChecksumLines: overviewBase64.base64ChecksumLines,
+      base64Chunks: overviewBase64.base64Chunks,
     };
   } finally {
     await browser.close();
