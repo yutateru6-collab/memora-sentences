@@ -11,10 +11,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: qa-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   capture-screenshots:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -28,23 +32,13 @@ jobs:
       - name: Install app dependencies
         run: npm install
 
+      - name: Verify production build
+        run: npm run build
+
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.55.0
           npx playwright install --with-deps chromium
-
-      - name: Configure iPhone 16 QA profile
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('tools/capture-screenshots.mjs')
-          source = path.read_text()
-          old = "name: 'iphone-15',\n    context: { ...devices['iPhone 15'], deviceScaleFactor: 1 },"
-          new = "name: 'iphone-16',\n    // iPhone 16 and iPhone 15 share the same 393x852pt @3x display geometry.\n    // Reuse Playwright's iPhone 15 mobile browser profile, but capture at the real iPhone 16 DPR.\n    context: { ...devices['iPhone 15'], deviceScaleFactor: 3 },"
-          if old not in source:
-              raise SystemExit('Expected iPhone QA profile was not found')
-          path.write_text(source.replace(old, new))
-          PY
 
       - name: Start Vite app
         run: |
@@ -64,23 +58,39 @@ jobs:
           cat /tmp/memora-vite.log || true
           exit 1
 
-      - name: Capture desktop and iPhone screenshots
+      - name: Run browser QA and capture screenshots
         run: node tools/capture-screenshots.mjs
         env:
           APP_URL: http://127.0.0.1:3000
+          QA_REPOSITORY: ${{ github.repository }}
+          QA_COMMIT_SHA: ${{ github.sha }}
+          QA_RUN_ID: ${{ github.run_id }}
+          QA_RUN_NUMBER: ${{ github.run_number }}
+          QA_EVENT_NAME: ${{ github.event_name }}
 
-      - name: Publish latest screenshots for ChatGPT
+      - name: Publish latest QA evidence for ChatGPT
         if: always()
+        env:
+          QA_JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p /tmp/qa-latest/screenshots
 
+          REPORT_PRESENT=false
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
+            REPORT_PRESENT=true
           fi
 
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
           fi
+
+          QA_STATUS="failure"
+          if [ "$REPORT_PRESENT" = "true" ]; then
+            QA_STATUS="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('qa-artifacts/report.json','utf8')); process.stdout.write(r.status || 'failure')" 2>/dev/null || echo failure)"
+          fi
+
+          SCREENSHOT_COUNT="$(find /tmp/qa-latest/screenshots -type f 2>/dev/null | wc -l | tr -d ' ')"
 
           cat > /tmp/qa-latest/latest.json <<EOF
           {
@@ -89,6 +99,10 @@ jobs:
             "run_id": "${GITHUB_RUN_ID}",
             "run_number": "${GITHUB_RUN_NUMBER}",
             "commit_sha": "${GITHUB_SHA}",
+            "job_status": "${QA_JOB_STATUS}",
+            "qa_status": "${QA_STATUS}",
+            "report_present": ${REPORT_PRESENT},
+            "screenshot_count": ${SCREENSHOT_COUNT},
             "storage": "qa-latest branch",
             "screenshots_path": "screenshots/",
             "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -103,5 +117,5 @@ jobs:
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
           git add .
-          git commit -m "Update latest QA screenshots"
+          git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest

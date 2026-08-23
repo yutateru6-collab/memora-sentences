@@ -3,11 +3,22 @@ import fs from 'node:fs/promises';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const outDir = process.env.SCREENSHOT_DIR || 'qa-artifacts/screenshots';
+const reportPath = 'qa-artifacts/report.json';
+
+const qaMeta = {
+  repository: process.env.QA_REPOSITORY || null,
+  commitSha: process.env.QA_COMMIT_SHA || null,
+  workflowRunId: process.env.QA_RUN_ID || null,
+  workflowRunNumber: process.env.QA_RUN_NUMBER || null,
+  eventName: process.env.QA_EVENT_NAME || null,
+};
 
 await fs.mkdir(outDir, { recursive: true });
+await fs.mkdir('qa-artifacts', { recursive: true });
 
-const browser = await chromium.launch({ headless: true });
 const results = [];
+let fatalError = null;
+let browser = null;
 
 const sampleTitle = 'QA Long Reading Sample';
 const firstSentence = 'Every morning, a small bakery near the station opens before sunrise.';
@@ -43,9 +54,6 @@ const targets = [
     cropHeight: 500,
   },
   {
-    // iPhone 16 (standard model) QA profile.
-    // CSS viewport is kept at 393px wide for responsive-layout testing,
-    // while @3x produces 1179px-wide source screenshots for visual inspection.
     name: 'iphone-16',
     context: {
       viewport: { width: 393, height: 852 },
@@ -59,28 +67,67 @@ const targets = [
   },
 ];
 
-async function captureScreenshots(page, target, prefix, { fullPage = false } = {}) {
+const normalizeText = value => (value || '').replace(/\s+/g, '');
+const errorText = error => error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+
+function addAction(result, name, status, details = {}) {
+  result.actions.push({
+    name,
+    status,
+    at: new Date().toISOString(),
+    ...details,
+  });
+}
+
+async function getDocumentState(page) {
+  return page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    scrollHeight: document.documentElement.scrollHeight,
+    clientWidth: document.documentElement.clientWidth,
+    clientHeight: document.documentElement.clientHeight,
+    horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  }));
+}
+
+async function getVisibleViewportOutliers(page) {
+  return page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    return [...document.querySelectorAll('body *')]
+      .map(el => {
+        const style = getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return { el, style, rect };
+      })
+      .filter(({ style, rect }) => {
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+        if (rect.width <= 1 || rect.height <= 1) return false;
+        return rect.left < -2 || rect.right > viewportWidth + 2;
+      })
+      .slice(0, 20)
+      .map(({ el, rect }) => ({
+        tag: el.tagName.toLowerCase(),
+        id: el.id || null,
+        className: typeof el.className === 'string' ? el.className.slice(0, 180) : null,
+        text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 120),
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        width: Math.round(rect.width),
+      }));
+  });
+}
+
+async function captureScreenshots(page, target, prefix) {
   const viewportPath = `${outDir}/${target.name}-${prefix}-viewport.png`;
   const fullPath = `${outDir}/${target.name}-${prefix}-full.png`;
   const previewPath = `${outDir}/${target.name}-${prefix}-ai-preview.jpg`;
   const cropPath = `${outDir}/${target.name}-${prefix}-top-crop.jpg`;
 
-  // High-resolution source images. On iPhone 16 these use @3x device pixels.
   await page.screenshot({ path: viewportPath, fullPage: false, scale: 'device' });
   await page.screenshot({ path: fullPath, fullPage: true, scale: 'device' });
-
-  // Lightweight ChatGPT preview: one pixel per CSS pixel, even when source is @3x.
-  await page.screenshot({
-    path: previewPath,
-    fullPage,
-    type: 'jpeg',
-    quality: 55,
-    scale: 'css',
-  });
+  await page.screenshot({ path: previewPath, fullPage: false, type: 'jpeg', quality: 55, scale: 'css' });
 
   const viewport = page.viewportSize();
   if (viewport) {
-    // Focused crop remains high-resolution so small text and overlaps can be inspected.
     await page.screenshot({
       path: cropPath,
       type: 'jpeg',
@@ -95,31 +142,38 @@ async function captureScreenshots(page, target, prefix, { fullPage = false } = {
     });
   }
 
-  return {
-    viewport: viewportPath,
-    fullPage: fullPath,
-    aiPreview: previewPath,
-    topCrop: cropPath,
-  };
+  return { viewport: viewportPath, fullPage: fullPath, aiPreview: previewPath, topCrop: cropPath };
+}
+
+async function captureFailureEvidence(page, target, stage) {
+  const safeStage = String(stage || 'unknown').replace(/[^a-z0-9_-]+/gi, '-').toLowerCase();
+  const png = `${outDir}/${target.name}-failure-${safeStage}-viewport.png`;
+  const preview = `${outDir}/${target.name}-failure-${safeStage}-ai-preview.jpg`;
+  try {
+    await page.screenshot({ path: png, fullPage: false, scale: 'device' });
+    await page.screenshot({ path: preview, fullPage: false, type: 'jpeg', quality: 55, scale: 'css' });
+    return { viewport: png, aiPreview: preview };
+  } catch (error) {
+    return { captureError: errorText(error) };
+  }
 }
 
 async function openAddMaterialModal(page) {
   await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
+
   const allButtons = (await page.locator('button').allTextContents())
     .map(text => text.replace(/\s+/g, ' ').trim())
     .filter(Boolean);
   const visibleButtons = (await page.locator('button:visible').allTextContents())
     .map(text => text.replace(/\s+/g, ' ').trim())
     .filter(Boolean);
-  console.log('All buttons on Library:', JSON.stringify(allButtons));
-  console.log('Visible buttons on Library:', JSON.stringify(visibleButtons));
 
   const firstRunButton = page.locator('button').filter({ hasText: '手持ちの教材を追加' }).first();
   if (await firstRunButton.count()) {
     if (await firstRunButton.isVisible()) await firstRunButton.click();
     else await firstRunButton.evaluate(el => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
-    return;
+    return { allButtons, visibleButtons, selector: 'text:手持ちの教材を追加' };
   }
 
   const floatingAdd = page.locator('button[title="新規追加"]').first();
@@ -127,10 +181,19 @@ async function openAddMaterialModal(page) {
     if (await floatingAdd.isVisible()) await floatingAdd.click();
     else await floatingAdd.evaluate(el => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
-    return;
+    return { allButtons, visibleButtons, selector: 'title:新規追加' };
   }
 
-  throw new Error(`Add-material button was not found. All buttons: ${allButtons.join(' | ')}`);
+  throw new Error(`Add-material button was not found. Visible buttons: ${visibleButtons.join(' | ')}. All buttons: ${allButtons.join(' | ')}`);
+}
+
+async function waitForBodyIncludes(page, text, timeout = 15_000) {
+  const needle = normalizeText(text);
+  await page.waitForFunction(
+    expected => (document.body?.innerText || '').replace(/\s+/g, '').includes(expected),
+    needle,
+    { timeout },
+  );
 }
 
 async function captureFirstSentence(page, target, normalizedFirstSentence) {
@@ -152,99 +215,177 @@ async function captureFirstSentence(page, target, normalizedFirstSentence) {
   const locator = page.locator(`[${selector}="true"]`).first();
   await locator.scrollIntoViewIfNeeded();
   const sentencePath = `${outDir}/${target.name}-reader-first-sentence.jpg`;
-  await locator.screenshot({
-    path: sentencePath,
-    type: 'jpeg',
-    quality: 70,
-    scale: 'device',
-  });
+  await locator.screenshot({ path: sentencePath, type: 'jpeg', quality: 70, scale: 'device' });
   return sentencePath;
 }
 
 try {
+  browser = await chromium.launch({ headless: true });
+
   for (const target of targets) {
-    const context = await browser.newContext(target.context);
-    const page = await context.newPage();
-    const consoleErrors = [];
-    const pageErrors = [];
-
-    page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
-    page.on('pageerror', err => pageErrors.push(String(err)));
-
-    const startedAt = new Date().toISOString();
-    await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.waitForTimeout(2000);
-
-    const title = await page.title();
-    const viewport = page.viewportSize();
-    const libraryDimensions = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      scrollHeight: document.documentElement.scrollHeight,
-      clientWidth: document.documentElement.clientWidth,
-      clientHeight: document.documentElement.clientHeight,
-    }));
-    const libraryScreenshots = await captureScreenshots(page, target, 'library');
-
-    await openAddMaterialModal(page);
-    await page.getByPlaceholder('教材名 (任意)').fill(sampleTitle);
-    await page.getByPlaceholder(/テキスト、または匿名掲示板/).fill(samplePassage);
-    await page.getByRole('button', { name: 'データを読み込んで作成' }).click();
-    await page.waitForTimeout(2000);
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await page.waitForTimeout(300);
-
-    const bodyText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
-    const normalizedBody = bodyText.replace(/\s+/g, '');
-    const normalizedFirstSentence = firstSentence.replace(/\s+/g, '');
-    const readerDetected = normalizedBody.includes(normalizedFirstSentence);
-    console.log(`${target.name} post-submit readerDetected=${readerDetected}`);
-    console.log(`${target.name} post-submit body excerpt: ${bodyText.slice(0, 1200)}`);
-
-    const readerDimensions = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      scrollHeight: document.documentElement.scrollHeight,
-      clientWidth: document.documentElement.clientWidth,
-      clientHeight: document.documentElement.clientHeight,
-    }));
-    const readerScreenshots = await captureScreenshots(page, target, 'reader', { fullPage: false });
-    readerScreenshots.firstSentence = await captureFirstSentence(page, target, normalizedFirstSentence);
-
-    results.push({
+    const result = {
       target: target.name,
-      url: page.url(),
-      title,
-      startedAt,
-      viewport,
+      status: 'failure',
+      startedAt: new Date().toISOString(),
+      viewport: target.context.viewport,
       deviceScaleFactor: target.context.deviceScaleFactor,
-      library: {
-        dimensions: libraryDimensions,
-        horizontalOverflow: libraryDimensions.scrollWidth > libraryDimensions.clientWidth,
-        screenshots: libraryScreenshots,
-      },
-      reader: {
+      url: null,
+      pageTitle: null,
+      actions: [],
+      consoleErrors: [],
+      pageErrors: [],
+      failure: null,
+      warnings: [],
+    };
+
+    let context = null;
+    let page = null;
+    let currentStage = 'create-context';
+
+    try {
+      context = await browser.newContext(target.context);
+      page = await context.newPage();
+
+      page.on('console', msg => {
+        if (msg.type() === 'error') result.consoleErrors.push(msg.text());
+      });
+      page.on('pageerror', err => result.pageErrors.push(String(err)));
+
+      currentStage = 'open-library';
+      await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
+      await page.waitForTimeout(500);
+      result.url = page.url();
+      result.pageTitle = await page.title();
+      addAction(result, 'open-library', 'passed', { url: result.url, pageTitle: result.pageTitle });
+
+      currentStage = 'capture-library';
+      result.library = {
+        dimensions: await getDocumentState(page),
+        viewportOutliers: await getVisibleViewportOutliers(page),
+        screenshots: await captureScreenshots(page, target, 'library'),
+      };
+      addAction(result, 'capture-library', 'passed', { horizontalOverflow: result.library.dimensions.horizontalOverflow });
+
+      currentStage = 'open-add-material';
+      const addModalEvidence = await openAddMaterialModal(page);
+      addAction(result, 'open-add-material', 'passed', addModalEvidence);
+
+      currentStage = 'fill-material';
+      await page.getByPlaceholder('教材名 (任意)').fill(sampleTitle);
+      await page.getByPlaceholder(/テキスト、または匿名掲示板/).fill(samplePassage);
+      addAction(result, 'fill-material', 'passed', { sampleTitle, passageCharacters: samplePassage.length });
+
+      currentStage = 'create-reader';
+      await page.getByRole('button', { name: 'データを読み込んで作成' }).click();
+      await waitForBodyIncludes(page, firstSentence, 20_000);
+      await page.waitForTimeout(500);
+      const bodyText = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+      const readerDetected = normalizeText(bodyText).includes(normalizeText(firstSentence));
+      if (!readerDetected) throw new Error('Reader was not detected after creating the QA material.');
+      addAction(result, 'create-reader', 'passed', { readerDetected });
+
+      currentStage = 'capture-reader';
+      result.reader = {
         sampleTitle,
         readerDetected,
         bodyExcerpt: bodyText.slice(0, 1200),
-        dimensions: readerDimensions,
-        horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth,
-        screenshots: readerScreenshots,
-      },
-      consoleErrors,
-      pageErrors,
-    });
+        dimensions: await getDocumentState(page),
+        viewportOutliers: await getVisibleViewportOutliers(page),
+        screenshots: await captureScreenshots(page, target, 'reader'),
+      };
+      result.reader.screenshots.firstSentence = await captureFirstSentence(page, target, normalizeText(firstSentence));
+      addAction(result, 'capture-reader', 'passed', { horizontalOverflow: result.reader.dimensions.horizontalOverflow });
 
-    await context.close();
+      currentStage = 'verify-persistence';
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
+      await page.waitForTimeout(500);
+
+      const persistedTitle = page.getByText(sampleTitle, { exact: true }).first();
+      const persistedMaterialVisible = await persistedTitle.isVisible().catch(() => false);
+      if (!persistedMaterialVisible) throw new Error('QA material was not present after reload; IndexedDB persistence check failed.');
+
+      const continueButton = page.getByRole('button', { name: '続きから学習' }).first();
+      const learningStartButton = page.getByRole('button', { name: '学習スタート' }).first();
+      if (await continueButton.count() && await continueButton.isVisible()) {
+        await continueButton.click();
+      } else if (await learningStartButton.count() && await learningStartButton.isVisible()) {
+        await learningStartButton.click();
+      } else {
+        throw new Error('Persisted material was visible, but no button to reopen it was available.');
+      }
+
+      await waitForBodyIncludes(page, firstSentence, 20_000);
+      const reloadedBody = (await page.locator('body').innerText()).replace(/\s+/g, ' ').trim();
+      const reopenedReaderDetected = normalizeText(reloadedBody).includes(normalizeText(firstSentence));
+      if (!reopenedReaderDetected) throw new Error('Persisted QA material did not reopen in Reader.');
+
+      result.persistence = {
+        persistedMaterialVisible,
+        reopenedReaderDetected,
+        dimensions: await getDocumentState(page),
+      };
+      addAction(result, 'verify-persistence', 'passed', result.persistence);
+
+      if (result.library.dimensions.horizontalOverflow) throw new Error('Library has horizontal document overflow.');
+      if (result.reader.dimensions.horizontalOverflow) throw new Error('Reader has horizontal document overflow.');
+      if (result.persistence.dimensions.horizontalOverflow) throw new Error('Reopened Reader has horizontal document overflow.');
+      if (result.consoleErrors.length > 0) throw new Error(`Console errors detected: ${result.consoleErrors.join(' | ')}`);
+      if (result.pageErrors.length > 0) throw new Error(`Page errors detected: ${result.pageErrors.join(' | ')}`);
+
+      if (result.library.viewportOutliers.length > 0) result.warnings.push({ type: 'library-viewport-outliers', elements: result.library.viewportOutliers });
+      if (result.reader.viewportOutliers.length > 0) result.warnings.push({ type: 'reader-viewport-outliers', elements: result.reader.viewportOutliers });
+
+      result.status = 'success';
+      addAction(result, 'final-assertions', 'passed', {
+        consoleErrors: result.consoleErrors.length,
+        pageErrors: result.pageErrors.length,
+        warnings: result.warnings.length,
+      });
+    } catch (error) {
+      const message = errorText(error);
+      result.failure = { stage: currentStage, message };
+      addAction(result, currentStage, 'failed', { error: message });
+      if (page) {
+        result.failure.screenshots = await captureFailureEvidence(page, target, currentStage);
+        result.url = page.url();
+        result.pageTitle = await page.title().catch(() => result.pageTitle);
+        result.failure.visibleButtons = await page.locator('button:visible').allTextContents().catch(() => []);
+        result.failure.bodyExcerpt = await page.locator('body').innerText().then(text => text.replace(/\s+/g, ' ').trim().slice(0, 1600)).catch(() => null);
+      }
+    } finally {
+      result.finishedAt = new Date().toISOString();
+      results.push(result);
+      if (context) await context.close().catch(() => {});
+    }
   }
+} catch (error) {
+  fatalError = errorText(error);
 } finally {
-  await browser.close();
+  if (browser) await browser.close().catch(() => {});
 }
 
-await fs.mkdir('qa-artifacts', { recursive: true });
-await fs.writeFile(
-  'qa-artifacts/report.json',
-  JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, sampleTitle, results }, null, 2),
-  'utf8',
-);
-console.log('Saved screenshots and report under qa-artifacts/');
+const status = fatalError || results.length !== targets.length || results.some(result => result.status !== 'success')
+  ? 'failure'
+  : 'success';
+
+const report = {
+  generatedAt: new Date().toISOString(),
+  status,
+  baseUrl,
+  sampleTitle,
+  qaMeta,
+  expectedTargets: targets.map(target => ({
+    target: target.name,
+    viewport: target.context.viewport,
+    deviceScaleFactor: target.context.deviceScaleFactor,
+  })),
+  fatalError,
+  results,
+};
+
+await fs.writeFile(reportPath, JSON.stringify(report, null, 2), 'utf8');
+console.log(`Saved QA report to ${reportPath} with status=${status}`);
+
+if (status !== 'success') process.exitCode = 1;
