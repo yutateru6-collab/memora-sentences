@@ -1,74 +1,70 @@
 # GitHub Screenshot QA Flow
 
-このリポジトリでは、GitHub Actions + Playwright を使ってアプリを実際に起動・操作し、PC / iPhone 16 のスクリーンショット、機械チェック、失敗証拠を `qa-latest` ブランチへ保存する。
+このリポジトリでは GitHub Actions + Playwright を使い、アプリを実際に起動・操作して PC / iPhone 16 の動作、スクリーンショット、Console / Page Error、横はみ出し、IndexedDB 永続化まで確認する。
+
+## 実行タイミング
+
+- `main` push
+- `workflow_dispatch`
+- 毎日 03:00 JST（18:00 UTC）
 
 ## 標準フロー
 
-1. `main` 更新時、手動実行時、または毎日 03:00 JST に `.github/workflows/qa-screenshots.yml` を実行する。
-2. Node.js 22 で依存関係をインストールする。
-3. `npm run build` で production build を確認する。
-4. Vite を `127.0.0.1:3000` で起動する。
-5. Playwright が PC（1440x900）と iPhone 16（393x852 CSS px / DPR 3）で実際に画面を開く。
-6. Library を表示し、初期UIを撮影・計測する。
-7. QA専用教材 `QA Long Reading Sample` を追加し、長文を入力して Reader まで進む。
-8. Reader本文の表示を確認する。
-9. ページをリロードし、IndexedDB にQA教材が残ることを確認する。
+1. Node.js 22 で依存関係をインストールする。
+2. `npm run build` で production build を確認する。
+3. Vite を `127.0.0.1:3000` で起動する。
+4. Playwright が PC 1440x900 / DPR 1 と iPhone 16 393x852 / DPR 3 で実際に画面を開く。
+5. Library を確認する。
+6. QA専用教材 `QA Long Reading Sample` を追加する。
+7. 英日長文を入力して Reader まで進む。
+8. Reader本文が実際に表示されたことを確認する。
+9. ページをリロードし、IndexedDB に教材が残っていることを確認する。
 10. 保存済み教材を再度 Reader で開く。
-11. Console Error / Page Error / document horizontal overflow を確認する。
-12. 成功・失敗にかかわらず `report.json` を可能な限り生成する。
-13. 途中失敗時は、その時点の画面を failure screenshot として保存する。
-14. 軽量preview・crop・reportのActions Artifact保存を補助的に試す。Artifact容量不足などで失敗してもQA本体は失敗扱いにしない。
-15. 完全な最新結果は `qa-latest` ブランチへ orphan commit + force push で置き換える。`main` は force push しない。
-
-## 基本ユーザーフロー
-
-- Libraryを開く
-- 教材追加UIを開く
-- 教材名を入力
-- 英日長文を入力
-- 「データを読み込んで作成」を実行
-- Readerへの遷移と本文表示を確認
-- リロード
-- QA教材の永続化を確認
-- 保存済み教材を再びReaderで開く
+11. Console Error / Page Error / horizontal overflow を判定する。
+12. 成功・失敗にかかわらず、可能な限り `report.json` と失敗証拠を残す。
+13. PC / iPhone の実画像を ChatGPT が後から目視できるよう vision handoff を作る。
+14. 最新結果だけを `qa-latest` ブランチへ置き換える。`main` は force push しない。
 
 ## スクリーンショット
 
 ### PC
+
 - CSS viewport: 1440x900
 - deviceScaleFactor: 1
 
 ### iPhone 16
+
 - CSS viewport: 393x852
 - deviceScaleFactor: 3
 - 高解像度 viewport PNG: 1179x2556 px 相当
 - `isMobile: true`
 - `hasTouch: true`
 
-各主要画面で保存するもの:
+各主要画面で以下を保存する。
 
-- `*-viewport.png`: 高解像度の現在画面
-- `*-full.png`: full-page PNG
-- `*-ai-preview.jpg`: `scale: css`, quality 55
-- `*-top-crop.jpg`: `scale: device`, quality 65
-- `*-reader-first-sentence.jpg`: Reader本文の高解像度crop
+- `*-viewport.png`: 高解像度 viewport
+- `*-full.png`: 高解像度 full-page
+- `*-ai-preview.jpg`: CSSサイズ・quality 55 の軽量全体確認用
+- `*-top-crop.jpg`: device scale・quality 65 の高解像度crop
+- `*-reader-first-sentence.jpg`: Reader本文の詳細確認用
 
-失敗時は `*-failure-<stage>-viewport.png` と `*-failure-<stage>-ai-preview.jpg` も保存する。
+途中失敗時は `*-failure-<stage>-viewport.png` と `*-failure-<stage>-ai-preview.jpg` を残す。
 
-## 軽量Preview Artifact（補助経路）
+## AI vision handoff
 
-画像受け渡し補助として次だけをArtifact保存することを試みる。
+GitHub連携が private repository のJPEG/PNGをそのまま画像入力へ渡せない場合でも、画像の存在確認だけで終わらないよう `tools/build-qa-vision-contact-sheet.mjs` が vision handoff を作る。
 
-- `report.json`
-- `*-ai-preview.jpg`
-- `*-top-crop.jpg`
-- `*-first-sentence.jpg`
+`qa-latest/vision/` には次を保存する。
 
-Artifact名は `qa-preview-<workflow run id>`、保持期間は1日。
+- `qa-overview.jpg`: Desktop Library / Desktop Reader / iPhone Library / iPhone Reader の4画面コンタクトシート
+- `qa-overview.jpg.b64`: overview画像を76文字ごとに改行したUTF-8 base64
+- `desktop-1440x900-reader-first-sentence.jpg.b64`: PC Reader詳細cropのbase64
+- `iphone-16-reader-first-sentence.jpg.b64`: iPhone Reader詳細cropのbase64
+- `manifest.json`: 元画像、byteLength、SHA-256、overviewサイズを記録
 
-ただし GitHub Actions Artifact のストレージ容量上限に達している場合、アップロードは失敗する。その場合でも `continue-on-error` によりQA job全体は失敗させず、`qa-latest` を正本として利用する。
+ChatGPT は `.b64` を取得して画像へ復号し、`manifest.json` の `byteLength` と `sha256` が一致することを確認してから実画像として開く。
 
-`latest.json` の `preview_artifact_status` / `preview_artifact_available` を確認し、実際にArtifactが利用できる場合だけ取得する。
+これにより「base64を取得しただけ」と「画像を実際に目視した」を明確に区別できる。
 
 ## report.json
 
@@ -90,56 +86,82 @@ Artifact名は `qa-preview-<workflow run id>`、保持期間は1日。
 
 主な項目:
 
-- `job_status`: GitHub Actions job全体
-- `qa_status`: `report.json` のQA判定
+- `job_status`
+- `qa_status`
 - `report_present`
 - `screenshot_count`
 - `commit_sha`
-- `preview_artifact`
+- `vision_handoff_present`
+- `vision_manifest`
+- `vision_overview_base64`
 - `preview_artifact_status`
 - `preview_artifact_available`
-- `preview_artifact_retention_days`
 
-`latest.json` が存在するだけではQA成功とみなさない。QA本体を確認済みと扱う条件は原則、`job_status == success`、`qa_status == success`、`report_present == true`、かつ `report.json` が対象commitと一致すること。
+`latest.json` が存在するだけでは QA 成功とみなさない。原則として `job_status == success`、`qa_status == success`、`report_present == true`、かつ対象commitが一致する場合に機械QA成功と扱う。
 
-Artifactは補助経路なので、`preview_artifact_available == false` だけではQA本体の失敗とはしない。
+## Actions Artifact
+
+軽量previewの Artifact 保存も補助的に試すが、GitHub Actions Artifact のストレージ上限に達している場合は失敗する。その場合でも `continue-on-error` により QA 本体は失敗させない。
+
+正本は `qa-latest`。Artifactは利用可能な場合だけ補助経路として使う。
 
 ## ChatGPT側の確認手順
 
-1. `qa-latest/latest.json` を取得する。
+1. `qa-latest/latest.json` を読む。
 2. `qa_status`, `job_status`, `report_present`, `commit_sha` を確認する。
-3. `report.json` でPC / iPhone 16 の両結果を確認する。
-4. 画像を直接materializeできる場合は `screenshots/*-ai-preview.jpg` を画像として開く。
-5. 直接開けず、かつ `preview_artifact_available == true` の場合だけArtifactを取得する。
-6. Artifactが容量不足等で利用できなければ、`qa-latest` の画像保存確認と機械結果を報告し、「実画像としてはまだ目視していない」と明確に区別する。
-7. 細部が疑わしい場合だけ高解像度crop / PNGを追加で開く。
+3. `report.json` で PC / iPhone の機械結果を確認する。
+4. `vision/manifest.json` を読む。
+5. `vision/qa-overview.jpg.b64` を取得・復号する。
+6. byteLength / SHA-256 を manifest と照合する。
+7. 復号した overview を画像として開き、4画面を目視する。
+8. 細部が必要なら Reader first-sentence のbase64や高解像度cropを追加確認する。
+9. 失敗時は failure screenshot、visible button、body excerpt、失敗stageを確認する。
 
-画像ファイルがGitHubに存在するだけでは「目視確認済み」としない。
+実画像を開いていない場合は「スクリーンショット目視済み」と報告しない。
 
 ## AIが画像で見る項目
 
-文字切れ、ボタン見切れ、要素の重なり、本文への固定UI被り、横方向のはみ出し、不自然な余白、文字サイズ・行間、ボタンのタップしやすさ、ヘッダー、主操作、PC / iPhone 16 の差、Reader本文、Safe Area周辺。
+- 文字切れ
+- ボタン見切れ
+- 要素の重なり
+- 本文への固定UI被り
+- 横方向のはみ出し
+- 不自然な余白
+- 文字サイズ・行間
+- ボタンのタップしやすさ
+- ヘッダーの窮屈さ
+- 主操作の分かりやすさ
+- PC / iPhone 16 の差
+- Reader本文の読みやすさ
+- Safe Area周辺
 
 ## 機械チェック
 
-viewport、deviceScaleFactor、document dimensions、horizontalOverflow、viewport外候補、consoleErrors、pageErrors、current URL、page title、Reader到達、IndexedDB保存後の再読込を確認する。
+- viewport width / height
+- deviceScaleFactor
+- document scrollWidth / scrollHeight
+- document clientWidth / clientHeight
+- horizontalOverflow
+- viewport外候補
+- consoleErrors
+- pageErrors
+- current URL
+- page title
+- Reader到達可否
+- IndexedDB保存後の再読込可否
 
 Playwrightの機械チェック成功だけでUI正常とは判断しない。
 
 ## 保存量
 
-- 最新QA: `qa-latest` に保持
+- 最新QA: `qa-latest` に1回分だけ保持
+- vision handoff: 最新QAと一緒に置換
 - 軽量Preview Artifact: 利用可能なら1日だけ
-- Artifact容量上限時: `qa-latest` のみ使用
-- 以前の通常QA: `qa-latest` 上では保持しない
-- 完成版の基準画像: 必要時だけ別途管理
+- 過去の通常QA: `qa-latest` には残さない
+- 完成版基準画像: 必要時のみ別途 `qa-baseline` 等で管理
 
 ## エラー調査
 
 Workflow Run → Job → Step → Logs → 失敗stage → `report.json` → failure screenshot → DOM / visible button → 修正 → 再実行。
 
 Selectorは推測で増やさず、role / label / placeholder / visible text / title の実UIに合わせる。
-
-## 運用方針
-
-今後このリポジトリで「動作確認して」「スクショ撮って」「iPhoneで見て」「UI崩れてない？」と依頼された場合は、このフローを標準として扱う。
