@@ -135,6 +135,12 @@ jobs:
           }
           EOF
 
+          # Stop Vite before switching branches so it cannot recreate .vite files
+          # while qa-latest is being assembled.
+          if [ -f /tmp/memora-vite.pid ]; then
+            kill "$(cat /tmp/memora-vite.pid)" >/dev/null 2>&1 || true
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -142,6 +148,15 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
-          git add .
+
+          # Stage only the QA evidence. Never commit transient Vite/node files.
+          git add latest.json
+          if [ -f report.json ]; then
+            git add report.json
+          fi
+          if [ -d screenshots ]; then
+            git add screenshots/
+          fi
+
           git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest
