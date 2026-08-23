@@ -1,4 +1,4 @@
-import { chromium, devices } from 'playwright';
+import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
@@ -35,65 +35,89 @@ For her, the most important achievement is that people who once entered as stran
 const targets = [
   {
     name: 'desktop-1440x900',
-    context: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
-    aiPreviewWidth: 640,
-    visionTransferWidth: 340,
+    context: {
+      viewport: { width: 1440, height: 900 },
+      screen: { width: 1440, height: 900 },
+      deviceScaleFactor: 1,
+    },
     cropHeight: 500,
   },
   {
-    name: 'iphone-15',
-    context: { ...devices['iPhone 15'], deviceScaleFactor: 1 },
-    aiPreviewWidth: 320,
-    visionTransferWidth: 220,
-    cropHeight: 360,
+    // iPhone 16 (standard model) QA profile.
+    // CSS viewport is kept at 393px wide for responsive-layout testing,
+    // while @3x produces 1179px-wide source screenshots for visual inspection.
+    name: 'iphone-16',
+    context: {
+      viewport: { width: 393, height: 852 },
+      screen: { width: 393, height: 852 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    },
+    cropHeight: 420,
   },
 ];
 
-async function captureAiPreview(page, context, target, prefix, { fullPage = false } = {}) {
+async function captureScreenshots(page, target, prefix, { fullPage = false } = {}) {
   const viewportPath = `${outDir}/${target.name}-${prefix}-viewport.png`;
   const fullPath = `${outDir}/${target.name}-${prefix}-full.png`;
-  const previewPath = `${outDir}/${target.name}-${prefix}-preview.jpg`;
-  const aiPreviewPath = `${outDir}/${target.name}-${prefix}-ai-preview.jpg`;
-  const visionPath = `${outDir}/${target.name}-${prefix}-vision.jpg`;
+  const previewPath = `${outDir}/${target.name}-${prefix}-ai-preview.jpg`;
   const cropPath = `${outDir}/${target.name}-${prefix}-top-crop.jpg`;
 
-  await page.screenshot({ path: viewportPath, fullPage: false });
-  await page.screenshot({ path: fullPath, fullPage: true });
+  // High-resolution source images. On iPhone 16 these use @3x device pixels.
+  await page.screenshot({ path: viewportPath, fullPage: false, scale: 'device' });
+  await page.screenshot({ path: fullPath, fullPage: true, scale: 'device' });
+
+  // Lightweight ChatGPT preview: one pixel per CSS pixel, even when source is @3x.
+  await page.screenshot({
+    path: previewPath,
+    fullPage,
+    type: 'jpeg',
+    quality: 55,
+    scale: 'css',
+  });
 
   const viewport = page.viewportSize();
   if (viewport) {
+    // Focused crop remains high-resolution so small text and overlaps can be inspected.
     await page.screenshot({
       path: cropPath,
       type: 'jpeg',
-      quality: 25,
-      clip: { x: 0, y: 0, width: viewport.width, height: Math.min(target.cropHeight, viewport.height) },
+      quality: 65,
+      scale: 'device',
+      clip: {
+        x: 0,
+        y: 0,
+        width: viewport.width,
+        height: Math.min(target.cropHeight, viewport.height),
+      },
     });
   }
 
-  const previewBuffer = await page.screenshot({ path: previewPath, fullPage, type: 'jpeg', quality: 50 });
-  const previewPage = await context.newPage();
-  const dataUrl = `data:image/jpeg;base64,${previewBuffer.toString('base64')}`;
-  await previewPage.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"/><style>html,body{margin:0;padding:0;background:#fff}img{display:block;width:${target.aiPreviewWidth}px;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
-  const img = previewPage.locator('img');
-  await img.screenshot({ path: aiPreviewPath, type: 'jpeg', quality: 50 });
-  await img.evaluate((el, width) => { el.style.width = `${width}px`; }, target.visionTransferWidth);
-  await img.screenshot({ path: visionPath, type: 'jpeg', quality: 20 });
-  await previewPage.close();
-
-  return { viewport: viewportPath, fullPage: fullPath, preview: previewPath, aiPreview: aiPreviewPath, vision: visionPath, topCrop: cropPath };
+  return {
+    viewport: viewportPath,
+    fullPage: fullPath,
+    aiPreview: previewPath,
+    topCrop: cropPath,
+  };
 }
 
 async function openAddMaterialModal(page) {
   await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
-  const allButtons = (await page.locator('button').allTextContents()).map(text => text.replace(/\s+/g, ' ').trim()).filter(Boolean);
-  const visibleButtons = (await page.locator('button:visible').allTextContents()).map(text => text.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const allButtons = (await page.locator('button').allTextContents())
+    .map(text => text.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const visibleButtons = (await page.locator('button:visible').allTextContents())
+    .map(text => text.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
   console.log('All buttons on Library:', JSON.stringify(allButtons));
   console.log('Visible buttons on Library:', JSON.stringify(visibleButtons));
 
   const firstRunButton = page.locator('button').filter({ hasText: '手持ちの教材を追加' }).first();
   if (await firstRunButton.count()) {
     if (await firstRunButton.isVisible()) await firstRunButton.click();
-    else await firstRunButton.evaluate((el) => el.click());
+    else await firstRunButton.evaluate(el => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
     return;
   }
@@ -101,17 +125,18 @@ async function openAddMaterialModal(page) {
   const floatingAdd = page.locator('button[title="新規追加"]').first();
   if (await floatingAdd.count()) {
     if (await floatingAdd.isVisible()) await floatingAdd.click();
-    else await floatingAdd.evaluate((el) => el.click());
+    else await floatingAdd.evaluate(el => el.click());
     await page.getByRole('heading', { name: '新しいデータを追加' }).waitFor({ state: 'visible', timeout: 10_000 });
     return;
   }
+
   throw new Error(`Add-material button was not found. All buttons: ${allButtons.join(' | ')}`);
 }
 
 async function captureFirstSentence(page, target, normalizedFirstSentence) {
   const selector = 'data-qa-first-sentence-crop';
   const found = await page.evaluate(({ selector, needle }) => {
-    const normalize = (value) => (value || '').replace(/\s+/g, '');
+    const normalize = value => (value || '').replace(/\s+/g, '');
     const candidates = [...document.querySelectorAll('body *')]
       .filter(el => normalize(el.textContent).includes(needle))
       .map(el => ({ el, rect: el.getBoundingClientRect() }))
@@ -127,7 +152,12 @@ async function captureFirstSentence(page, target, normalizedFirstSentence) {
   const locator = page.locator(`[${selector}="true"]`).first();
   await locator.scrollIntoViewIfNeeded();
   const sentencePath = `${outDir}/${target.name}-reader-first-sentence.jpg`;
-  await locator.screenshot({ path: sentencePath, type: 'jpeg', quality: 55 });
+  await locator.screenshot({
+    path: sentencePath,
+    type: 'jpeg',
+    quality: 70,
+    scale: 'device',
+  });
   return sentencePath;
 }
 
@@ -137,7 +167,10 @@ try {
     const page = await context.newPage();
     const consoleErrors = [];
     const pageErrors = [];
-    page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+
+    page.on('console', msg => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
     page.on('pageerror', err => pageErrors.push(String(err)));
 
     const startedAt = new Date().toISOString();
@@ -146,8 +179,13 @@ try {
 
     const title = await page.title();
     const viewport = page.viewportSize();
-    const libraryDimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight }));
-    const libraryScreenshots = await captureAiPreview(page, context, target, 'library');
+    const libraryDimensions = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      scrollHeight: document.documentElement.scrollHeight,
+      clientWidth: document.documentElement.clientWidth,
+      clientHeight: document.documentElement.clientHeight,
+    }));
+    const libraryScreenshots = await captureScreenshots(page, target, 'library');
 
     await openAddMaterialModal(page);
     await page.getByPlaceholder('教材名 (任意)').fill(sampleTitle);
@@ -164,16 +202,39 @@ try {
     console.log(`${target.name} post-submit readerDetected=${readerDetected}`);
     console.log(`${target.name} post-submit body excerpt: ${bodyText.slice(0, 1200)}`);
 
-    const readerDimensions = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight }));
-    const readerScreenshots = await captureAiPreview(page, context, target, 'reader', { fullPage: false });
+    const readerDimensions = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      scrollHeight: document.documentElement.scrollHeight,
+      clientWidth: document.documentElement.clientWidth,
+      clientHeight: document.documentElement.clientHeight,
+    }));
+    const readerScreenshots = await captureScreenshots(page, target, 'reader', { fullPage: false });
     readerScreenshots.firstSentence = await captureFirstSentence(page, target, normalizedFirstSentence);
 
     results.push({
-      target: target.name, url: page.url(), title, startedAt, viewport,
-      library: { dimensions: libraryDimensions, horizontalOverflow: libraryDimensions.scrollWidth > libraryDimensions.clientWidth, screenshots: libraryScreenshots },
-      reader: { sampleTitle, readerDetected, bodyExcerpt: bodyText.slice(0, 1200), dimensions: readerDimensions, horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth, screenshots: readerScreenshots },
-      consoleErrors, pageErrors,
+      target: target.name,
+      url: page.url(),
+      title,
+      startedAt,
+      viewport,
+      deviceScaleFactor: target.context.deviceScaleFactor,
+      library: {
+        dimensions: libraryDimensions,
+        horizontalOverflow: libraryDimensions.scrollWidth > libraryDimensions.clientWidth,
+        screenshots: libraryScreenshots,
+      },
+      reader: {
+        sampleTitle,
+        readerDetected,
+        bodyExcerpt: bodyText.slice(0, 1200),
+        dimensions: readerDimensions,
+        horizontalOverflow: readerDimensions.scrollWidth > readerDimensions.clientWidth,
+        screenshots: readerScreenshots,
+      },
+      consoleErrors,
+      pageErrors,
     });
+
     await context.close();
   }
 } finally {
@@ -181,5 +242,9 @@ try {
 }
 
 await fs.mkdir('qa-artifacts', { recursive: true });
-await fs.writeFile('qa-artifacts/report.json', JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, sampleTitle, results }, null, 2), 'utf8');
+await fs.writeFile(
+  'qa-artifacts/report.json',
+  JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, sampleTitle, results }, null, 2),
+  'utf8',
+);
 console.log('Saved screenshots and report under qa-artifacts/');
