@@ -17,7 +17,8 @@
 11. Console Error / Page Error / document horizontal overflow を確認する。
 12. 成功・失敗にかかわらず `report.json` を可能な限り生成する。
 13. 途中失敗時は、その時点の画面を `failure-*-viewport.png` と軽量JPEGで保存する。
-14. 最新結果だけを `qa-latest` ブランチへ orphan commit + force push で置き換える。`main` は force push しない。
+14. ChatGPTへの画像受け渡し用に、軽量preview・crop・reportだけをGitHub Actions Artifactへ1日だけ保存する。
+15. 完全な最新結果は `qa-latest` ブランチへ orphan commit + force push で置き換える。`main` は force push しない。
 
 ## 現在の基本ユーザーフロー
 
@@ -64,6 +65,19 @@
 - `*-failure-<stage>-viewport.png`
 - `*-failure-<stage>-ai-preview.jpg`
 
+## 軽量Preview Artifact
+
+GitHub連携から画像バイナリを直接Vision入力へ渡せない場合に備え、各QA runで次だけをArtifactとして保存する。
+
+- `report.json`
+- `*-ai-preview.jpg`
+- `*-top-crop.jpg`
+- `*-first-sentence.jpg`
+
+Artifact名は `qa-preview-<workflow run id>`、保持期間は1日。
+
+高解像度full PNGをArtifactへ重複保存しないことで容量を抑える。元の高解像度画像は `qa-latest` に最新1回分だけ保持する。
+
 ## report.json
 
 `qa-artifacts/report.json` / `qa-latest/report.json` には少なくとも以下を保存する。
@@ -100,6 +114,8 @@
 - `report_present`: reportが本当に存在するか
 - `screenshot_count`: 保存された画像数
 - `commit_sha`: QA対象commit
+- `preview_artifact`: 軽量画像受け渡し用Artifact名
+- `preview_artifact_retention_days`: Artifact保持日数
 
 ### 重要
 
@@ -121,9 +137,10 @@
 1. `qa-latest/latest.json` を取得する。
 2. `qa_status`, `job_status`, `report_present`, `commit_sha` を確認する。
 3. `report.json` を取得し、PC / iPhone 16 の両結果を確認する。
-4. まず `screenshots/*-ai-preview.jpg` を画像として開いて目視する。
-5. 文字切れ・重なり・細部が疑わしい場合だけ高解像度crop / PNGを追加で開く。
-6. 失敗時は `failure-*` 画像、visible button一覧、body excerpt、失敗stageを確認する。
+4. 画像を直接materializeできる場合は `screenshots/*-ai-preview.jpg` を画像として開く。
+5. GitHub連携から画像を直接開けない場合は、`preview_artifact` を取得して軽量画像をmaterializeする。
+6. 文字切れ・重なり・細部が疑わしい場合だけ高解像度crop / PNGを追加で開く。
+7. 失敗時は `failure-*` 画像、visible button一覧、body excerpt、失敗stageを確認する。
 
 画像ファイルがGitHubに存在するだけでは「目視確認済み」としない。実画像として開いて確認した場合のみ目視確認済みと報告する。
 
@@ -166,7 +183,8 @@ Playwrightの機械チェック成功だけでUI正常とは判断しない。�
 
 通常QAは日付別に蓄積せず、`qa-latest` へ最新1回分だけ残す。
 
-- 最新QA: 保持
+- 最新QA: `qa-latest` に保持
+- 軽量Preview Artifact: 1日だけ保持
 - 以前の通常QA: `qa-latest` 上では保持しない
 - 完成版の基準画像: 必要な場合だけ別途 `qa-baseline/` 等で管理する
 
