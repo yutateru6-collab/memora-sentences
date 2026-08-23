@@ -141,6 +141,43 @@ section[aria-label="MEMORAをはじめる"] .mt-5 > button + button {
   display: none !important;
 }
 
+/* Temporarily simplify the first-run and long-reading creation screens. */
+section[aria-label="MEMORAをはじめる"] .relative.z-10 > div:first-child {
+  display: none !important;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(3) > div:nth-child(3),
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(3) > div:nth-child(4),
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div > div:nth-child(1),
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(5) {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(3) > div:nth-child(1),
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(3) > div:nth-child(2) {
+    grid-column: span 4 / span 4 !important;
+  }
+}
+
+@media (min-width: 640px) {
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div > div:nth-child(2) {
+    grid-column: span 5 / span 5 !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) > div > div:nth-child(3) {
+    grid-column: span 6 / span 6 !important;
+  }
+}
+
 /*
  * Prompt library: mobile-first visual hierarchy.
  * Scope the rules to the prompt-library screen via its unique mascot image so
