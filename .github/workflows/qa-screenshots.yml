@@ -68,6 +68,11 @@ jobs:
           QA_RUN_NUMBER: ${{ github.run_number }}
           QA_EVENT_NAME: ${{ github.event_name }}
 
+      - name: Prepare AI vision handoff
+        if: always()
+        continue-on-error: true
+        run: node tools/build-qa-vision-contact-sheet.mjs
+
       - name: Upload lightweight QA previews (optional)
         id: upload_preview
         if: always()
@@ -80,6 +85,8 @@ jobs:
             qa-artifacts/screenshots/*-ai-preview.jpg
             qa-artifacts/screenshots/*-top-crop.jpg
             qa-artifacts/screenshots/*-first-sentence.jpg
+            qa-artifacts/vision/manifest.json
+            qa-artifacts/vision/qa-overview.jpg
           if-no-files-found: warn
           retention-days: 1
           compression-level: 6
@@ -91,6 +98,7 @@ jobs:
           PREVIEW_ARTIFACT_OUTCOME: ${{ steps.upload_preview.outcome }}
         run: |
           mkdir -p /tmp/qa-latest/screenshots
+          mkdir -p /tmp/qa-latest/vision
 
           REPORT_PRESENT=false
           if [ -f qa-artifacts/report.json ]; then
@@ -100,6 +108,14 @@ jobs:
 
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
+          fi
+
+          VISION_PRESENT=false
+          if [ -d qa-artifacts/vision ]; then
+            cp -R qa-artifacts/vision/. /tmp/qa-latest/vision/
+            if [ -f qa-artifacts/vision/qa-overview.jpg.b64 ]; then
+              VISION_PRESENT=true
+            fi
           fi
 
           QA_STATUS="failure"
@@ -127,6 +143,9 @@ jobs:
             "screenshot_count": ${SCREENSHOT_COUNT},
             "storage": "qa-latest branch",
             "screenshots_path": "screenshots/",
+            "vision_handoff_present": ${VISION_PRESENT},
+            "vision_manifest": "vision/manifest.json",
+            "vision_overview_base64": "vision/qa-overview.jpg.b64",
             "preview_artifact": "qa-preview-${GITHUB_RUN_ID}",
             "preview_artifact_status": "${PREVIEW_ARTIFACT_OUTCOME}",
             "preview_artifact_available": ${PREVIEW_ARTIFACT_AVAILABLE},
@@ -156,6 +175,9 @@ jobs:
           fi
           if [ -d screenshots ]; then
             git add screenshots/
+          fi
+          if [ -d vision ]; then
+            git add vision/
           fi
 
           git commit -m "Update latest QA evidence"
