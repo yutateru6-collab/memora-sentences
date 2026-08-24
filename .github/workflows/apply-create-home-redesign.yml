@@ -1,4 +1,4 @@
-# Compact visual handoff v3
+# Compact visual handoff v4
 name: Verify Create Home Redesign
 
 on:
@@ -7,6 +7,11 @@ on:
       - agent/create-home-redesign
     paths:
       - .github/workflows/apply-create-home-redesign.yml
+      - App.tsx
+      - components/CreateHomeScreen.tsx
+      - create-home.css
+      - tools/capture-create-home.mjs
+      - tools/build-create-home-vision.mjs
 
 permissions:
   contents: write
