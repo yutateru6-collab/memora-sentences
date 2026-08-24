@@ -42,10 +42,49 @@ async function documentState(page) {
   }));
 }
 
+async function createLayoutState(page) {
+  return page.evaluate(() => {
+    const rect = selector => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        top: Math.round(box.top + window.scrollY),
+        bottom: Math.round(box.bottom + window.scrollY),
+        height: Math.round(box.height),
+        width: Math.round(box.width),
+      };
+    };
+
+    return {
+      document: {
+        scrollWidth: document.documentElement.scrollWidth,
+        scrollHeight: document.documentElement.scrollHeight,
+        clientWidth: document.documentElement.clientWidth,
+        clientHeight: document.documentElement.clientHeight,
+        horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      },
+      sections: {
+        hero: rect('.create-home__hero'),
+        topic: rect('.create-home__topic-card'),
+        choices: rect('.create-home__choice-grid'),
+        persona: rect('.create-home__persona-card'),
+        actions: rect('.create-home__actions'),
+        footer: rect('.create-home__footer-note'),
+        otherModes: rect('.create-home__other-modes'),
+      },
+    };
+  });
+}
+
 async function runHomeFlow(page, result) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.getByRole('heading', { name: '教材をつくる', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
   result.actions.push('open-create-home');
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(120);
+  result.createLayoutInitial = await createLayoutState(page);
 
   await page.getByTestId('create-topic').fill('星と恐竜の英語学習');
   await page.getByTestId('create-keyword').fill('星空、恐竜、英語学習');
@@ -54,6 +93,8 @@ async function runHomeFlow(page, result) {
   await page.getByTestId('create-role').selectOption({ label: '高校教師' });
   await page.getByTestId('create-trait').selectOption({ label: '完全なるポジティブ' });
   result.actions.push('fill-generation-settings');
+
+  result.createLayoutFilled = await createLayoutState(page);
 
   await page.getByTestId('create-copy').click();
   await page.getByText('コピーしました！', { exact: true }).waitFor({ state: 'visible', timeout: 5_000 });
@@ -71,14 +112,18 @@ async function runHomeFlow(page, result) {
   const beforeImport = await documentState(page);
   result.checks.noHorizontalOverflowBeforeImport = !beforeImport.horizontalOverflow;
 
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(180);
+
   const prefix = `${outDir}/${result.target}-create-home`;
   await page.screenshot({ path: `${prefix}-viewport.png`, fullPage: false, scale: 'device' });
   await page.screenshot({ path: `${prefix}-full.png`, fullPage: true, scale: 'device' });
   await page.screenshot({ path: `${prefix}-ai-preview.jpg`, fullPage: false, type: 'jpeg', quality: 58, scale: 'css' });
-  await page.locator('.create-home__persona-card').screenshot({ path: `${prefix}-persona.png`, scale: 'device' });
   result.screenshots.viewport = `${prefix}-viewport.png`;
   result.screenshots.full = `${prefix}-full.png`;
   result.screenshots.aiPreview = `${prefix}-ai-preview.jpg`;
+
+  await page.locator('.create-home__persona-card').screenshot({ path: `${prefix}-persona.png`, scale: 'device' });
   result.screenshots.persona = `${prefix}-persona.png`;
 
   await page.getByTestId('create-import').click();
@@ -116,6 +161,8 @@ for (const target of targets) {
     actions: [],
     checks: {},
     screenshots: {},
+    createLayoutInitial: null,
+    createLayoutFilled: null,
     failure: null,
   };
 
