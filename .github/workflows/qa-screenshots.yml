@@ -73,29 +73,10 @@ jobs:
         continue-on-error: true
         run: node tools/build-qa-vision-contact-sheet.mjs
 
-      - name: Upload lightweight QA previews (optional)
-        id: upload_preview
-        if: always()
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: qa-preview-${{ github.run_id }}
-          path: |
-            qa-artifacts/report.json
-            qa-artifacts/screenshots/*-ai-preview.jpg
-            qa-artifacts/screenshots/*-top-crop.jpg
-            qa-artifacts/screenshots/*-first-sentence.jpg
-            qa-artifacts/vision/manifest.json
-            qa-artifacts/vision/qa-overview.jpg
-          if-no-files-found: warn
-          retention-days: 1
-          compression-level: 6
-
       - name: Publish latest QA evidence for ChatGPT
         if: always()
         env:
           QA_JOB_STATUS: ${{ job.status }}
-          PREVIEW_ARTIFACT_OUTCOME: ${{ steps.upload_preview.outcome }}
         run: |
           mkdir -p /tmp/qa-latest/screenshots
           mkdir -p /tmp/qa-latest/vision
@@ -125,11 +106,6 @@ jobs:
 
           SCREENSHOT_COUNT="$(find /tmp/qa-latest/screenshots -type f 2>/dev/null | wc -l | tr -d ' ')"
 
-          PREVIEW_ARTIFACT_AVAILABLE=false
-          if [ "$PREVIEW_ARTIFACT_OUTCOME" = "success" ]; then
-            PREVIEW_ARTIFACT_AVAILABLE=true
-          fi
-
           cat > /tmp/qa-latest/latest.json <<EOF
           {
             "repository": "${GITHUB_REPOSITORY}",
@@ -146,10 +122,7 @@ jobs:
             "vision_handoff_present": ${VISION_PRESENT},
             "vision_manifest": "vision/manifest.json",
             "vision_overview_base64": "vision/qa-overview.jpg.b64",
-            "preview_artifact": "qa-preview-${GITHUB_RUN_ID}",
-            "preview_artifact_status": "${PREVIEW_ARTIFACT_OUTCOME}",
-            "preview_artifact_available": ${PREVIEW_ARTIFACT_AVAILABLE},
-            "preview_artifact_retention_days": 1,
+            "preview_artifact_available": false,
             "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
@@ -168,7 +141,8 @@ jobs:
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
 
-          # Stage only the QA evidence. Never commit transient Vite/node files.
+          # Stage only the latest QA evidence; force-pushing this orphan branch
+          # keeps one rotating copy instead of accumulating Actions artifacts.
           git add latest.json
           if [ -f report.json ]; then
             git add report.json
