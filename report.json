@@ -1,0 +1,318 @@
+{
+  "generatedAt": "2026-08-24T18:25:06.824Z",
+  "repository": "yutateru6-collab/memora-sentences",
+  "commitSha": "32edcf836f8f4c4c385d639df6769b046b89cf05",
+  "workflowRunId": "32762171066",
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "success",
+  "results": [
+    {
+      "target": "desktop-1440x900",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "status": "success",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "actions": [
+        "open-create-home",
+        "fill-generation-settings",
+        "copy-prompt",
+        "open-generated-result-import",
+        "open-library"
+      ],
+      "checks": {
+        "heroDinoLoaded": true,
+        "primaryActionVisible": true,
+        "importActionVisible": true,
+        "copyActionVisible": true,
+        "libraryActionVisible": true,
+        "levelSelected": true,
+        "lengthSelected": true,
+        "noHorizontalOverflowBeforeImport": true,
+        "importModalOpened": true,
+        "importTextareaFocused": true,
+        "libraryNavigationWorks": true
+      },
+      "screenshots": {
+        "viewport": "qa-create-home-artifacts/screenshots/desktop-1440x900-create-home-viewport.png",
+        "full": "qa-create-home-artifacts/screenshots/desktop-1440x900-create-home-full.png",
+        "aiPreview": "qa-create-home-artifacts/screenshots/desktop-1440x900-create-home-ai-preview.jpg",
+        "persona": "qa-create-home-artifacts/screenshots/desktop-1440x900-create-home-persona.png",
+        "importModal": "qa-create-home-artifacts/screenshots/desktop-1440x900-create-home-import-modal.png"
+      },
+      "createLayoutInitial": {
+        "document": {
+          "scrollWidth": 1440,
+          "scrollHeight": 1540,
+          "clientWidth": 1440,
+          "clientHeight": 900,
+          "horizontalOverflow": false
+        },
+        "sections": {
+          "hero": {
+            "top": 0,
+            "bottom": 430,
+            "height": 430,
+            "width": 880
+          },
+          "topic": {
+            "top": 442,
+            "bottom": 694,
+            "height": 252,
+            "width": 824
+          },
+          "choices": {
+            "top": 708,
+            "bottom": 853,
+            "height": 145,
+            "width": 824
+          },
+          "persona": {
+            "top": 867,
+            "bottom": 1137,
+            "height": 270,
+            "width": 824
+          },
+          "actions": {
+            "top": 1152,
+            "bottom": 1411,
+            "height": 259,
+            "width": 824
+          },
+          "footer": {
+            "top": 1429,
+            "bottom": 1453,
+            "height": 24,
+            "width": 824
+          },
+          "otherModes": {
+            "top": 1466,
+            "bottom": 1506,
+            "height": 40,
+            "width": 222
+          }
+        }
+      },
+      "createLayoutFilled": {
+        "document": {
+          "scrollWidth": 1440,
+          "scrollHeight": 1540,
+          "clientWidth": 1440,
+          "clientHeight": 900,
+          "horizontalOverflow": false
+        },
+        "sections": {
+          "hero": {
+            "top": 0,
+            "bottom": 430,
+            "height": 430,
+            "width": 880
+          },
+          "topic": {
+            "top": 442,
+            "bottom": 694,
+            "height": 252,
+            "width": 824
+          },
+          "choices": {
+            "top": 708,
+            "bottom": 853,
+            "height": 145,
+            "width": 824
+          },
+          "persona": {
+            "top": 867,
+            "bottom": 1137,
+            "height": 270,
+            "width": 824
+          },
+          "actions": {
+            "top": 1152,
+            "bottom": 1411,
+            "height": 259,
+            "width": 824
+          },
+          "footer": {
+            "top": 1429,
+            "bottom": 1453,
+            "height": 24,
+            "width": 824
+          },
+          "otherModes": {
+            "top": 1466,
+            "bottom": 1506,
+            "height": 40,
+            "width": 222
+          }
+        }
+      },
+      "failure": null,
+      "document": {
+        "scrollWidth": 1440,
+        "scrollHeight": 900,
+        "clientWidth": 1440,
+        "clientHeight": 900,
+        "horizontalOverflow": false
+      },
+      "url": "http://127.0.0.1:3000/",
+      "pageTitle": "MEMORA Sentences"
+    },
+    {
+      "target": "iphone-16",
+      "viewport": {
+        "width": 393,
+        "height": 852
+      },
+      "deviceScaleFactor": 3,
+      "status": "success",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "actions": [
+        "open-create-home",
+        "fill-generation-settings",
+        "copy-prompt",
+        "open-generated-result-import",
+        "open-library"
+      ],
+      "checks": {
+        "heroDinoLoaded": true,
+        "primaryActionVisible": true,
+        "importActionVisible": true,
+        "copyActionVisible": true,
+        "libraryActionVisible": true,
+        "levelSelected": true,
+        "lengthSelected": true,
+        "noHorizontalOverflowBeforeImport": true,
+        "importModalOpened": true,
+        "importTextareaFocused": true,
+        "libraryNavigationWorks": true
+      },
+      "screenshots": {
+        "viewport": "qa-create-home-artifacts/screenshots/iphone-16-create-home-viewport.png",
+        "full": "qa-create-home-artifacts/screenshots/iphone-16-create-home-full.png",
+        "aiPreview": "qa-create-home-artifacts/screenshots/iphone-16-create-home-ai-preview.jpg",
+        "persona": "qa-create-home-artifacts/screenshots/iphone-16-create-home-persona.png",
+        "importModal": "qa-create-home-artifacts/screenshots/iphone-16-create-home-import-modal.png"
+      },
+      "createLayoutInitial": {
+        "document": {
+          "scrollWidth": 393,
+          "scrollHeight": 1369,
+          "clientWidth": 393,
+          "clientHeight": 852,
+          "horizontalOverflow": false
+        },
+        "sections": {
+          "hero": {
+            "top": 0,
+            "bottom": 375,
+            "height": 375,
+            "width": 393
+          },
+          "topic": {
+            "top": 383,
+            "bottom": 615,
+            "height": 232,
+            "width": 359
+          },
+          "choices": {
+            "top": 625,
+            "bottom": 771,
+            "height": 146,
+            "width": 359
+          },
+          "persona": {
+            "top": 781,
+            "bottom": 1016,
+            "height": 235,
+            "width": 359
+          },
+          "actions": {
+            "top": 1027,
+            "bottom": 1250,
+            "height": 223,
+            "width": 359
+          },
+          "footer": {
+            "top": 1264,
+            "bottom": 1288,
+            "height": 24,
+            "width": 359
+          },
+          "otherModes": {
+            "top": 1301,
+            "bottom": 1341,
+            "height": 40,
+            "width": 222
+          }
+        }
+      },
+      "createLayoutFilled": {
+        "document": {
+          "scrollWidth": 393,
+          "scrollHeight": 1369,
+          "clientWidth": 393,
+          "clientHeight": 852,
+          "horizontalOverflow": false
+        },
+        "sections": {
+          "hero": {
+            "top": 0,
+            "bottom": 375,
+            "height": 375,
+            "width": 393
+          },
+          "topic": {
+            "top": 383,
+            "bottom": 615,
+            "height": 232,
+            "width": 359
+          },
+          "choices": {
+            "top": 625,
+            "bottom": 771,
+            "height": 146,
+            "width": 359
+          },
+          "persona": {
+            "top": 781,
+            "bottom": 1016,
+            "height": 235,
+            "width": 359
+          },
+          "actions": {
+            "top": 1027,
+            "bottom": 1250,
+            "height": 223,
+            "width": 359
+          },
+          "footer": {
+            "top": 1264,
+            "bottom": 1288,
+            "height": 24,
+            "width": 359
+          },
+          "otherModes": {
+            "top": 1301,
+            "bottom": 1341,
+            "height": 40,
+            "width": 222
+          }
+        }
+      },
+      "failure": null,
+      "document": {
+        "scrollWidth": 393,
+        "scrollHeight": 852,
+        "clientWidth": 393,
+        "clientHeight": 852,
+        "horizontalOverflow": false
+      },
+      "url": "http://127.0.0.1:3000/",
+      "pageTitle": "MEMORA Sentences"
+    }
+  ]
+}

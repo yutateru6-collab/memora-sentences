@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-08-24T18:25:07.265Z",
+  "files": [
+    {
+      "source": "desktop-1440x900-create-home-full.png",
+      "image": "vision/desktop-create-home-full-mini.jpg",
+      "base64": "vision/desktop-create-home-full-mini.jpg.b64",
+      "width": 260,
+      "height": 278,
+      "byteLength": 3200,
+      "sha256": "dbedee288558762f7d727c6a1a55893f089d5576116d3614b1034f8c4c12968c",
+      "base64LineLength": 4096,
+      "base64LineCount": 2
+    },
+    {
+      "source": "iphone-16-create-home-full.png",
+      "image": "vision/iphone-create-home-full-mini.jpg",
+      "base64": "vision/iphone-create-home-full-mini.jpg.b64",
+      "width": 180,
+      "height": 627,
+      "byteLength": 7034,
+      "sha256": "07a11294e882dd8a6d5c72b87e1f6fa43409fe2687dfcb2fa692b3a20592e49e",
+      "base64LineLength": 4096,
+      "base64LineCount": 3
+    },
+    {
+      "source": "iphone-16-create-home-persona.png",
+      "image": "vision/iphone-create-home-persona-mini.jpg",
+      "base64": "vision/iphone-create-home-persona-mini.jpg.b64",
+      "width": 320,
+      "height": 209,
+      "byteLength": 5109,
+      "sha256": "e9593c2407c956adeaef31f20c67604eb2dd6ede8fc089535f44a59bcf04aee9",
+      "base64LineLength": 4096,
+      "base64LineCount": 2
+    }
+  ]
+}
