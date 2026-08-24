@@ -1,0 +1,47 @@
+/* Keep the star/dinosaur hero decorative without replacing semantic copy via generated content. */
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child h2 {
+  font-size: 1.35rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.015em;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child h2::before {
+  content: "✦";
+  margin-right: 0.45rem;
+  color: var(--sd-star);
+  font-size: 1rem;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child h2::after {
+  content: none !important;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child p {
+  margin-top: 0.65rem !important;
+  max-width: 29rem;
+  font-size: 0.88rem !important;
+  line-height: 1.75;
+  color: var(--sd-muted) !important;
+}
+
+main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child p::after {
+  content: none !important;
+}
+
+@media (max-width: 640px) {
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:first-child h2 {
+    font-size: 1.18rem !important;
+  }
+
+  main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+    > div > div > div:first-child p {
+    font-size: 0.76rem !important;
+    line-height: 1.65;
+  }
+}
