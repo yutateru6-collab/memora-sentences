@@ -306,7 +306,7 @@ ${mnemonicRules}
 
           <img
             className="create-home__hero-dino"
-            src="/mascots/06_紫_ノートを書くステゴサウルス.png"
+            src="/mascots/06_%E7%B4%AB_%E3%83%8E%E3%83%BC%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F%E3%82%B9%E3%83%86%E3%82%B4%E3%82%B5%E3%82%A6%E3%83%AB%E3%82%B9.png"
             alt="紫色の恐竜マスコット"
             draggable={false}
             loading="eager"
@@ -372,7 +372,7 @@ ${mnemonicRules}
 
           <div className="create-home__persona-summary">
             <div className="create-home__persona-avatar">
-              <img src="/mascots/06_紫_ノートを書くステゴサウルス.png" alt="" aria-hidden="true" draggable={false} />
+              <img src="/mascots/06_%E7%B4%AB_%E3%83%8E%E3%83%BC%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F%E3%82%B9%E3%83%86%E3%82%B4%E3%82%B5%E3%82%A6%E3%83%AB%E3%82%B9.png" alt="" aria-hidden="true" draggable={false} />
             </div>
             <div className="create-home__persona-copy">
               <p><span className="create-home__pill">役割</span> {role}</p>
