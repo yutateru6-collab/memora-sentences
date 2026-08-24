@@ -60,17 +60,6 @@ jobs:
           QA_COMMIT_SHA: ${{ github.sha }}
           QA_RUN_ID: ${{ github.run_id }}
 
-      - name: Upload creation-screen evidence (optional)
-        if: always()
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-create-${{ github.run_id }}
-          path: qa-create-artifacts/
-          if-no-files-found: warn
-          retention-days: 2
-          compression-level: 6
-
       - name: Publish latest creation-screen evidence
         if: always()
         run: |
