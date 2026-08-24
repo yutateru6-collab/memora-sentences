@@ -1,4 +1,4 @@
-name: Apply Create Home Redesign
+name: Verify Create Home Redesign
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  apply-and-verify:
+  verify-and-publish:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -25,12 +25,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Apply guarded App patch
-        run: node tools/apply-create-home-redesign.mjs
-
-      - name: Validate patch whitespace
-        run: git diff --check
 
       - name: Install dependencies
         run: npm install
@@ -70,30 +64,34 @@ jobs:
           QA_COMMIT_SHA: ${{ github.sha }}
           QA_RUN_ID: ${{ github.run_id }}
 
-      - name: Upload create-home QA evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: create-home-redesign-qa
-          path: qa-create-home-artifacts/
-          if-no-files-found: warn
-          retention-days: 7
-
-      - name: Commit verified App integration
-        if: steps.create_home_qa.outcome == 'success'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add App.tsx
-          git commit -m "Make redesigned create screen the app home"
-          git push origin HEAD:agent/create-home-redesign
-
       - name: Stop Vite
         if: always()
         run: |
           if [ -f /tmp/memora-create-home-vite.pid ]; then
             kill "$(cat /tmp/memora-create-home-vite.pid)" >/dev/null 2>&1 || true
           fi
+
+      - name: Publish latest create-home evidence
+        if: always()
+        run: |
+          if [ ! -d qa-create-home-artifacts ]; then
+            echo "qa-create-home-artifacts is missing"
+            exit 1
+          fi
+
+          rm -rf /tmp/qa-create-home-latest
+          mkdir -p /tmp/qa-create-home-latest
+          cp -R qa-create-home-artifacts/. /tmp/qa-create-home-latest/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan qa-create-home-latest-temp
+          git rm -rf . >/dev/null 2>&1 || true
+          git clean -fdx >/dev/null 2>&1 || true
+          cp -R /tmp/qa-create-home-latest/. .
+          git add report.json screenshots/
+          git commit -m "Update create-home QA evidence"
+          git push --force origin HEAD:qa-create-home-latest
 
       - name: Fail when create-home QA failed
         if: steps.create_home_qa.outcome != 'success'
