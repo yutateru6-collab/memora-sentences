@@ -1,4 +1,4 @@
-# Compact visual handoff v4
+# Compact visual handoff v5
 name: Verify Create Home Redesign
 
 on:
@@ -31,6 +31,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Isolate create-home mascot from legacy CSS selectors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('components/CreateHomeScreen.tsx')
+          text = path.read_text()
+          old = '/mascots/06_紫_ノートを書くステゴサウルス.png'
+          new = '/mascots/06_%E7%B4%AB_%E3%83%8E%E3%83%BC%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F%E3%82%B9%E3%83%86%E3%82%B4%E3%82%B5%E3%82%A6%E3%83%AB%E3%82%B9.png'
+          if old in text:
+              path.write_text(text.replace(old, new))
+              print('Rewrote mascot path to avoid legacy :has() selectors')
+          else:
+              print('Mascot path already isolated')
+          PY
 
       - name: Install dependencies
         run: npm install
@@ -73,6 +88,19 @@ jobs:
       - name: Prepare AI vision handoff
         if: always()
         run: node tools/build-create-home-vision.mjs
+
+      - name: Persist verified mascot collision fix
+        if: steps.create_home_qa.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- components/CreateHomeScreen.tsx; then
+            git add components/CreateHomeScreen.tsx
+            git commit -m "Isolate create home mascot from legacy styles"
+            git push origin HEAD:agent/create-home-redesign
+          else
+            echo "No mascot-path change to persist"
+          fi
 
       - name: Stop Vite
         if: always()
