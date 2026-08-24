@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-08-24T07:30:06.439Z",
+  "repository": "YutaTeru/memora-sentences",
+  "commitSha": "544e3554951b4eefe56802d941bf86b5a670d2aa",
+  "workflowRunId": "32701694173",
+  "baseUrl": "http://127.0.0.1:3000",
+  "status": "failure",
+  "results": [
+    {
+      "target": "desktop-1440x900",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "status": "failure",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "actions": [
+        "open-library",
+        "open-prompt-library"
+      ],
+      "checks": {},
+      "screenshots": {
+        "failure": "qa-create-artifacts/screenshots/desktop-1440x900-failure.png"
+      },
+      "failure": "Error: locator.waitFor: Error: strict mode violation: getByRole('heading', { name: '教材をつくる' }) resolved to 2 elements:\n    1) <h1 class=\"text-xl font-bold text-white\">教材をつくる</h1> aka getByRole('heading', { name: '教材をつくる', exact: true })\n    2) <h2 class=\"text-xl font-bold text-white\">作成モードを選ぶ</h2> aka getByRole('heading', { name: '✦作成モードを選ぶ教材をつくる' })\n\nCall log:\n  - waiting for getByRole('heading', { name: '教材をつくる' }) to be visible\n"
+    },
+    {
+      "target": "iphone-16",
+      "viewport": {
+        "width": 393,
+        "height": 852
+      },
+      "deviceScaleFactor": 3,
+      "status": "failure",
+      "consoleErrors": [],
+      "pageErrors": [],
+      "actions": [
+        "open-library",
+        "open-prompt-library"
+      ],
+      "checks": {},
+      "screenshots": {
+        "failure": "qa-create-artifacts/screenshots/iphone-16-failure.png"
+      },
+      "failure": "Error: locator.waitFor: Error: strict mode violation: getByRole('heading', { name: '教材をつくる' }) resolved to 2 elements:\n    1) <h1 class=\"text-xl font-bold text-white\">教材をつくる</h1> aka getByRole('heading', { name: '教材をつくる', exact: true })\n    2) <h2 class=\"text-xl font-bold text-white\">作成モードを選ぶ</h2> aka getByRole('heading', { name: '✦作成モードを選ぶ教材をつくる' })\n\nCall log:\n  - waiting for getByRole('heading', { name: '教材をつくる' }) to be visible\n"
+    }
+  ]
+}
