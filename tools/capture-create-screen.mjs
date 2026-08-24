@@ -152,7 +152,7 @@ for (const target of targets) {
 await browser.close();
 
 const status = results.every(result => result.status === 'success') ? 'success' : 'failure';
-await fs.writeFile(reportPath, JSON.stringify({
+const report = {
   generatedAt: new Date().toISOString(),
   repository: process.env.QA_REPOSITORY || null,
   commitSha: process.env.QA_COMMIT_SHA || null,
@@ -160,7 +160,9 @@ await fs.writeFile(reportPath, JSON.stringify({
   baseUrl,
   status,
   results,
-}, null, 2));
+};
 
+await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
 console.log(`Saved ${reportPath} with status=${status}`);
+console.log(`QA_CREATE_REPORT=${JSON.stringify(report)}`);
 if (status !== 'success') process.exitCode = 1;
