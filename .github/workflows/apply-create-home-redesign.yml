@@ -64,6 +64,10 @@ jobs:
           QA_COMMIT_SHA: ${{ github.sha }}
           QA_RUN_ID: ${{ github.run_id }}
 
+      - name: Prepare AI vision handoff
+        if: always()
+        run: node tools/build-create-home-vision.mjs
+
       - name: Stop Vite
         if: always()
         run: |
@@ -89,7 +93,7 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-create-home-latest/. .
-          git add report.json screenshots/
+          git add report.json screenshots/ vision/
           git commit -m "Update create-home QA evidence"
           git push --force origin HEAD:qa-create-home-latest
 
