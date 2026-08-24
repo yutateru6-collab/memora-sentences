@@ -33,6 +33,34 @@ main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
   content: none !important;
 }
 
+/* The light theme keeps the same star/dino language but uses a dawn-like surface,
+ * so the app's existing dark text tokens remain readable. */
+body.bg-gray-50 main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:first-child {
+  background:
+    radial-gradient(circle at 80% 18%, rgba(217, 119, 6, 0.08), transparent 22%),
+    radial-gradient(circle at 88% 68%, rgba(139, 92, 246, 0.11), transparent 34%),
+    linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,243,255,0.94)) !important;
+  box-shadow: 0 22px 52px rgba(99, 102, 241, 0.10), inset 0 1px 0 rgba(255,255,255,0.86) !important;
+}
+
+body.bg-gray-50 main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(4) {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(217, 119, 6, 0.05), transparent 22%),
+    linear-gradient(145deg, rgba(124, 58, 237, 0.055), rgba(255,255,255,0.82)) !important;
+}
+
+body.bg-gray-50 main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  .space-y-4.my-4 > div:nth-child(4) > div:not(:first-child) {
+  background: rgba(99, 102, 241, 0.035) !important;
+}
+
+body.bg-gray-50 main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
+  > div > div > div:last-child > :first-child > div:nth-child(2) > div > div > .flex.items-center.gap-2 > :nth-child(1)::before {
+  color: #374151;
+}
+
 @media (max-width: 640px) {
   main:has(img[src*="06_紫_ノートを書くステゴサウルス.png"])
     > div > div > div:first-child h2 {
