@@ -1,13 +1,8 @@
 name: Build MEMORA Sentences
 
 on:
-  push:
-    branches:
-      - main
-      - agent/standalone-refresh
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:

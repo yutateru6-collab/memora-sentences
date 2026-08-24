@@ -2,11 +2,7 @@ name: QA Screenshots
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-  schedule:
-    # Every day at 03:00 JST (18:00 UTC)
-    - cron: '0 18 * * *'
+  workflow_call:
 
 permissions:
   contents: write
@@ -127,8 +123,6 @@ jobs:
           }
           EOF
 
-          # Stop Vite before switching branches so it cannot recreate .vite files
-          # while qa-latest is being assembled.
           if [ -f /tmp/memora-vite.pid ]; then
             kill "$(cat /tmp/memora-vite.pid)" >/dev/null 2>&1 || true
           fi
@@ -141,8 +135,6 @@ jobs:
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
 
-          # Stage only the latest QA evidence; force-pushing this orphan branch
-          # keeps one rotating copy instead of accumulating Actions artifacts.
           git add latest.json
           if [ -f report.json ]; then
             git add report.json
