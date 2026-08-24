@@ -10,20 +10,20 @@ const miniSources = [
   {
     source: 'desktop-1440x900-create-home-full.png',
     output: 'desktop-create-home-full-mini.jpg',
-    width: 480,
-    quality: 38,
+    width: 260,
+    quality: 20,
   },
   {
     source: 'iphone-16-create-home-full.png',
     output: 'iphone-create-home-full-mini.jpg',
-    width: 280,
-    quality: 38,
+    width: 180,
+    quality: 20,
   },
   {
     source: 'iphone-16-create-home-persona.png',
     output: 'iphone-create-home-persona-mini.jpg',
-    width: 360,
-    quality: 48,
+    width: 320,
+    quality: 36,
   },
 ];
 
@@ -36,8 +36,7 @@ try {
     const inputPath = `${screenshotsDir}/${item.source}`;
     try {
       const bytes = await fs.readFile(inputPath);
-      const mime = item.source.endsWith('.png') ? 'image/png' : 'image/jpeg';
-      const dataUrl = `data:${mime};base64,${bytes.toString('base64')}`;
+      const dataUrl = `data:image/png;base64,${bytes.toString('base64')}`;
       const page = await browser.newPage({ viewport: { width: item.width, height: 300 }, deviceScaleFactor: 1 });
       await page.setContent(`<!doctype html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;background:#070d25;width:100%;}img{display:block;width:${item.width}px;height:auto}</style></head><body><img id="shot" src="${dataUrl}" alt=""></body></html>`, { waitUntil: 'load' });
       const height = await page.$eval('#shot', img => Math.max(1, Math.round(img.getBoundingClientRect().height)));
