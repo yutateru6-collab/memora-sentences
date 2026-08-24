@@ -13,11 +13,12 @@ import BoardScreen from './components/BoardScreen';
 import AmazonScreen from './components/AmazonScreen';
 import { SnsScreen } from './components/SnsScreen'; // Import SnsScreen
 import { PromptLibraryScreen, PromptPersonaSelection } from './components/PromptLibraryScreen';
+import CreateHomeScreen from './components/CreateHomeScreen';
 import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
 
-type View = 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
+type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
 export interface Theme {
   name: string;
@@ -116,7 +117,7 @@ const themes: Themes = {
 };
 
 const App: React.FC = () => {
-  const [view, setView] = useState<View>('upload');
+  const [view, setView] = useState<View>('create');
   const [openPasteJsonMode, setOpenPasteJsonMode] = useState(false);
   const [pendingPromptPersonas, setPendingPromptPersonas] = useState<PromptPersonaSelection[] | null>(null);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -969,6 +970,17 @@ const App: React.FC = () => {
 
   return (
     <div className={`min-h-screen ${T.bg} flex flex-col font-sans text-base transition-colors duration-300 relative`}>
+      {view === 'create' && (
+        <CreateHomeScreen
+          onOpenLibrary={() => setView('upload')}
+          onOpenOtherModes={() => setView('promptLibrary')}
+          onNavigateToPasteJSON={(personas) => {
+            setPendingPromptPersonas(personas);
+            setOpenPasteJsonMode(true);
+            setView('upload');
+          }}
+        />
+      )}
       {view === 'upload' && (
         <UploadScreen 
           onLoad={handleLoad} 
@@ -1123,7 +1135,7 @@ const App: React.FC = () => {
       )}
       {view === 'promptLibrary' && (
           <PromptLibraryScreen 
-            onBack={() => setView('upload')}
+            onBack={() => setView('create')}
             onNavigateToPasteJSON={(personas) => {
                 setPendingPromptPersonas(personas);
                 setOpenPasteJsonMode(true);
