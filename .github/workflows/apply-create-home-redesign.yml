@@ -1,0 +1,100 @@
+name: Apply Create Home Redesign
+
+on:
+  push:
+    branches:
+      - agent/create-home-redesign
+    paths:
+      - .github/workflows/apply-create-home-redesign.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/create-home-redesign
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply guarded App patch
+        run: node tools/apply-create-home-redesign.mjs
+
+      - name: Validate patch whitespace
+        run: git diff --check
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Verify production build
+        run: npm run build
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      - name: Start Vite app
+        run: |
+          npm run dev > /tmp/memora-create-home-vite.log 2>&1 &
+          echo $! > /tmp/memora-create-home-vite.pid
+
+      - name: Wait for app
+        run: |
+          for i in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3000 > /dev/null; then
+              echo "App is ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/memora-create-home-vite.log || true
+          exit 1
+
+      - name: Run create-home QA
+        id: create_home_qa
+        continue-on-error: true
+        run: node tools/capture-create-home.mjs
+        env:
+          APP_URL: http://127.0.0.1:3000
+          QA_REPOSITORY: ${{ github.repository }}
+          QA_COMMIT_SHA: ${{ github.sha }}
+          QA_RUN_ID: ${{ github.run_id }}
+
+      - name: Upload create-home QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-home-redesign-qa
+          path: qa-create-home-artifacts/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Commit verified App integration
+        if: steps.create_home_qa.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add App.tsx
+          git commit -m "Make redesigned create screen the app home"
+          git push origin HEAD:agent/create-home-redesign
+
+      - name: Stop Vite
+        if: always()
+        run: |
+          if [ -f /tmp/memora-create-home-vite.pid ]; then
+            kill "$(cat /tmp/memora-create-home-vite.pid)" >/dev/null 2>&1 || true
+          fi
+
+      - name: Fail when create-home QA failed
+        if: steps.create_home_qa.outcome != 'success'
+        run: exit 1
