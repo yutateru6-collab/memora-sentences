@@ -70,7 +70,7 @@ for (const target of targets) {
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.getByRole('heading', { name: 'Library' }).waitFor({ state: 'visible', timeout: 30_000 });
+    await page.getByRole('heading', { name: 'Library', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
     result.actions.push('open-library');
 
     const createButton = page.getByRole('button', { name: /長文をつくる/ }).first();
@@ -78,7 +78,7 @@ for (const target of targets) {
     await createButton.click();
     result.actions.push('open-prompt-library');
 
-    await page.getByRole('heading', { name: '教材をつくる' }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByRole('heading', { name: '教材をつくる', exact: true }).first().waitFor({ state: 'visible', timeout: 10_000 });
 
     const longReading = page.getByRole('button').filter({ hasText: '好きな内容の長文' }).first();
     await longReading.waitFor({ state: 'visible', timeout: 10_000 });
