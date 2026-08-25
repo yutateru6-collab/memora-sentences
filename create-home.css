@@ -104,12 +104,12 @@ body:has(.create-home)::-webkit-scrollbar {
   top: auto;
   bottom: -1%;
   right: 0;
-  width: 70%;
+  width: 74%;
   height: 74%;
   object-fit: cover;
   object-position: 50% 46%;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.58) 17%, #000 39%);
-  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.58) 17%, #000 39%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.7) 12%, #000 30%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.7) 12%, #000 30%);
   user-select: none;
 }
 
@@ -121,7 +121,7 @@ body:has(.create-home)::-webkit-scrollbar {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(4, 10, 36, 0.18) 0%, rgba(4, 10, 36, 0) 28%, rgba(4, 10, 36, 0.16) 100%),
-    linear-gradient(90deg, rgba(4, 10, 36, 0.97) 0%, rgba(7, 15, 49, 0.82) 40%, rgba(7, 15, 49, 0.04) 76%);
+    linear-gradient(90deg, rgba(4, 10, 36, 0.95) 0%, rgba(7, 15, 49, 0.7) 36%, rgba(7, 15, 49, 0.03) 72%);
 }
 
 .create-home__hero-copy {
@@ -164,7 +164,7 @@ body:has(.create-home)::-webkit-scrollbar {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  font-size: clamp(40px, 11.5vw, 56px);
+  font-size: clamp(36px, 10.4vw, 50px);
   font-weight: 800;
   line-height: 0.92;
   letter-spacing: 0.01em;
@@ -193,7 +193,7 @@ body:has(.create-home)::-webkit-scrollbar {
   max-width: 64%;
   margin: auto 0 0;
   color: #fffaff;
-  font-size: clamp(22px, 6.4vw, 29px);
+  font-size: clamp(20px, 5.7vw, 25px);
   font-weight: 800;
   line-height: 1.5;
   letter-spacing: 0.01em;
@@ -787,7 +787,7 @@ body:has(.create-home)::-webkit-scrollbar {
 
   .create-home__brand-name {
     margin-top: 8px;
-    font-size: 68px;
+    font-size: 60px;
   }
 
   .create-home__brand-tagline {
@@ -798,7 +798,7 @@ body:has(.create-home)::-webkit-scrollbar {
 
   .create-home__hero-description {
     max-width: 55%;
-    font-size: 35px;
+    font-size: 31px;
     line-height: 1.4;
   }
 
@@ -988,12 +988,12 @@ body:has(.create-home)::-webkit-scrollbar {
 @media (max-width: 360px) {
   .create-home__hero-description {
     max-width: 68%;
-    font-size: 21px;
+    font-size: 19px;
     line-height: 1.48;
   }
 
   .create-home__brand-name {
-    font-size: 39px;
+    font-size: 36px;
   }
 
   .create-home__brand-tagline {
