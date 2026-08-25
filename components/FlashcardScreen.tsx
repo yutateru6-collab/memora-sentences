@@ -28,6 +28,7 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
   const [fontFamily, setFontFamily] = useState("'system-ui', sans-serif");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [isSessionComplete, setIsSessionComplete] = useState(false);
   const settingsContainerRef = useRef<HTMLDivElement>(null);
   
   const fontOptions = {
@@ -78,10 +79,16 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
       if (currentIndex < cards.length - 1) {
           setCurrentIndex(prev => prev + 1);
       } else {
-          alert("セッション完了！お疲れ様でした！");
-          onBack();
+          setIsSessionComplete(true);
       }
-  }, [currentCard, currentIndex, cards.length, onSaveCardStats, onBack]);
+  }, [currentCard, currentIndex, cards.length, onSaveCardStats]);
+
+  const handleRestartSession = () => {
+      setCurrentIndex(0);
+      setFaceIndex(0);
+      setShowAnswer(false);
+      setIsSessionComplete(false);
+  };
 
   // Legacy navigation for decks without SRS or manual browsing
   const handleNextCard = useCallback(() => {
@@ -146,7 +153,7 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
   }
 
   return (
-    <div className={`flex flex-col h-screen max-h-screen overflow-hidden ${T.bg}`}>
+    <div className={`memora-flashcard-screen flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg}`}>
       {/* Progress Bar */}
       <div className="w-full h-1 bg-gray-800">
           <div 
@@ -155,13 +162,16 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
           />
       </div>
 
-      <header className={`flex-shrink-0 flex items-center justify-between p-3 ${T.containerBg} shadow-md z-10`}>
+      <header className={`memora-flashcard-header flex-shrink-0 flex items-center justify-between p-3 ${T.containerBg} shadow-md z-10`}>
         <div className="flex items-center gap-2">
-            <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
+            <button onClick={onBack} aria-label="戻る" className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
               &larr; 戻る
             </button>
         </div>
-        <h1 className={`text-xl font-bold ${T.textPrimary}`}>{deckName}</h1>
+        <div className="memora-flashcard-header__title">
+          <span>MEMORIZE</span>
+          <h1 className={T.textPrimary}>{deckName}</h1>
+        </div>
         <div className="flex justify-end items-center gap-2">
             {materialId > 0 && (
                 <button 
@@ -200,10 +210,10 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
         </div>
       </header>
 
-      <main className={`flex-grow flex flex-col items-center justify-center p-4 relative ${T.containerBg}`}>
+      <main className={`memora-flashcard-main flex-grow flex flex-col items-center justify-center p-4 relative ${T.containerBg}`}>
         {/* Main Card Content */}
         <div className="w-full max-w-3xl flex flex-col items-center justify-center relative flex-grow">
-            <img
+            {!isSessionComplete && <img
                 src="/memora-world/memorize-v1.webp"
                 alt=""
                 aria-hidden="true"
@@ -211,18 +221,19 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
                 decoding="async"
                 draggable={false}
                 className="absolute top-0 right-0 w-14 sm:w-20 max-h-20 object-contain drop-shadow-lg select-none pointer-events-none z-[1]"
-            />
-            <div className={`absolute top-0 left-0 text-sm ${T.textMuted} font-mono`}>
-                ID {currentCard.id} 
+            />}
+            <div className={`memora-flashcard-status absolute top-0 left-0 text-sm ${T.textMuted}`}>
+                <span>{currentIndex + 1} / {cards.length}</span>
                 {currentCard.srsState && (
-                    <span className="ml-2 text-xs bg-gray-700 px-1 rounded">
-                        Next: {new Date(currentCard.srsState.dueDate).toLocaleDateString()}
+                    <span>
+                        次の復習：{new Date(currentCard.srsState.dueDate).toLocaleDateString('ja-JP')}
                     </span>
                 )}
+                {!currentCard.srsState && <span>新しいカード</span>}
             </div>
             
             <div 
-                className={`w-full max-w-3xl h-80 sm:h-96 rounded-xl shadow-2xl flex flex-col items-center justify-center p-8 border ${T.border} cursor-pointer overflow-hidden transition-all duration-300 ${isBack ? T.highlightBg : T.panelBg}`}
+                className={`memora-flashcard-card w-full max-w-3xl h-80 sm:h-96 rounded-xl shadow-2xl flex flex-col items-center justify-center p-8 border ${T.border} cursor-pointer overflow-hidden transition-all duration-300 ${isBack ? `${T.highlightBg} is-back` : T.panelBg}`}
                 onClick={handleCardClick}
             >
                  <div className="text-4xl sm:text-5xl font-bold text-center overflow-y-auto max-h-full w-full flex-grow flex items-center justify-center" style={{ fontSize: `${fontSize}%`, fontFamily: fontFamily }}>
@@ -244,21 +255,21 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
         <div className="w-full max-w-3xl flex flex-col items-center mt-6 h-24 justify-end">
             {showAnswer ? (
                  /* SRS Buttons */
-                <div className="grid grid-cols-4 gap-2 w-full animate-fade-in">
+                <div className="memora-grade-grid grid grid-cols-2 sm:grid-cols-4 gap-2 w-full animate-fade-in">
                     <button onClick={() => handleGrade('again')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500 text-red-200 transition-colors">
-                        <span className="font-bold">やり直し</span>
+                        <span className="font-bold">もう一度</span>
                         <span className="text-xs opacity-70">{getNextReviewText('again', currentCard.srsState)}</span>
                     </button>
                     <button onClick={() => handleGrade('hard')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500 text-orange-200 transition-colors">
-                        <span className="font-bold">難しい</span>
+                        <span className="font-bold">むずかしい</span>
                          <span className="text-xs opacity-70">{getNextReviewText('hard', currentCard.srsState)}</span>
                     </button>
                     <button onClick={() => handleGrade('good')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500 text-green-200 transition-colors">
-                        <span className="font-bold">普通</span>
+                        <span className="font-bold">できた</span>
                          <span className="text-xs opacity-70">{getNextReviewText('good', currentCard.srsState)}</span>
                     </button>
                     <button onClick={() => handleGrade('easy')} className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500 text-blue-200 transition-colors">
-                        <span className="font-bold">簡単</span>
+                        <span className="font-bold">かんたん</span>
                          <span className="text-xs opacity-70">{getNextReviewText('easy', currentCard.srsState)}</span>
                     </button>
                 </div>
@@ -273,6 +284,21 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
             )}
         </div>
       </main>
+
+      {isSessionComplete && (
+        <div className="memora-flashcard-complete" role="dialog" aria-modal="true" aria-labelledby="review-complete-title">
+          <div className="memora-flashcard-complete__card">
+            <img src="/memora-world/memorize-v1.webp" alt="" aria-hidden="true" draggable={false} />
+            <p>MEMORIZE COMPLETE</p>
+            <h2 id="review-complete-title">今日の復習、おわり！</h2>
+            <span>{cards.length}枚クリアしました</span>
+            <div>
+              <button type="button" onClick={handleRestartSession}>もう一度</button>
+              <button type="button" className="is-primary" onClick={onBack}>ライブラリへ</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
