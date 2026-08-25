@@ -80,6 +80,7 @@ body:has(.create-home)::-webkit-scrollbar {
   position: relative;
   z-index: 1;
   width: min(100%, 432px);
+  min-height: 0;
   margin: 0 auto;
   padding: 0 17px max(18px, env(safe-area-inset-bottom));
 }
@@ -206,6 +207,7 @@ body:has(.create-home)::-webkit-scrollbar {
 .create-home__topic-card {
   display: grid;
   gap: 6px;
+  min-height: 0;
   margin-top: 0;
   padding: 9px 11px;
   border-radius: 16px;
@@ -351,6 +353,7 @@ body:has(.create-home)::-webkit-scrollbar {
 }
 
 .create-home__persona-card {
+  min-height: 0;
   margin-top: 7px;
   padding: 8px 10px;
   border-radius: 16px;
@@ -493,6 +496,46 @@ body:has(.create-home)::-webkit-scrollbar {
   display: grid;
   gap: 5px;
   margin-top: 7px;
+}
+
+@media (max-width: 699px) {
+  .create-home__content,
+  .create-home__topic-card,
+  .create-home__choice-grid,
+  .create-home__persona-card,
+  .create-home__actions {
+    height: auto;
+    max-height: none;
+  }
+
+  .create-home__topic-card,
+  .create-home__choice-grid,
+  .create-home__persona-card,
+  .create-home__actions {
+    position: relative;
+    clear: both;
+  }
+
+  /* iOS zooms focused fields below 16px and can leave the in-app browser's
+     visual viewport covering the following cards. Keep the focused viewport
+     stable so the keyword field flows directly into the choices below. */
+  .create-home input,
+  .create-home select {
+    font-size: 16px;
+  }
+
+  .create-home input {
+    min-height: 44px;
+  }
+
+  .create-home select {
+    min-height: 42px;
+    background-position: calc(100% - 14px) 18px, calc(100% - 10px) 18px;
+  }
+
+  .create-home__field--keyword {
+    scroll-margin-bottom: 18px;
+  }
 }
 
 .create-home__action {
