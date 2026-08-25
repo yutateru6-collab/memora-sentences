@@ -87,7 +87,8 @@ body:has(.create-home)::-webkit-scrollbar {
 
 .create-home__hero {
   position: relative;
-  min-height: 248px;
+  min-height: 340px;
+  height: min(88vw, 390px);
   margin: 0 -17px;
   overflow: hidden;
   isolation: isolate;
@@ -100,12 +101,13 @@ body:has(.create-home)::-webkit-scrollbar {
 .create-home__hero-art {
   position: absolute;
   z-index: 0;
-  top: 0;
+  top: auto;
+  bottom: -1%;
   right: 0;
-  width: 66%;
-  height: 100%;
+  width: 70%;
+  height: 74%;
   object-fit: cover;
-  object-position: 50% 48%;
+  object-position: 50% 46%;
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.58) 17%, #000 39%);
   mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.58) 17%, #000 39%);
   user-select: none;
@@ -117,35 +119,95 @@ body:has(.create-home)::-webkit-scrollbar {
   z-index: 1;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(4, 10, 36, 0.96) 0%, rgba(7, 15, 49, 0.82) 36%, rgba(7, 15, 49, 0.08) 72%);
+  background:
+    linear-gradient(180deg, rgba(4, 10, 36, 0.18) 0%, rgba(4, 10, 36, 0) 28%, rgba(4, 10, 36, 0.16) 100%),
+    linear-gradient(90deg, rgba(4, 10, 36, 0.97) 0%, rgba(7, 15, 49, 0.82) 40%, rgba(7, 15, 49, 0.04) 76%);
 }
 
 .create-home__hero-copy {
   position: absolute;
   z-index: 2;
   left: 7.5%;
-  top: 27%;
-  width: 55%;
+  top: 25px;
+  bottom: 25px;
+  width: 85%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
 }
 
 .create-home__hero h1 {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: 'Noto Sans JP', system-ui, sans-serif;
+}
+
+.create-home__brand-reading {
+  display: block;
+  margin-left: 2px;
   color: #fffaff;
-  font-family: 'RocknRoll One', 'Noto Sans JP', sans-serif;
-  font-size: clamp(26px, 6.6vw, 31px);
-  font-weight: 400;
-  line-height: 1.18;
-  letter-spacing: 0.04em;
-  text-shadow: 0 0 14px rgba(244, 205, 255, 0.35), 0 3px 18px rgba(2, 6, 23, 0.68);
+  font-size: clamp(13px, 3.8vw, 17px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 12px rgba(2, 6, 23, 0.72);
+}
+
+.create-home__brand-name {
+  display: block;
+  margin-top: 7px;
+  color: #f6b8dc;
+  background: linear-gradient(90deg, #ffc5d8 0%, #e98cdd 36%, #aa9cff 67%, #7bdcff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-size: clamp(40px, 11.5vw, 56px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 24px rgba(183, 139, 255, 0.16);
+}
+
+.create-home__brand-tagline {
+  display: inline-flex;
+  margin: 12px 0 0;
+  padding: 6px 12px 7px;
+  border: 1px solid rgba(226, 198, 255, 0.22);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(181, 73, 202, 0.9), rgba(118, 82, 218, 0.9));
+  color: #fffaff;
+  font-size: clamp(10px, 2.8vw, 13px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  box-shadow: 0 6px 18px rgba(76, 29, 149, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  text-shadow: 0 1px 7px rgba(45, 16, 78, 0.48);
 }
 
 .create-home__hero-description {
-  margin: 15px 0 0;
-  color: rgba(248, 244, 255, 0.94);
-  font-size: clamp(13px, 3.4vw, 16px);
-  font-weight: 650;
-  line-height: 1.65;
-  text-shadow: 0 2px 12px rgba(2, 6, 23, 0.72);
+  display: grid;
+  gap: 1px;
+  max-width: 64%;
+  margin: auto 0 0;
+  color: #fffaff;
+  font-size: clamp(22px, 6.4vw, 29px);
+  font-weight: 800;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-shadow: 0 3px 18px rgba(2, 6, 23, 0.84);
+}
+
+.create-home__hero-description span {
+  display: block;
+  white-space: nowrap;
+}
+
+.create-home__hero-description strong {
+  color: #ffe56d;
+  font-weight: 800;
 }
 
 .create-home__hero-helper {
@@ -714,19 +776,30 @@ body:has(.create-home)::-webkit-scrollbar {
     margin-left: -36px;
   }
 
-  .create-home__hero h1 {
-    font-size: 56px;
+  .create-home__hero-copy {
+    top: 34px;
+    bottom: 34px;
+  }
+
+  .create-home__brand-reading {
+    font-size: 20px;
+  }
+
+  .create-home__brand-name {
+    margin-top: 8px;
+    font-size: 68px;
+  }
+
+  .create-home__brand-tagline {
+    margin-top: 14px;
+    padding: 8px 18px 9px;
+    font-size: 15px;
   }
 
   .create-home__hero-description {
-    margin-top: 24px;
-    font-size: 19px;
-  }
-
-  .create-home__hero-helper {
-    max-width: 340px;
-    margin-top: 12px;
-    font-size: 12px;
+    max-width: 55%;
+    font-size: 35px;
+    line-height: 1.4;
   }
 
   .create-home__library-button {
@@ -913,18 +986,21 @@ body:has(.create-home)::-webkit-scrollbar {
 }
 
 @media (max-width: 360px) {
-  .create-home__hero h1 {
-    font-size: 24px;
-  }
-
   .create-home__hero-description {
-    margin-top: 10px;
-    font-size: 12px;
+    max-width: 68%;
+    font-size: 21px;
+    line-height: 1.48;
   }
 
-  .create-home__hero-helper {
-    max-width: 175px;
-    font-size: 8px;
+  .create-home__brand-name {
+    font-size: 39px;
+  }
+
+  .create-home__brand-tagline {
+    margin-top: 10px;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-size: 9px;
   }
 
   .create-home__persona-summary {

@@ -127,7 +127,7 @@ for (const target of targets) {
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-    await page.getByRole('heading', { name: '教材をつくる', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+    await page.getByRole('heading', { name: 'リードン READON', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
     await page.waitForTimeout(400);
     result.actions.push('open-create-home');
 
@@ -166,8 +166,10 @@ for (const target of targets) {
 
     const createBodyText = (await page.locator('body').innerText()).replace(/\s+/g, '');
     for (const text of [
-      '好きなテーマを、自分だけの英語教材に。',
-      '英語レベルや長さ、解説キャラも自由に選べます。',
+      'リードン',
+      'READON',
+      '好きからつくる、英語長文。',
+      '好きなテーマで自分だけの英語教材を作ろう！',
       '入れたいこと',
       '長文の長さ',
       '性格',

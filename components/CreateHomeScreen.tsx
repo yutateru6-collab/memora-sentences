@@ -302,12 +302,18 @@ ${mnemonicRules}
           </button>
 
           <div className="create-home__hero-copy">
-            <h1 id="create-home-title">教材をつくる</h1>
+            <div className="create-home__brand-lockup">
+              <h1 id="create-home-title" aria-label="リードン READON">
+                <span className="create-home__brand-reading">リードン</span>
+                <span className="create-home__brand-name">READON</span>
+              </h1>
+              <p className="create-home__brand-tagline">好きからつくる、英語長文。</p>
+            </div>
             <p className="create-home__hero-description">
-              好きなテーマを、<br />
-              自分だけの英語教材に。
+              <span>好きなテーマで</span>
+              <span>自分だけの</span>
+              <span><strong>英語教材</strong>を作ろう！</span>
             </p>
-            <p className="create-home__hero-helper">英語レベルや長さ、解説キャラも自由に選べます。</p>
           </div>
 
         </section>
