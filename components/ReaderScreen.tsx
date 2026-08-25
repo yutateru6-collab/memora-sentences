@@ -2294,6 +2294,9 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               }}
           />
           <div 
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${activeWordPopup.card.front} の単語情報`}
               className="hidden sm:block fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
               style={{ 
                   top: Math.round(activeWordPopup.position.top < 300 ? activeWordPopup.position.top + 30 : activeWordPopup.position.top - 10), 
