@@ -49,6 +49,162 @@
   --memora-accent-soft: rgba(69, 190, 139, 0.16);
 }
 
+.memora-reader-screen {
+  position: relative;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(58, 169, 134, 0.11), transparent 28%),
+    radial-gradient(circle at 88% 18%, rgba(95, 102, 220, 0.12), transparent 30%),
+    linear-gradient(165deg, rgba(3, 10, 31, 0.98), rgba(7, 18, 48, 0.98)) !important;
+}
+
+.memora-reader-screen::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 56px 0 0;
+  pointer-events: none;
+  opacity: 0.18;
+  background-image:
+    radial-gradient(circle, rgba(255, 230, 167, 0.9) 0 0.65px, transparent 1.1px),
+    radial-gradient(circle, rgba(219, 225, 255, 0.8) 0 0.5px, transparent 1px);
+  background-size: 101px 101px, 157px 157px;
+  background-position: 19px 11px, 64px 38px;
+}
+
+.memora-reader-screen > * {
+  position: relative;
+  z-index: 1;
+}
+
+.memora-reader-header {
+  background: rgba(5, 15, 42, 0.86) !important;
+  border-color: rgba(134, 226, 176, 0.18) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+}
+
+.memora-reader-document {
+  padding: 2px;
+}
+
+.memora-reader-guide {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 84px;
+  min-height: 96px;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 15px;
+  overflow: hidden;
+  border: 1px solid rgba(134, 226, 176, 0.2);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(48, 145, 111, 0.15), rgba(20, 31, 77, 0.58));
+  box-shadow: 0 14px 38px rgba(1, 7, 29, 0.22);
+}
+
+.memora-reader-guide > div {
+  min-width: 0;
+}
+
+.memora-reader-guide span,
+.memora-reader-complete > div > span {
+  display: block;
+  color: #8ee8b8;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.22em;
+}
+
+.memora-reader-guide strong {
+  display: block;
+  margin-top: 2px;
+  color: #fffaff;
+  font-size: 17px;
+}
+
+.memora-reader-guide small {
+  display: block;
+  margin-top: 5px;
+  color: #bdc9d8;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.memora-reader-guide img {
+  width: 84px;
+  height: 84px;
+  border-radius: 18px;
+  object-fit: cover;
+  object-position: center;
+  box-shadow: 0 8px 24px rgba(0, 8, 31, 0.35);
+}
+
+.memora-reader-sentence {
+  border: 1px solid rgba(191, 203, 232, 0.09);
+  background: linear-gradient(145deg, rgba(13, 25, 58, 0.72), rgba(17, 23, 62, 0.5));
+  box-shadow: 0 12px 32px rgba(1, 6, 25, 0.16);
+}
+
+.memora-reader-explanation {
+  border-color: rgba(134, 226, 176, 0.12) !important;
+  background: rgba(4, 13, 38, 0.48) !important;
+}
+
+.memora-reader-complete {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid rgba(134, 226, 176, 0.24);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(43, 153, 112, 0.18), rgba(31, 31, 93, 0.66));
+  box-shadow: 0 18px 46px rgba(1, 7, 29, 0.28);
+}
+
+.memora-reader-complete > img {
+  width: 148px;
+  height: 148px;
+  border-radius: 24px;
+  object-fit: cover;
+  box-shadow: 0 12px 30px rgba(0, 8, 31, 0.34);
+}
+
+.memora-reader-complete h2 {
+  margin: 4px 0 0;
+  color: #fffaff;
+  font-size: 22px;
+  font-weight: 820;
+}
+
+.memora-reader-complete p {
+  margin: 7px 0 0;
+  color: #c5cedd;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.memora-reader-complete > div > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.memora-reader-complete button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid rgba(196, 238, 216, 0.2);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #15795d, #3ab182);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.memora-reader-complete button + button {
+  background: rgba(255, 255, 255, 0.07);
+}
+
 .memora-world--memorize {
   --memora-accent: #8bd7ff;
   --memora-accent-strong: #1677b8;
@@ -413,6 +569,58 @@
   .memora-world::before {
     height: 155px;
     opacity: 0.12;
+  }
+
+  .memora-reader-scroll {
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+  }
+
+  .memora-reader-guide {
+    grid-template-columns: minmax(0, 1fr) 68px;
+    min-height: 82px;
+    padding: 10px 11px;
+  }
+
+  .memora-reader-guide strong {
+    font-size: 15px;
+  }
+
+  .memora-reader-guide img {
+    width: 68px;
+    height: 68px;
+    border-radius: 15px;
+  }
+
+  .memora-reader-sentence {
+    padding: 14px 12px !important;
+  }
+
+  .memora-reader-complete {
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 12px;
+    padding: 13px;
+    border-radius: 18px;
+  }
+
+  .memora-reader-complete > img {
+    width: 86px;
+    height: 86px;
+    border-radius: 18px;
+  }
+
+  .memora-reader-complete h2 {
+    font-size: 17px;
+  }
+
+  .memora-reader-complete p {
+    font-size: 10px;
+  }
+
+  .memora-reader-complete button {
+    min-height: 38px;
+    padding: 0 11px;
+    font-size: 11px;
   }
 
   .memora-library-screen {
