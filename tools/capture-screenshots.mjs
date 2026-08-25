@@ -122,7 +122,7 @@ for (const target of targets) {
     await page.waitForTimeout(400);
     result.actions.push('open-create-home');
 
-    const createBodyText = await page.locator('body').innerText();
+    const createBodyText = (await page.locator('body').innerText()).replace(/\s+/g, '');
     for (const text of [
       '好きなテーマを、自分だけの英語教材に。',
       '英語レベルや長さ、解説キャラも自由に選べます。',
@@ -133,7 +133,7 @@ for (const target of targets) {
       'できた教材を取り込む',
       '作成用の指示だけコピー',
     ]) {
-      if (!createBodyText.includes(text)) {
+      if (!createBodyText.includes(text.replace(/\s+/g, ''))) {
         throw new Error(`Create copy is missing: ${text}`);
       }
     }
