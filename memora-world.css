@@ -716,6 +716,8 @@
 }
 
 .memora-app-header__actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -831,6 +833,7 @@
 
 .memora-header-menu {
   position: absolute;
+  z-index: 3;
   top: calc(100% + 8px);
   right: 0;
   width: min(280px, calc(100vw - 32px));
