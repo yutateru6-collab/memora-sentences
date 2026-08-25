@@ -107,6 +107,7 @@ for (const target of targets) {
     deviceScaleFactor: target.context.deviceScaleFactor,
     status: 'failure',
     actions: [],
+    dialogs: [],
     consoleErrors: [],
     pageErrors: [],
     states: {},
@@ -119,6 +120,10 @@ for (const target of targets) {
     if (message.type() === 'error') result.consoleErrors.push(message.text());
   });
   page.on('pageerror', error => result.pageErrors.push(String(error)));
+  page.on('dialog', async dialog => {
+    result.dialogs.push({ type: dialog.type(), message: dialog.message() });
+    await dialog.dismiss();
+  });
 
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
@@ -266,6 +271,75 @@ for (const target of targets) {
       if (!(await page.getByText(menuItem, { exact: true }).isVisible())) throw new Error(`Library menu item is missing: ${menuItem}`);
     }
     result.actions.push('verify-library-menu');
+
+    await page.getByText('単語デッキ', { exact: true }).click();
+    await page.getByRole('heading', { name: '単語デッキ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    const deckCard = page.getByRole('article').filter({ hasText: sampleTitle }).first();
+    await deckCard.waitFor({ state: 'visible', timeout: 15_000 });
+    for (const actionName of ['カード一覧', '4択ゲーム', '単語を覚える', '本文を読む']) {
+      await deckCard.getByRole('button', { name: actionName, exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    }
+    result.actions.push('open-vocabulary-decks');
+    result.states.deckList = {
+      document: await assertNoOverflow(page, 'Vocabulary decks'),
+      mascot: await assertMascot(page, '/memora-world/memorize-v1.webp', 'Vocabulary decks'),
+    };
+    result.screenshots.deckList = await saveScreenshots(page, target, 'deck-list');
+
+    await deckCard.getByRole('button', { name: 'カード一覧', exact: true }).click();
+    await page.getByRole('heading', { name: '単語カード一覧', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    const cardListText = await page.locator('body').innerText();
+    if (/\bID\s+\d+/i.test(cardListText) || cardListText.includes('(No Content)')) {
+      throw new Error(`Card list contains developer-facing copy: ${cardListText}`);
+    }
+    result.actions.push('open-card-list');
+    result.states.cardListFront = {
+      document: await assertNoOverflow(page, 'Card list front'),
+      mascot: await assertMascot(page, '/memora-world/organize-v1.webp', 'Card list front'),
+    };
+    result.screenshots.cardListFront = await saveScreenshots(page, target, 'card-list-front');
+
+    await page.getByRole('button', { name: /originate：タップして次の面へ/ }).click();
+    await page.locator('img[src="/memora-world/organize-v2.webp"]').waitFor({ state: 'visible', timeout: 10_000 });
+    result.actions.push('flip-card-list-item');
+    result.states.cardListBack = {
+      document: await assertNoOverflow(page, 'Card list back'),
+      mascot: await assertMascot(page, '/memora-world/organize-v2.webp', 'Card list back'),
+    };
+    result.screenshots.cardListBack = await saveScreenshots(page, target, 'card-list-back');
+
+    await page.getByRole('button', { name: '戻る', exact: true }).click();
+    await page.getByRole('button', { name: '答えを表示', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    const flashcardText = await page.locator('body').innerText();
+    if (/\bID\s+\d+/i.test(flashcardText) || flashcardText.includes('Next:')) {
+      throw new Error(`Flashcard contains developer-facing copy: ${flashcardText}`);
+    }
+    result.actions.push('open-flashcard');
+    result.states.flashcardFront = {
+      document: await assertNoOverflow(page, 'Flashcard front'),
+      mascot: await assertMascot(page, '/memora-world/memorize-v1.webp', 'Flashcard front'),
+    };
+    result.screenshots.flashcardFront = await saveScreenshots(page, target, 'flashcard-front');
+
+    await page.getByRole('button', { name: '答えを表示', exact: true }).click();
+    for (const gradeName of ['もう一度', 'むずかしい', 'できた', 'かんたん']) {
+      await page.getByRole('button', { name: new RegExp(`^${gradeName}`) }).waitFor({ state: 'visible', timeout: 10_000 });
+    }
+    await page.getByRole('button', { name: /^できた/ }).click();
+    const completion = page.getByRole('dialog', { name: '今日の復習、おわり！' });
+    await completion.waitFor({ state: 'visible', timeout: 15_000 });
+    await completion.getByText('1枚クリアしました', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    if (result.dialogs.length > 0) throw new Error(`Unexpected browser dialog: ${JSON.stringify(result.dialogs)}`);
+    result.actions.push('complete-flashcard-session');
+    result.states.flashcardComplete = {
+      document: await assertNoOverflow(page, 'Flashcard complete'),
+      mascot: await assertMascot(page, '/memora-world/memorize-v1.webp', 'Flashcard complete'),
+    };
+    result.screenshots.flashcardComplete = await saveScreenshots(page, target, 'flashcard-complete');
+
+    await completion.getByRole('button', { name: 'もう一度', exact: true }).click();
+    await page.getByRole('button', { name: '答えを表示', exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    result.actions.push('restart-flashcard-session');
 
     if (result.consoleErrors.length) throw new Error(`Console errors: ${result.consoleErrors.join(' | ')}`);
     if (result.pageErrors.length) throw new Error(`Page errors: ${result.pageErrors.join(' | ')}`);
