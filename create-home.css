@@ -1031,8 +1031,8 @@ body:has(.create-home)::-webkit-scrollbar {
 .create-home__hero {
   min-height: 0;
   height: auto;
-  aspect-ratio: 1169 / 1013;
-  background: #050a26 url('/memora-world/readon-hero.jpeg') center / cover no-repeat;
+  aspect-ratio: 3 / 2;
+  background: #050a26 url('/memora-world/readon-hero-compact.webp') center / cover no-repeat;
 }
 
 .create-home__hero-art {
