@@ -489,7 +489,9 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
 
   // Fast direct lookup logic targeting registered cards
   const findRegisteredCard = useCallback((cleanTranscriptWord: string) => {
-      if (!showInlineNotes || cleanTranscriptWord.length <= 1 || precomputedRegisteredWords.length === 0) return undefined;
+      // Vocabulary cards are learning content, not user-created inline notes.
+      // Keep them tappable even when the user temporarily hides inline notes.
+      if (cleanTranscriptWord.length <= 1 || precomputedRegisteredWords.length === 0) return undefined;
       
       for (let i = 0; i < precomputedRegisteredWords.length; i++) {
           const { card, cardWords } = precomputedRegisteredWords[i];
@@ -506,7 +508,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
           if (cleanTranscriptWord.endsWith('ing') && cardWords.includes(cleanTranscriptWord.slice(0, -3))) return card;
       }
       return undefined;
-  }, [precomputedRegisteredWords, showInlineNotes]);
+  }, [precomputedRegisteredWords]);
 
   const cleanText = (text: string) => {
     if (!text) return '';
@@ -854,8 +856,16 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               return (
                   <span 
                       key={i} 
+                      role="button"
+                      tabIndex={0}
                       className="border-b border-dotted border-gray-400 cursor-help hover:text-sky-400 hover:border-sky-400 transition-colors"
                       onClick={(e) => handleGrammarTermClick(e, term)}
+                      onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              handleGrammarTermClick(e as unknown as React.MouseEvent<HTMLSpanElement>, term);
+                          }
+                      }}
                   >
                       {part}
                   </span>
@@ -1272,7 +1282,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   };
 
   return (
-    <div className={`flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
+    <div className={`memora-reader-screen flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
       {/* RSVP Screen Overlay */}
       {isRsvpModeOpen && (
           <RsvpScreen 
@@ -1301,7 +1311,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
 
       {/* Header */}
       {isHeaderVisible ? (
-      <div className={`flex-shrink-0 h-14 flex items-center justify-between px-4 border-b ${T.border} ${T.panelBg} z-20 transition-all duration-100 relative shadow-sm`}>
+      <div className={`memora-reader-header flex-shrink-0 h-14 flex items-center justify-between px-4 border-b ${T.border} ${T.panelBg} z-20 transition-all duration-100 relative shadow-sm`}>
         {isSpeedMode && speedTimerState !== 'idle' ? (
             // Speed Reading Timer Header
             <div className="flex-grow flex items-center justify-between animate-fade-in">
@@ -1558,7 +1568,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
           {/* Text Scroll Container */}
           <div 
             ref={scrollContainerRef}
-            className={`absolute inset-0 overflow-y-auto p-4 transition-all duration-500 ${isImmersive ? 'px-8 sm:px-16' : ''}`}
+            className={`memora-reader-scroll absolute inset-0 overflow-y-auto p-4 transition-all duration-500 ${isImmersive ? 'px-8 sm:px-16' : ''}`}
             style={{ 
                 fontSize: `${fontSize}%`, 
                 fontFamily: fontFamily,
@@ -1572,7 +1582,15 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                       <p>テキストデータがありません</p>
                   </div>
               ) : (
-                  <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="memora-reader-document max-w-4xl mx-auto space-y-6">
+                      <aside className="memora-reader-guide" aria-label="読解担当キャラクター">
+                          <div>
+                              <span>READ</span>
+                              <strong>教材を読む</strong>
+                              <small>気になる単語は、本文の下線をタップすると確認できます。</small>
+                          </div>
+                          <img src="/memora-world/read-v1.webp" alt="" aria-hidden="true" draggable={false} />
+                      </aside>
                       {transcript.map((entry, index) => {
                           const isActive = currentTime >= entry.start && currentTime < entry.end;
                           const sentenceStartIndex = sentenceStartIndices[index];
@@ -1582,7 +1600,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                               <div 
                                 key={index} 
                                 id={`sentence-${index}`}
-                                className={`relative p-4 rounded-xl transition-all duration-100 ${isActive && isPlaying ? `${T.highlightBg} scale-[1.01] shadow-lg ring-1 ${T.accent}` : 'hover:bg-white/5'} group`}
+                                className={`memora-reader-sentence relative p-4 rounded-xl transition-all duration-100 ${isActive && isPlaying ? `${T.highlightBg} scale-[1.01] shadow-lg ring-1 ${T.accent}` : 'hover:bg-white/5'} group`}
                               >
                                    {(hasMedia || useTTS) && (
                                        <button 
@@ -1616,39 +1634,32 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                                
                                                const cleanTranscriptWord = normalizeForMatch(word);
                                                
-                                               const registeredCard = findRegisteredCard(cleanTranscriptWord); /*
-                                               
-                                                   const contentWithoutNotes = c.front.toLowerCase()
-                                                       .replace(/\[.*?\]/g, '')
-                                                       .replace(/\(.*?\)/g, '')
-                                                       .replace(/【.*?】/g, '')
-                                                       .replace(/[^\w\s']/g, ''); 
-                                                   const cardWords: string[] = contentWithoutNotes.match(/[a-z0-9']+/g) || [];
-                                                   if (cardWords.includes(cleanTranscriptWord)) return true;
-                                                   if (cleanTranscriptWord.length >= 5) {
-                                                       const transcriptPrefix = cleanTranscriptWord.substring(0, 5);
-                                                       const hasPrefixMatch = cardWords.some(cw => cw.length >= 5 && cw.substring(0, 5) === transcriptPrefix);
-                                                       if (hasPrefixMatch) return true;
-                                                   }
-                                                   if (cleanTranscriptWord.endsWith('s') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return true;
-                                                   if (cleanTranscriptWord.endsWith('es') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return true;
-                                                   if (cleanTranscriptWord.endsWith('ed') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return true;
-                                                   if (cleanTranscriptWord.endsWith('d') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return true;
-                                                   if (cleanTranscriptWord.endsWith('ing') && cardWords.includes(cleanTranscriptWord.slice(0, -3))) return true;
-                                                   return false;
-
-                                               */ const note = showInlineNotes ? getEnglishNoteForWord(globalWordIndex) : null;
+                                               const registeredCard = findRegisteredCard(cleanTranscriptWord);
+                                               const note = showInlineNotes ? getEnglishNoteForWord(globalWordIndex) : null;
                                                return (
                                                    <span 
                                                       key={wIdx} 
                                                       id={`pacer-word-${globalWordIndex}`}
+                                                      data-word-card={registeredCard ? registeredCard.front : undefined}
+                                                      role={registeredCard || note ? 'button' : undefined}
+                                                      tabIndex={registeredCard || note ? 0 : undefined}
                                                       onClick={(e) => handleSingleWordClick(e, globalWordIndex, registeredCard)}
+                                                      onKeyDown={(e) => {
+                                                          if ((registeredCard || note) && (e.key === 'Enter' || e.key === ' ')) {
+                                                              e.preventDefault();
+                                                              handleSingleWordClick(e as unknown as React.MouseEvent<HTMLSpanElement>, globalWordIndex, registeredCard);
+                                                          }
+                                                      }}
                                                       className={`inline-block pr-1.5 transition-all duration-100 rounded-sm cursor-text select-text relative
                                                         ${isPacerActive ? `border-b-2 ${T.textPrimary}` : ''}
                                                         ${note ? 'border-b-2 border-dotted border-yellow-400 bg-yellow-400/20 cursor-pointer' : ''}
                                                         ${registeredCard ? 'text-amber-400 font-bold decoration-dotted decoration-amber-600 underline underline-offset-2 cursor-pointer' : ''}
                                                       `}
-                                                      style={isPacerActive ? { borderColor: 'var(--accent-color, #38bdf8)', color: 'var(--accent-color, #38bdf8)' } : {}}
+                                                      style={{
+                                                          ...(isPacerActive ? { borderColor: 'var(--accent-color, #38bdf8)', color: 'var(--accent-color, #38bdf8)' } : {}),
+                                                          touchAction: registeredCard || note ? 'manipulation' : 'auto',
+                                                          WebkitTapHighlightColor: 'transparent',
+                                                      }}
                                                    >
                                                        {word}
                                                    </span>
@@ -1676,7 +1687,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                    {showExplanation && entry.explanation && (
                                        <div 
                                             id={`sentence-exp-${index}`}
-                                            className={`mt-3 p-3 rounded-lg bg-black/20 border border-white/5 ${T.textSecondary} whitespace-pre-wrap`}
+                                            className={`memora-reader-explanation mt-3 p-3 rounded-lg bg-black/20 border border-white/5 ${T.textSecondary} whitespace-pre-wrap`}
                                             style={{ fontSize: '0.7em' }}
                                         >
                                            <div className="flex items-center gap-2 mb-2 text-sky-400 font-bold text-xs uppercase tracking-wider">
@@ -1697,6 +1708,18 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                               </div>
                           );
                       })}
+                      <section className="memora-reader-complete" aria-label="読了後の学習案内">
+                          <img src="/memora-world/read-v2.webp" alt="" aria-hidden="true" draggable={false} />
+                          <div>
+                              <span>READ COMPLETE</span>
+                              <h2>読み終わりました！</h2>
+                              <p>次は、単語の復習か確認クイズへ進めます。</p>
+                              <div>
+                                  {hasWordFile && <button type="button" onClick={() => onStartStudy(materialId)}>単語を復習</button>}
+                                  <button type="button" onClick={() => hasQuizFile ? onStartQuiz(materialId) : setIsQuizModalOpen(true)}>クイズへ</button>
+                              </div>
+                          </div>
+                      </section>
                   </div>
               )}
           </div>
@@ -2299,11 +2322,10 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               
               <div className="font-bold text-base text-amber-400 mb-2 leading-snug">{activeWordPopup.card.back}</div>
               
-              {activeWordPopup.card.memo && (
-                  <div className="text-xs text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-2 mt-2 leading-relaxed opacity-90">
-                      {activeWordPopup.card.memo}
-                  </div>
-              )}
+              <div className="text-xs text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-2 mt-2 leading-relaxed opacity-90">
+                  <div className="font-bold text-emerald-300 mb-1">単語メモ</div>
+                  {activeWordPopup.card.memo || 'この単語にはメモがありません。'}
+              </div>
 
               <span 
                   className={`absolute left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-800 border-r border-b border-slate-600 transform rotate-45 ${activeWordPopup.position.top < 300 ? '-top-1.5 border-t border-l border-r-0 border-b-0' : '-bottom-1.5'}`}
@@ -2336,11 +2358,10 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                       </button>
                   </div>
                   <div className="font-bold text-base text-amber-400 mb-3 leading-snug whitespace-pre-wrap">{activeWordPopup.card.back}</div>
-                  {activeWordPopup.card.memo && (
-                      <div className="text-sm text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-3 mt-3 leading-relaxed">
-                          {activeWordPopup.card.memo}
-                      </div>
-                  )}
+                  <div className="text-sm text-slate-300 whitespace-pre-wrap border-t border-slate-600/50 pt-3 mt-3 leading-relaxed">
+                      <div className="font-bold text-emerald-300 mb-1.5">単語メモ</div>
+                      {activeWordPopup.card.memo || 'この単語にはメモがありません。'}
+                  </div>
               </div>
           </div>
         </>
@@ -2349,19 +2370,30 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       {activeGrammarTerm && (
         <>
           <div 
-              className="fixed inset-0 z-40 bg-transparent" 
+              className="fixed inset-0 z-40 bg-black/25 sm:bg-transparent" 
               onClick={(e) => {
                   e.stopPropagation();
                   setActiveGrammarTerm(null);
               }}
           />
           <div 
-              className="fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${activeGrammarTerm.term.term} の文法メモ`}
+              className="hidden sm:block fixed z-50 bg-slate-800 text-white text-sm p-3 rounded-lg shadow-2xl border border-slate-600 animate-fade-in"
               style={{ 
-                  top: Math.round(activeGrammarTerm.position.top + 30), 
-                  left: Math.round(activeGrammarTerm.position.left),
-                  maxWidth: '300px',
-                  width: 'max-content',
+                  top: Math.min(
+                      Math.round(activeGrammarTerm.position.top + 30),
+                      (typeof window !== 'undefined' ? window.innerHeight : 768) - 260
+                  ),
+                  left: Math.min(
+                      Math.max(Math.round(activeGrammarTerm.position.left), 12),
+                      (typeof window !== 'undefined' ? window.innerWidth : 1024) - 332
+                  ),
+                  maxWidth: '320px',
+                  width: 'calc(100vw - 24px)',
+                  maxHeight: '240px',
+                  overflowY: 'auto',
                   WebkitFontSmoothing: 'antialiased',
                   MozOsxFontSmoothing: 'grayscale',
               }}
@@ -2376,6 +2408,34 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               <span 
                   className="absolute -top-1.5 left-4 w-3 h-3 bg-slate-800 border-t border-l border-slate-600 transform rotate-45"
               ></span>
+          </div>
+          <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${activeGrammarTerm.term.term} の文法メモ`}
+              className="sm:hidden fixed z-50 left-3 right-3 bottom-3 max-h-[58dvh] overflow-hidden rounded-2xl bg-slate-800 text-white border border-slate-600 shadow-2xl animate-fade-in"
+              style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+              onClick={(e) => e.stopPropagation()}
+          >
+              <div className="max-h-[58dvh] overflow-y-auto p-4 pb-2">
+                  <div className="flex items-start justify-between gap-3 border-b border-slate-600/50 pb-3 mb-3">
+                      <div>
+                          <div className="text-[11px] font-bold tracking-[0.18em] text-emerald-300 mb-1">文法メモ</div>
+                          <div className="font-bold text-xl text-sky-300 leading-tight break-words">{activeGrammarTerm.term.term}</div>
+                      </div>
+                      <button
+                          type="button"
+                          onClick={() => setActiveGrammarTerm(null)}
+                          className="flex-shrink-0 w-9 h-9 rounded-full bg-white/10 text-slate-200 flex items-center justify-center"
+                          aria-label="文法メモを閉じる"
+                      >
+                          <span className="text-xl leading-none" aria-hidden="true">×</span>
+                      </button>
+                  </div>
+                  <div className="text-slate-200 leading-7 text-sm whitespace-pre-wrap break-words">
+                      {activeGrammarTerm.term.description}
+                  </div>
+              </div>
           </div>
         </>
       )}
