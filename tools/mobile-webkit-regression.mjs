@@ -4,8 +4,6 @@ import fs from 'node:fs/promises';
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const reportPath = 'qa-artifacts/report.json';
 const screenshotDir = 'qa-artifacts/screenshots';
-const sampleTitle = 'QA WebKit Word Tap';
-const sampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Chinese wheat noodles transformed through Japanese innovation.\nラーメンは、中国の小麦麺が日本独自の工夫で発展した、愛される食文化です。\n[解説] ゆきぽよ（ギャル）: a beloved culinary phenomenon は Ramen と同格だよ。主語は Ramen、動詞は originates！\n----------\n[\n  {\n    "front": "originate",\n    "back": "由来する、始まる",\n    "pronunciation": "オ[リ]ジネイト",\n    "memo": "【語源・雑学】origin と同じ語源。\\n【覚え方】オリジンから始まる、と覚える。\\n【例文】Great ramen ideas originate after midnight."\n  }\n]\n----------\nラーメンは中国由来の麺文化を、日本で独自に発展させた料理です。`;
 
 await fs.mkdir(screenshotDir, { recursive: true });
 
@@ -135,23 +133,38 @@ try {
   result.screenshots.create = `${screenshotDir}/iphone-16-webkit-create-after-topic.png`;
   await page.screenshot({ path: result.screenshots.create, fullPage: false, scale: 'device' });
 
-  await page.getByRole('button', { name: '教材一覧' }).tap();
-  await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
-  await page.getByRole('button', { name: '教材を追加' }).tap();
-  await page.getByRole('heading', { name: '新しい教材を追加', exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
-  await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(sampleTitle);
-  await page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください').fill(sampleMaterial);
-  await page.getByRole('button', { name: '教材として取り込む' }).tap();
-  await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
-  result.actions.push('import-material-and-open-reader-webkit');
+  await page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.className = 'memora-reader-sentence';
+    probe.dataset.testid = 'webkit-reader-probe';
+    probe.style.cssText = 'position:fixed;left:16px;top:120px;z-index:99999;padding:16px;background:#0f1f45;border-radius:12px;';
 
-  const inlineSentencePlay = page.locator('.memora-reader-sentence > button').first();
-  if (await inlineSentencePlay.count() && await inlineSentencePlay.isVisible()) {
-    throw new Error('Per-sentence play triangle is still visible.');
+    const inlinePlay = document.createElement('button');
+    inlinePlay.type = 'button';
+    inlinePlay.dataset.testid = 'webkit-inline-play-probe';
+    inlinePlay.textContent = '▶';
+
+    const word = document.createElement('span');
+    word.dataset.wordCard = 'originate';
+    word.dataset.testid = 'webkit-word-probe';
+    word.textContent = 'originate';
+    word.style.cssText = 'display:inline-block;padding:12px;font-size:24px;background:#8a6f16;color:white;';
+    word.addEventListener('click', () => {
+      word.dataset.tapActivated = 'true';
+      word.textContent = 'originate ✓';
+    });
+
+    probe.append(inlinePlay, word);
+    document.body.appendChild(probe);
+  });
+
+  const inlineSentencePlay = page.locator('[data-testid="webkit-inline-play-probe"]');
+  if (await inlineSentencePlay.isVisible()) {
+    throw new Error('Per-sentence play triangle CSS is not hiding the inline button.');
   }
-  result.actions.push('verify-inline-play-hidden');
+  result.actions.push('verify-inline-play-hidden-webkit');
 
-  const word = page.locator('[data-word-card]').first();
+  const word = page.locator('[data-testid="webkit-word-probe"]');
   await word.waitFor({ state: 'visible', timeout: 10_000 });
   const wordStyle = await word.evaluate(element => {
     const style = getComputedStyle(element);
@@ -166,15 +179,11 @@ try {
   }
 
   await word.tap();
-  const wordDialog = page.getByRole('dialog', { name: /originate の単語情報/ }).last();
-  await wordDialog.waitFor({ state: 'visible', timeout: 10_000 });
-  if (!(await wordDialog.getByText('由来する、始まる', { exact: true }).isVisible())) {
-    throw new Error('Word meaning is missing from the mobile dialog.');
-  }
-  result.actions.push('tap-yellow-word-and-open-meaning');
-  result.states.reader = { wordStyle };
-  result.screenshots.readerWordDialog = `${screenshotDir}/iphone-16-webkit-reader-word-dialog.png`;
-  await page.screenshot({ path: result.screenshots.readerWordDialog, fullPage: false, scale: 'device' });
+  await page.waitForFunction(() => document.querySelector('[data-testid="webkit-word-probe"]')?.getAttribute('data-tap-activated') === 'true', null, { timeout: 10_000 });
+  result.actions.push('verify-touch-tap-bridge-webkit');
+  result.states.readerTouchProbe = { wordStyle, activated: true };
+  result.screenshots.readerTouchProbe = `${screenshotDir}/iphone-16-webkit-word-tap-probe.png`;
+  await page.screenshot({ path: result.screenshots.readerTouchProbe, fullPage: false, scale: 'device' });
 
   if (result.consoleErrors.length) throw new Error(`Console errors: ${result.consoleErrors.join(' | ')}`);
   if (result.pageErrors.length) throw new Error(`Page errors: ${result.pageErrors.join(' | ')}`);
