@@ -174,14 +174,15 @@ try {
       touchAction: style.touchAction,
     };
   });
-  if (wordStyle.userSelect !== 'none' || wordStyle.webkitUserSelect !== 'none') {
-    throw new Error(`Registered word remains selectable on touch WebKit: ${JSON.stringify(wordStyle)}`);
+  const effectiveUserSelect = wordStyle.webkitUserSelect || wordStyle.userSelect;
+  if (effectiveUserSelect !== 'none' || wordStyle.touchAction !== 'manipulation') {
+    throw new Error(`Registered word touch style is not effective on WebKit: ${JSON.stringify(wordStyle)}`);
   }
 
   await word.tap();
   await page.waitForFunction(() => document.querySelector('[data-testid="webkit-word-probe"]')?.getAttribute('data-tap-activated') === 'true', null, { timeout: 10_000 });
   result.actions.push('verify-touch-tap-bridge-webkit');
-  result.states.readerTouchProbe = { wordStyle, activated: true };
+  result.states.readerTouchProbe = { wordStyle, effectiveUserSelect, activated: true };
   result.screenshots.readerTouchProbe = `${screenshotDir}/iphone-16-webkit-word-tap-probe.png`;
   await page.screenshot({ path: result.screenshots.readerTouchProbe, fullPage: false, scale: 'device' });
 
