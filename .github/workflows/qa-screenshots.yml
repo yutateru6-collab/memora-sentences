@@ -54,7 +54,7 @@ jobs:
           cat /tmp/memora-vite.log || true
           exit 1
 
-      - name: Run Phase 1 browser QA
+      - name: Run responsive browser QA
         run: node tools/capture-screenshots.mjs
         env:
           APP_URL: http://127.0.0.1:3000
