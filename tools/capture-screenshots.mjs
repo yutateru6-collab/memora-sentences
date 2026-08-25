@@ -230,7 +230,7 @@ for (const target of targets) {
     result.screenshots.readerWordMemo = await saveScreenshots(page, target, 'reader-word-memo');
     await page.locator('div.fixed.inset-0.z-40').last().click({ position: { x: 2, y: 2 } });
 
-    await page.locator('button[title="解説を表示"]').first().click();
+    await page.locator('button[title="解説を表示"]:visible').first().click();
     const grammarTerm = page.getByRole('button', { name: '同格', exact: true }).first();
     await grammarTerm.waitFor({ state: 'visible', timeout: 10_000 });
     await grammarTerm.click();
@@ -252,7 +252,7 @@ for (const target of targets) {
     await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
     const card = page.getByRole('article').filter({ hasText: sampleTitle }).first();
     await card.waitFor({ state: 'visible', timeout: 15_000 });
-    if (!(await card.getByText(/読む・約\d+語/).isVisible())) throw new Error('Reading word-count badge is missing.');
+    await card.getByText(/読む・約\d+語/).waitFor({ state: 'visible', timeout: 10_000 });
     if (!(await card.getByRole('button', { name: '読む', exact: true }).isVisible())) throw new Error('Read action is missing.');
     result.actions.push('return-to-library-and-verify-card');
     result.states.libraryCard = {
