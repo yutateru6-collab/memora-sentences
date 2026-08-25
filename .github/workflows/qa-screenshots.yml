@@ -1,8 +1,9 @@
 name: QA Screenshots
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: write
@@ -18,10 +19,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
@@ -50,11 +51,10 @@ jobs:
             fi
             sleep 1
           done
-          echo "App did not become ready"
           cat /tmp/memora-vite.log || true
           exit 1
 
-      - name: Run browser QA and capture screenshots
+      - name: Run Phase 1 browser QA
         run: node tools/capture-screenshots.mjs
         env:
           APP_URL: http://127.0.0.1:3000
@@ -64,43 +64,24 @@ jobs:
           QA_RUN_NUMBER: ${{ github.run_number }}
           QA_EVENT_NAME: ${{ github.event_name }}
 
-      - name: Prepare AI vision handoff
-        if: always()
-        continue-on-error: true
-        run: node tools/build-qa-vision-contact-sheet.mjs
-
-      - name: Publish latest QA evidence for ChatGPT
+      - name: Publish latest QA evidence
         if: always()
         env:
           QA_JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p /tmp/qa-latest/screenshots
-          mkdir -p /tmp/qa-latest/vision
-
-          REPORT_PRESENT=false
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
-            REPORT_PRESENT=true
           fi
-
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
           fi
 
-          VISION_PRESENT=false
-          if [ -d qa-artifacts/vision ]; then
-            cp -R qa-artifacts/vision/. /tmp/qa-latest/vision/
-            if [ -f qa-artifacts/vision/qa-overview.jpg.b64 ]; then
-              VISION_PRESENT=true
-            fi
-          fi
-
-          QA_STATUS="failure"
-          if [ "$REPORT_PRESENT" = "true" ]; then
-            QA_STATUS="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('qa-artifacts/report.json','utf8')); process.stdout.write(r.status || 'failure')" 2>/dev/null || echo failure)"
-          fi
-
           SCREENSHOT_COUNT="$(find /tmp/qa-latest/screenshots -type f 2>/dev/null | wc -l | tr -d ' ')"
+          QA_STATUS="failure"
+          if [ -f /tmp/qa-latest/report.json ]; then
+            QA_STATUS="$(node -e "const fs=require('fs');const r=JSON.parse(fs.readFileSync('/tmp/qa-latest/report.json','utf8'));process.stdout.write(r.status||'failure')")"
+          fi
 
           cat > /tmp/qa-latest/latest.json <<EOF
           {
@@ -111,14 +92,7 @@ jobs:
             "commit_sha": "${GITHUB_SHA}",
             "job_status": "${QA_JOB_STATUS}",
             "qa_status": "${QA_STATUS}",
-            "report_present": ${REPORT_PRESENT},
             "screenshot_count": ${SCREENSHOT_COUNT},
-            "storage": "qa-latest branch",
-            "screenshots_path": "screenshots/",
-            "vision_handoff_present": ${VISION_PRESENT},
-            "vision_manifest": "vision/manifest.json",
-            "vision_overview_base64": "vision/qa-overview.jpg.b64",
-            "preview_artifact_available": false,
             "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           }
           EOF
@@ -129,22 +103,12 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git checkout --orphan qa-latest-temp
           git rm -rf . >/dev/null 2>&1 || true
           git clean -fdx >/dev/null 2>&1 || true
           cp -R /tmp/qa-latest/. .
-
           git add latest.json
-          if [ -f report.json ]; then
-            git add report.json
-          fi
-          if [ -d screenshots ]; then
-            git add screenshots/
-          fi
-          if [ -d vision ]; then
-            git add vision/
-          fi
-
+          if [ -f report.json ]; then git add report.json; fi
+          if [ -d screenshots ]; then git add screenshots/; fi
           git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest
