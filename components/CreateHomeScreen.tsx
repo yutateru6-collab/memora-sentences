@@ -286,13 +286,22 @@ ${mnemonicRules}
       <div className="create-home__ambient create-home__ambient--two" aria-hidden="true" />
       <div className="create-home__content">
         <section className="create-home__hero" aria-labelledby="create-home-title">
+          <img
+            className="create-home__hero-art"
+            src="/create-home/hero-garden.webp"
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            loading="eager"
+            decoding="async"
+          />
+
           <button type="button" className="create-home__library-button" onClick={onOpenLibrary}>
             <BookIcon />
             <span>教材一覧</span>
           </button>
 
           <div className="create-home__hero-copy">
-            <p className="create-home__eyebrow">MEMORA SENTENCES</p>
             <h1 id="create-home-title">教材をつくる</h1>
             <p className="create-home__hero-description">
               好きなテーマの英語長文をつくって、<br />
@@ -300,18 +309,6 @@ ${mnemonicRules}
             </p>
           </div>
 
-          <div className="create-home__hero-stars" aria-hidden="true">
-            <span>★</span><span>✦</span><span>★</span><span>✧</span>
-          </div>
-
-          <img
-            className="create-home__hero-dino"
-            src="/mascots/06_%E7%B4%AB_%E3%83%8E%E3%83%BC%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F%E3%82%B9%E3%83%86%E3%82%B4%E3%82%B5%E3%82%A6%E3%83%AB%E3%82%B9.png"
-            alt="紫色の恐竜マスコット"
-            draggable={false}
-            loading="eager"
-            decoding="async"
-          />
         </section>
 
         <section className="create-home__glass-card create-home__topic-card" aria-label="長文の内容">
@@ -372,12 +369,21 @@ ${mnemonicRules}
 
           <div className="create-home__persona-summary">
             <div className="create-home__persona-avatar">
-              <img src="/mascots/06_%E7%B4%AB_%E3%83%8E%E3%83%BC%E3%83%88%E3%82%92%E6%9B%B8%E3%81%8F%E3%82%B9%E3%83%86%E3%82%B4%E3%82%B5%E3%82%A6%E3%83%AB%E3%82%B9.png" alt="" aria-hidden="true" draggable={false} />
+              <img src="/create-home/persona-wink.webp" alt="" aria-hidden="true" draggable={false} />
             </div>
             <div className="create-home__persona-copy">
               <p><span className="create-home__pill">役割</span> {role}</p>
               <p><span className="create-home__pill create-home__pill--star">★ 特徴</span> {trait}</p>
             </div>
+            <img
+              className="create-home__persona-sleep"
+              src="/create-home/persona-sleep.webp"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              loading="lazy"
+              decoding="async"
+            />
           </div>
 
           <div className="create-home__persona-controls">
@@ -421,14 +427,22 @@ ${mnemonicRules}
           </button>
         </section>
 
-        <div className="create-home__footer-note">
-          <span aria-hidden="true">♢</span>
-          <span>{personalSettingsEnabled ? 'あなたのパーソナル設定は長文に反映されます' : 'パーソナル設定は現在オフです'}</span>
-        </div>
+        <footer className="create-home__footer">
+          <img className="create-home__footer-flowers" src="/create-home/footer-flowers.webp" alt="" aria-hidden="true" draggable={false} loading="lazy" decoding="async" />
+          <div className="create-home__footer-note">
+            <span aria-hidden="true">♢</span>
+            <span>{personalSettingsEnabled ? 'あなたのパーソナル設定は長文に反映されます' : 'パーソナル設定は現在オフです'}</span>
+          </div>
 
-        <button type="button" className="create-home__other-modes" onClick={onOpenOtherModes}>
-          匿名掲示板など、その他の教材をつくる
-        </button>
+          <button
+            type="button"
+            className="create-home__other-modes"
+            onClick={onOpenOtherModes}
+            aria-label="匿名掲示板など、その他の教材をつくる"
+          >
+            その他の教材
+          </button>
+        </footer>
       </div>
     </main>
   );
