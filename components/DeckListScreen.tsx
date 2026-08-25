@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { StoredMaterial } from '../types';
 import { Theme } from '../App';
-import GridIcon from './icons/GridIcon';
 
 interface DeckListScreenProps {
   decks: StoredMaterial[];
@@ -20,77 +18,63 @@ const DeckItem: React.FC<{
   onGame: (id: number) => void;
   onRead: (id: number) => void;
   onViewList: (id: number) => void;
-  T: Theme;
-}> = ({ deck, onStudy, onGame, onRead, onViewList, T }) => {
-  // A placeholder for word count, would require reading the file or storing it.
-  const cardCount = deck.cardStats ? Object.keys(deck.cardStats).length : '??';
+}> = ({ deck, onStudy, onGame, onRead, onViewList }) => {
+  const reviewedCount = deck.cardStats ? Object.keys(deck.cardStats).length : 0;
 
   return (
-    <div className={`${T.containerBg} rounded-lg shadow-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4`}>
-      <div className="flex-grow">
-        <h2 className={`text-xl font-bold ${T.textPrimary}`}>{deck.name}</h2>
-        <p className={`text-sm ${T.textMuted}`}>{cardCount} 枚のカード</p>
+    <article className="memora-deck-card">
+      <div className="memora-deck-card__copy">
+        <span>MEMORIZE</span>
+        <h2>{deck.name}</h2>
+        <p>{reviewedCount > 0 ? `${reviewedCount}枚に復習記録があります` : '単語カード付きの教材です'}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-         <button 
-            onClick={() => onViewList(deck.id)}
-            className={`px-3 py-2 ${T.button} rounded-md font-semibold text-sm transition-colors flex items-center gap-1`}
-            title="一覧表示"
-        >
-            <GridIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">一覧</span>
-        </button>
-        <button 
-            onClick={() => onGame(deck.id)}
-            className="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white rounded-md font-semibold text-sm transition-colors"
-        >
-          ゲーム
-        </button>
-        <button 
-          onClick={() => onStudy(deck.id)}
-          className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-md font-semibold text-sm transition-colors"
-        >
-          学習
-        </button>
-        {deck.hasTextFile && (
-          <button 
-            onClick={() => onRead(deck.id)}
-            className={`px-4 py-2 ${T.button} rounded-md font-semibold text-sm transition-colors`}
-          >
-            読込
-          </button>
-        )}
+      <div className="memora-deck-card__actions" aria-label={`${deck.name}の学習メニュー`}>
+        <button type="button" onClick={() => onViewList(deck.id)}>カード一覧</button>
+        <button type="button" onClick={() => onGame(deck.id)}>4択ゲーム</button>
+        <button type="button" className="is-primary" onClick={() => onStudy(deck.id)}>単語を覚える</button>
+        {deck.hasTextFile && <button type="button" onClick={() => onRead(deck.id)}>本文を読む</button>}
       </div>
-    </div>
+    </article>
   );
 };
 
-const DeckListScreen: React.FC<DeckListScreenProps> = ({ decks, onStudy, onGame, onBack, onRead, onViewList, T }) => {
+const DeckListScreen: React.FC<DeckListScreenProps> = ({ decks, onStudy, onGame, onBack, onRead, onViewList }) => {
   return (
-    <div className="flex-grow flex flex-col items-center justify-start p-4 md:p-8 space-y-8">
-      <div className="w-full max-w-4xl">
-        <header className="flex justify-between items-center mb-6">
-          <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
-            &larr; 戻る
-          </button>
-          <h1 className={`text-3xl font-bold ${T.textPrimary}`}>マイデッキ一覧</h1>
-          <div className="w-10"></div> {/* Spacer for alignment */}
+    <main className="memora-deck-screen">
+      <div className="memora-deck-screen__inner">
+        <header className="memora-deck-header">
+          <div className="memora-deck-header__topline">
+            <button type="button" onClick={onBack} className="memora-header-button memora-header-button--back">
+              <span aria-hidden="true">←</span><span>教材ライブラリへ</span>
+            </button>
+          </div>
+          <div className="memora-deck-header__body">
+            <div>
+              <p>MEMORIZE</p>
+              <h1>単語デッキ</h1>
+              <span>教材で出会った単語を、自分のペースで覚えます。</span>
+            </div>
+            {decks.length > 0 && <img src="/memora-world/memorize-v1.webp" alt="" aria-hidden="true" draggable={false} />}
+          </div>
         </header>
 
-        <div className="space-y-4">
+        <section className="memora-deck-list" aria-label="単語デッキ一覧">
           {decks.length > 0 ? (
             decks.map(deck => (
-              <DeckItem key={deck.id} deck={deck} onStudy={onStudy} onGame={onGame} onRead={onRead} onViewList={onViewList} T={T} />
+              <DeckItem key={deck.id} deck={deck} onStudy={onStudy} onGame={onGame} onRead={onRead} onViewList={onViewList} />
             ))
           ) : (
-            <div className={`text-center p-8 rounded-lg ${T.containerBg}`}>
-              <p className={`${T.textMuted}`}>利用可能な単語デッキはありません。</p>
-              <p className={`${T.textMuted} text-sm mt-2`}>ライブラリから単語データ付きの教材を追加してください。</p>
+            <div className="memora-deck-empty">
+              <img src="/memora-world/memorize-v1.webp" alt="" aria-hidden="true" draggable={false} />
+              <p>MEMORIZE</p>
+              <h2>まだ単語デッキがありません</h2>
+              <span>単語カードが入った教材を追加すると、ここに表示されます。</span>
+              <button type="button" onClick={onBack}>教材ライブラリへ</button>
             </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 
