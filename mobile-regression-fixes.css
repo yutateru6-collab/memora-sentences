@@ -1,0 +1,47 @@
+/* Mobile interaction regressions: keep Reader taps and Create-screen rendering stable. */
+
+/* The per-sentence play triangle is intentionally hidden. The main Reader player remains available. */
+.memora-reader-sentence > button {
+  display: none !important;
+}
+
+/* Registered vocabulary is an action target on touch devices, not a text-selection target. */
+.memora-reader-sentence [data-word-card] {
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 699px) {
+  /* WKWebView/Safari can leave large stale compositor tiles after the keyboard
+     changes the visual viewport when blur/backdrop-filter layers are present.
+     Mobile cards are already opaque enough without the blur, so prefer stable
+     repainting over a nearly invisible glass effect. */
+  .create-home__glass-card,
+  .create-home__library-button {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .create-home__ambient {
+    display: none !important;
+    filter: none !important;
+  }
+
+  .create-home__hero-art {
+    animation: none !important;
+  }
+
+  .create-home__content,
+  .create-home__topic-card,
+  .create-home__choice-grid,
+  .create-home__persona-card,
+  .create-home__actions {
+    height: auto !important;
+    max-height: none !important;
+    contain: none !important;
+  }
+}
