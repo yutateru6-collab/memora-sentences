@@ -7,9 +7,11 @@ import FolderIcon from './icons/FolderIcon';
 import MusicIcon from './icons/MusicIcon';
 import PlusIcon from './icons/PlusIcon';
 import XMarkIcon from './icons/XMarkIcon';
+import SettingsIcon from './icons/SettingsIcon';
 import { getMaterialById } from '../lib/db';
 
 interface UploadScreenProps {
+  onBack: () => void;
   onLoad: (data: {
     name: string;
     mediaFile?: File;
@@ -29,7 +31,6 @@ interface UploadScreenProps {
   onUpdateFolder: (id: number, name: string) => void;
   onDeleteFolder: (id: number) => void;
   onGoToDeckList: () => void;
-  onGoToPromptLibrary: () => void;
   onStudy: (id: number) => void;
   onGame: (id: number) => void;
   onStartQuiz: (id: number) => void;
@@ -142,6 +143,44 @@ const MaterialCard: React.FC<{
     
     const [isPasting, setIsPasting] = useState(false);
     const [pasteContent, setPasteContent] = useState('');
+    const [contentStats, setContentStats] = useState({ readingWords: 0, wordCards: 0, quizQuestions: 0 });
+
+    useEffect(() => {
+        let active = true;
+        const countArray = (value: unknown) => Array.isArray(value) ? value.length : 0;
+        const loadContentStats = async () => {
+            try {
+                const fullMaterial = await getMaterialById(material.id);
+                let readingWords = 0;
+                let wordCards = 0;
+                let quizQuestions = 0;
+
+                if (fullMaterial.textFile) {
+                    const parsed = JSON.parse(await fullMaterial.textFile.text());
+                    if (Array.isArray(parsed)) {
+                        readingWords = parsed.reduce((total, entry) => {
+                            const english = typeof entry?.english === 'string' ? entry.english.trim() : '';
+                            return total + (english ? english.split(/\s+/).length : 0);
+                        }, 0);
+                    }
+                }
+                if (fullMaterial.wordFile) {
+                    const parsed = JSON.parse(await fullMaterial.wordFile.text());
+                    wordCards = countArray(parsed) || countArray(parsed?.cards) || countArray(parsed?.words);
+                }
+                if (fullMaterial.quizFile) {
+                    const parsed = JSON.parse(await fullMaterial.quizFile.text());
+                    quizQuestions = countArray(parsed) || countArray(parsed?.questions);
+                }
+
+                if (active) setContentStats({ readingWords, wordCards, quizQuestions });
+            } catch {
+                if (active) setContentStats({ readingWords: 0, wordCards: 0, quizQuestions: 0 });
+            }
+        };
+        loadContentStats();
+        return () => { active = false; };
+    }, [material.id, material.hasTextFile, material.hasWordFile, material.hasQuizFile]);
 
     const folderName = material.folderId ? storedFolders.find(f => f.id === material.folderId)?.name : 'フォルダなし';
 
@@ -296,7 +335,7 @@ const MaterialCard: React.FC<{
 
     return (
         <>
-            <div className={`${T.containerBg} group relative flex flex-col rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl border ${T.border}`}>
+            <article className={`memora-material-card ${T.containerBg} group relative flex flex-col rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl border ${T.border}`}>
                  <div 
                   className="relative aspect-video w-full cursor-pointer overflow-hidden bg-black/10"
                   onClick={() => { setEditingMaterialId(material.id); thumbnailInputRef.current?.click(); }}
@@ -357,6 +396,12 @@ const MaterialCard: React.FC<{
                         {isDeleteMode && <ConfirmDeleteButton itemType="file" onDelete={() => onDeleteFromDB(Number(material.id))} />}
                     </div>
 
+                    <div className="memora-material-card__meta" aria-label="教材に含まれる学習内容">
+                        {(material.hasTextFile || material.duration) && <span>読む{contentStats.readingWords > 0 ? `・約${contentStats.readingWords}語` : ''}</span>}
+                        {material.hasWordFile && <span>単語{contentStats.wordCards > 0 ? contentStats.wordCards : ''}</span>}
+                        {material.hasQuizFile && <span>クイズ{contentStats.quizQuestions > 0 ? contentStats.quizQuestions : ''}</span>}
+                    </div>
+
                      {!isDeleteMode && (
                         <div className="flex items-center justify-end gap-2 mb-3">
                              {/* Dynamic Add Buttons */}
@@ -409,7 +454,7 @@ const MaterialCard: React.FC<{
                               onClick={(e) => { e.stopPropagation(); onLoadFromDB(material.id); }}
                               className={`col-span-2 w-full py-2 ${T.accentBg} hover:brightness-110 text-white rounded-lg font-bold text-sm shadow-sm transition-all`}
                             >
-                              学習スタート
+                              読む
                             </button>
                         ) : (
                             <button disabled className={`col-span-2 w-full py-2 ${T.button} opacity-50 cursor-not-allowed rounded-lg text-xs`}>
@@ -419,7 +464,7 @@ const MaterialCard: React.FC<{
                         
                         {material.hasWordFile && (
                             <>
-                                <button onClick={(e) => {e.stopPropagation(); onGame(material.id)}} className="py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded-md font-semibold text-xs transition-colors">ゲーム</button>
+                                <button onClick={(e) => {e.stopPropagation(); onGame(material.id)}} className="py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded-md font-semibold text-xs transition-colors">4択ゲーム</button>
                                 <button onClick={(e) => {e.stopPropagation(); onStudy(material.id)}} className="py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-md font-semibold text-xs transition-colors">単語</button>
                             </>
                         )}
@@ -430,7 +475,7 @@ const MaterialCard: React.FC<{
                         )}
                     </div>
                 </div>
-            </div>
+            </article>
               {isPasting && (
                  <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={(e) => { e.stopPropagation(); setIsPasting(false); }}>
                     <div className={`${T.containerBg} p-6 rounded-lg shadow-xl max-w-lg w-full border ${T.border}`} onClick={e => e.stopPropagation()}>
@@ -456,7 +501,8 @@ const MaterialCard: React.FC<{
 
 const HeroSection: React.FC<{ material: StoredMaterial; onLoad: (id: number) => void; T: Theme; }> = ({ material, onLoad, T }) => {
     return (
-        <div className="w-full mb-8 animate-fade-in">
+        <section className="memora-recent w-full mb-8 animate-fade-in" aria-labelledby="recent-material-heading">
+            <h2 id="recent-material-heading" className="memora-section-title">最近ひらいた教材</h2>
             <div className={`relative w-full h-48 sm:h-64 rounded-2xl overflow-hidden shadow-2xl group cursor-pointer border ${T.border}`} onClick={() => onLoad(material.id)}>
                 {material.thumbnail ? (
                     <>
@@ -468,13 +514,13 @@ const HeroSection: React.FC<{ material: StoredMaterial; onLoad: (id: number) => 
                 )}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
                     <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded-full bg-white/20 text-white backdrop-blur-md`}>Recent</span>
+                        <span className={`px-2 py-0.5 text-xs font-bold tracking-wider rounded-full bg-white/20 text-white backdrop-blur-md`}>最近ひらいた教材</span>
                         <span className="text-white/70 text-sm">{new Date(material.createdAt).toLocaleDateString()}</span>
                     </div>
                     <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4 line-clamp-2 drop-shadow-md">{material.name}</h2>
                     <div className="flex items-center gap-4">
                         <button onClick={(e) => { e.stopPropagation(); onLoad(material.id); }} className={`flex items-center gap-2 px-6 py-3 ${T.accentBg} hover:brightness-110 text-white rounded-full font-bold shadow-lg transform transition-all hover:scale-105 active:scale-95`}>
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>続きから学習</span>
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>続きから読む</span>
                         </button>
                         {material.duration && <span className="text-white/80 font-mono text-sm bg-black/30 px-3 py-1 rounded-full backdrop-blur-sm">{formatDuration(material.duration)}</span>}
                     </div>
@@ -485,7 +531,7 @@ const HeroSection: React.FC<{ material: StoredMaterial; onLoad: (id: number) => 
                     </div>
                 )}
             </div>
-        </div>
+        </section>
     );
 };
 
@@ -497,7 +543,7 @@ const ConfirmDeleteButton: React.FC<{ onDelete: () => void; itemType: 'file' | '
     return <button type="button" onClick={handleClick} className={`relative z-50 p-2 rounded-full transition-all duration-200 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-md ${confirming ? 'bg-red-600 text-white w-auto px-3' : 'bg-red-500 text-white w-8 h-8 hover:bg-red-600'}`} title={confirming ? "クリックして削除" : "削除"}>{confirming ? <span className="text-xs font-bold whitespace-nowrap">削除?</span> : <TrashIcon className="w-4 h-4 pointer-events-none" />}</button>;
 };
 
-const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onGoToPromptLibrary, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview, initialOpenPasteJson, onClearPasteJson }) => {
+const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview, initialOpenPasteJson, onClearPasteJson }) => {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [textFile, setTextFile] = useState<File | null>(null);
   const [wordFile, setWordFile] = useState<File | null>(null);
@@ -635,53 +681,48 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
   const isFirstRun = storedMaterials.length === 0 && storedFolders.length === 0;
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-start p-4 pb-24 md:p-8 space-y-8 relative min-h-screen">
+    <div className="memora-library-screen flex-grow flex flex-col items-center justify-start p-4 pb-24 md:p-8 relative min-h-screen">
       <div className="w-full max-w-6xl">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-2 md:gap-4">
-               <h1 className={`text-2xl md:text-3xl font-bold tracking-tight ${T.textPrimary}`}>Library</h1>
-               <button onClick={onGoToPromptLibrary} className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm ${T.accentBg} hover:brightness-110 text-white rounded-full font-bold shadow-lg transition-all hover:-translate-y-0.5`}>
-                  <span className="text-base md:text-lg">✨</span> <span className="whitespace-nowrap">作成</span>
-               </button>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-3">
-            <button onClick={onGoToDeckList} className={`flex items-center gap-1 md:gap-2 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm ${T.button} rounded-full transition-colors`} title="マイデッキ一覧">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fillRule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h4a1 1 0 100-2H7zm0 4a1 1 0 100 2h4a1 1 0 100-2H7z" clipRule="evenodd" /></svg>
-                 <span className="hidden sm:inline font-medium">デッキ</span>
+        <header className="memora-app-header memora-app-header--read">
+          <div className="memora-app-header__topline">
+            <button type="button" onClick={onBack} className="memora-header-button memora-header-button--back" aria-label="教材作成画面に戻る">
+              <span aria-hidden="true">←</span><span>教材作成</span>
             </button>
-            {!isDeleteMode && (
-                <button onClick={() => setIsCreatingFolder(true)} className={`flex items-center gap-2 px-2 py-1.5 md:px-4 md:py-2 text-xs md:text-sm ${T.button} rounded-full transition-colors`} title="新しいフォルダ">
-                    <FolderIcon className="h-4 w-4 md:h-5 md:w-5" />
+            <div className="memora-app-header__actions">
+              <button type="button" onClick={() => setIsAddModalOpen(true)} className="memora-header-button memora-header-button--primary">教材を追加</button>
+              <div className="relative" ref={settingsContainerRef}>
+                <button type="button" onClick={() => isDeleteMode ? setIsDeleteMode(false) : setIsSettingsOpen(prev => !prev)} className={`memora-header-button memora-header-button--icon ${isDeleteMode ? 'is-active' : ''}`} aria-label={isDeleteMode ? '整理を完了' : 'ライブラリメニュー'}>
+                  {isDeleteMode ? <span className="font-bold text-xs">完了</span> : <SettingsIcon className="h-5 w-5" />}
                 </button>
-            )}
-
-            {!isDeleteMode && (
-                <button onClick={() => setIsPersonalSettingsOpen(true)} className={`p-2 rounded-full transition-colors ${T.button} text-white/80 hover:bg-white/20`} title="パーソナル設定">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                </button>
-            )}
-             <div className="relative" ref={settingsContainerRef}>
-                <button onClick={() => isDeleteMode ? setIsDeleteMode(false) : setIsSettingsOpen(prev => !prev)} className={`p-2 rounded-full transition-colors ${ isDeleteMode ? `${T.accentBg} text-white ring-2 ring-offset-2 ${T.ringOffset}` : `${T.button} text-white/80 hover:bg-white/20`}`} title={isDeleteMode ? "編集を完了" : "設定"}>
-                    {isDeleteMode ? <span className="font-bold text-xs md:text-sm px-2">完了</span> : <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
-                </button>
-              {isSettingsOpen && (
-                <div className={`absolute top-full right-0 mt-2 w-64 ${T.containerBg} rounded-xl shadow-2xl border ${T.border} z-20 overflow-hidden`}>
-                  <div className={`p-4 border-b ${T.border}`}>
-                    <label htmlFor="theme-select" className={`block text-xs font-bold uppercase tracking-wider ${T.textMuted} mb-2`}>Color Theme</label>
-                    <select id="theme-select" value={Object.keys(themes).find(key => themes[key as keyof Themes]?.name === T.name)} onChange={(e) => setTheme(e.target.value)} className={`w-full p-2 ${T.button} ${T.textSecondary} rounded-lg border ${T.border} focus:outline-none focus:ring-2 ${T.ring}`}>
-                      {Object.entries(themes).map(([key, theme]) => (<option key={key} value={key}>{(theme as Theme).name}</option>))}
-                    </select>
+                {isSettingsOpen && (
+                  <div className="memora-header-menu">
+                    <button type="button" onClick={() => { setIsSettingsOpen(false); onBack(); }}>教材をつくる</button>
+                    <button type="button" onClick={() => { setIsSettingsOpen(false); onGoToDeckList(); }}>単語デッキ</button>
+                    <button type="button" onClick={() => { setIsSettingsOpen(false); setIsCreatingFolder(true); }}>新しいフォルダ</button>
+                    <button type="button" onClick={() => { setIsSettingsOpen(false); setIsPersonalSettingsOpen(true); }}>パーソナル設定</button>
+                    <div className="memora-header-menu__theme">
+                      <label htmlFor="theme-select">表示テーマ</label>
+                      <select id="theme-select" value={Object.keys(themes).find(key => themes[key as keyof Themes]?.name === T.name)} onChange={(e) => setTheme(e.target.value)}>
+                        {Object.entries(themes).map(([key, theme]) => (<option key={key} value={key}>{(theme as Theme).name}</option>))}
+                      </select>
+                    </div>
+                    <button type="button" className="memora-header-menu__danger" onClick={() => { setIsDeleteMode(true); setIsSettingsOpen(false); }}>整理・削除</button>
                   </div>
-                  <button onClick={() => { setIsDeleteMode(true); setIsSettingsOpen(false); }} className={`w-full flex items-center gap-3 p-4 text-left ${T.textSecondary} hover:${T.button} transition-colors`}>
-                    <TrashIcon className="h-5 w-5" /><span>整理・削除モード</span>
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
+          <div className="memora-app-header__body">
+            <div className="memora-app-header__copy">
+              <p className="memora-app-header__role">READ</p>
+              <h1>教材ライブラリ</h1>
+              <p>つくった教材を、いつでもここから。</p>
+            </div>
+            {!isFirstRun && (
+              <img src="/memora-world/read-v1.webp" alt="" aria-hidden="true" draggable={false} className="memora-app-header__character" />
+            )}
+          </div>
+        </header>
         
         {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-sm mb-6 animate-fade-in">{error}</div>}
         
@@ -731,7 +772,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
             {rootMaterials.length > 0 && (
                 <div className="space-y-4">
                      <div className="flex items-center gap-3 border-b pb-2 border-white/10">
-                        <span className={`text-base md:text-lg font-semibold ${T.textPrimary}`}>すべてのファイル</span>
+                        <span className={`memora-section-title text-base md:text-lg font-semibold ${T.textPrimary}`}>すべての教材</span>
                      </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {rootMaterials.map(material => (
@@ -743,61 +784,14 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
             <input type="file" ref={thumbnailInputRef} accept="image/*" onChange={(e) => editingMaterialId && handleThumbnailChange(e, editingMaterialId)} className="hidden"/>
           </div>
         ) : (
-          <section aria-label="MEMORAをはじめる" className={`relative overflow-hidden rounded-3xl border ${T.border} ${T.containerBg}`}>
-            <div className="pointer-events-none absolute -top-20 -left-16 w-56 h-56 rounded-full bg-sky-500/10 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 -right-16 w-64 h-64 rounded-full bg-violet-500/10 blur-3xl" />
-            <div className="relative z-10 mx-auto flex min-h-[470px] max-w-2xl flex-col items-center justify-center px-5 py-8 text-center sm:px-10 sm:py-9">
-              <div className={`relative mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border ${T.border} ${T.button} shadow-sm sm:h-20 sm:w-20 sm:rounded-3xl`}>
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-8 h-8 text-sky-400 sm:w-10 sm:h-10" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-                <span className="absolute -top-2 -right-2 text-lg sm:text-xl" aria-hidden="true">✨</span>
-              </div>
-
-              <img
-                src="/mascots/02_緑_本を読むトリケラトプス.png"
-                alt=""
-                aria-hidden="true"
-                loading="eager"
-                decoding="async"
-                draggable={false}
-                className="mx-auto mb-3 w-28 sm:w-36 max-h-36 object-contain drop-shadow-xl select-none pointer-events-none"
-              />
-              <p className="mb-2 text-[10px] sm:text-xs font-bold tracking-[0.22em] text-sky-400">WELCOME TO MEMORA</p>
-              <h2 className={`text-2xl sm:text-3xl font-bold tracking-tight ${T.textPrimary}`}>最初の教材をつくろう</h2>
-              <p className={`mt-2 text-sm sm:text-base leading-6 sm:leading-7 ${T.textMuted}`}>
-                好きなテーマの英語長文をつくって、<br className="hidden sm:block" />
-                「読む・聴く・覚える」まで、ひとつに。
-              </p>
-
-              <div className="mt-5 flex w-full max-w-xl flex-col items-stretch justify-center gap-2.5 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={onGoToPromptLibrary}
-                  className={`min-h-12 flex-1 px-6 py-3 ${T.accentBg} hover:brightness-110 text-white rounded-xl font-bold shadow-lg transition-all hover:-translate-y-0.5 active:scale-[0.98]`}
-                >
-                  <span className="mr-2" aria-hidden="true">✨</span>長文をつくる
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  className={`min-h-12 flex-1 px-6 py-3 ${T.buttonStrong} rounded-xl font-bold shadow-sm transition-all hover:-translate-y-0.5 active:scale-[0.98]`}
-                >
-                  <span className="mr-2" aria-hidden="true">＋</span>手持ちの教材を追加
-                </button>
-              </div>
-              <p className={`mt-2.5 text-xs ${T.textMuted}`}>好きなテーマから、すぐ始められます。</p>
-
-              <div className="mt-6 w-full max-w-md">
-                <p className={`mb-2 text-[11px] font-bold tracking-wide ${T.textMuted}`}>教材をつくったら</p>
-                <div className={`flex items-center justify-center gap-2 rounded-2xl border ${T.border} bg-white/5 px-3 py-3 ${T.textSecondary}`} aria-label="学習フロー: 読む、聴く、覚える">
-                  <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold"><span aria-hidden="true">📖</span>読む</span>
-                  <span className={`${T.textMuted}`} aria-hidden="true">→</span>
-                  <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold"><span aria-hidden="true">🎧</span>聴く</span>
-                  <span className={`${T.textMuted}`} aria-hidden="true">→</span>
-                  <span className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold"><span aria-hidden="true">🧠</span>覚える</span>
-                </div>
-              </div>
+          <section aria-label="教材がないときの案内" className="memora-empty-state">
+            <img src="/memora-world/read-v1.webp" alt="" aria-hidden="true" draggable={false} />
+            <p className="memora-empty-state__role">READ</p>
+            <h2>まだ教材がありません</h2>
+            <p>好きなテーマから、自分だけの英語教材をつくれます。</p>
+            <div className="memora-empty-state__actions">
+              <button type="button" onClick={onBack} className="memora-button memora-button--primary">教材をつくる</button>
+              <button type="button" onClick={() => setIsAddModalOpen(true)} className="memora-button memora-button--secondary">できた教材を取り込む</button>
             </div>
           </section>
         )}
@@ -810,61 +804,69 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
       )}
       
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
-            <div className={`${T.containerBg} w-full max-w-2xl rounded-2xl shadow-2xl border ${T.border} overflow-hidden animate-fade-in flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
+        <div className="memora-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
+            <div className={`memora-modal ${T.containerBg} w-full max-w-2xl rounded-2xl shadow-2xl border ${T.border} overflow-hidden animate-fade-in flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
                 <div className={`flex items-center justify-between p-6 border-b ${T.border}`}>
-                    <h2 className={`text-2xl font-bold ${T.textPrimary}`}>新しいデータを追加</h2>
+                    <div>
+                      <p className="memora-modal__eyebrow">ORGANIZE</p>
+                      <h2 className={`text-2xl font-bold ${T.textPrimary}`}>新しい教材を追加</h2>
+                    </div>
                     <button onClick={() => setIsAddModalOpen(false)} className={`p-2 rounded-full ${T.button} hover:bg-red-500 hover:text-white transition-colors`}><XMarkIcon /></button>
                 </div>
-                <div className="p-6 overflow-y-auto space-y-8">
+                <div className="memora-modal__body p-6 overflow-y-auto space-y-8">
                      <div>
-                        <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-2`}>TITLE</label>
-                        <input type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="教材名 (任意)" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
+                        <label className={`memora-field-label ${T.textMuted}`}>教材名 <small>（任意）</small></label>
+                        <input type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="例：Japan’s Ramen Culture" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
                     </div>
                     
                     <div>
-                        <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-2`}>1. Plain Text / Prompt</label>
-                        <textarea ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="テキスト、または匿名掲示板/AmazonメーカーのJSONデータをここに貼り付けてください" rows={5} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                        <label className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
+                        <p className="memora-field-help">AI Studioで作った結果を貼り付けます。</p>
+                        <textarea ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div>
-                         <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-3`}>2. Media & Timestamp</label>
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button type="button" onClick={() => mediaInputRef.current?.click()} className={`group relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
-                                <div className={`mb-2 p-3 rounded-full ${T.button} group-hover:bg-sky-500 group-hover:text-white transition-colors`}><MusicIcon className="w-6 h-6" /></div>
-                                <span className={`font-semibold ${T.textPrimary}`}>音声・動画</span>
-                                <span className={`text-xs ${T.textMuted} mt-1 text-center max-w-full truncate px-2`}>{mediaFile?.name || 'Select File...'}</span>
-                                <input type="file" ref={mediaInputRef} accept="audio/*,video/*,.mp3,.m4a,.mp4,.mov,.wav,.ogg,.flac" onChange={handleMediaFileChange} className="hidden"/>
-                            </button>
-                            {isTimestampPasteMode ? (
-                                <div className={`relative flex flex-col p-0 rounded-xl border-2 ${T.border} overflow-hidden`}>
-                                    <textarea autoFocus value={timestampPasteContent} onChange={(e) => setTimestampPasteContent(e.target.value)} placeholder="JSONデータを貼り付け..." className={`w-full h-full p-3 text-xs ${T.button} ${T.textSecondary} resize-none focus:outline-none`} style={{ minHeight: '120px' }}/>
-                                    <button onClick={() => { setIsTimestampPasteMode(false); setTimestampPasteContent(''); }} className={`absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500`}><XMarkIcon className="w-4 h-4"/></button>
-                                </div>
-                            ) : (
-                                <button type="button" onClick={() => textInputRef.current?.click()} className={`group relative flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
-                                    <div className={`mb-2 p-3 rounded-full ${T.button} group-hover:bg-sky-500 group-hover:text-white transition-colors`}><svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div>
-                                    <span className={`font-semibold ${T.textPrimary}`}>タイムスタンプ</span>
-                                    <span className={`text-xs ${T.textMuted} mt-1 text-center max-w-full truncate px-2`}>{textFile?.name || 'Select File...'}</span>
-                                    <input type="file" ref={textInputRef} accept=".txt,.json,text/plain,application/json" onChange={handleTextFileChange} className="hidden"/>
-                                    <div onClick={(e) => { e.stopPropagation(); setIsTimestampPasteMode(true); setTextFile(null); }} className={`mt-2 text-xs text-sky-400 hover:underline z-10`}>またはJSONデータを直接貼り付け</div>
-                                </button>
-                            )}
+                            <div>
+                              <label className={`memora-field-label ${T.textMuted}`}>2. 音声 <small>（任意）</small></label>
+                              <button type="button" onClick={() => mediaInputRef.current?.click()} className={`memora-file-picker group relative flex w-full flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
+                                  <div className={`mb-2 p-3 rounded-full ${T.button} group-hover:bg-sky-500 group-hover:text-white transition-colors`}><MusicIcon className="w-6 h-6" /></div>
+                                  <span className={`font-semibold ${T.textPrimary}`}>音声・動画を選ぶ</span>
+                                  <span className={`text-xs ${T.textMuted} mt-1 text-center max-w-full truncate px-2`}>{mediaFile?.name || 'ファイル未選択'}</span>
+                                  <input type="file" ref={mediaInputRef} accept="audio/*,video/*,.mp3,.m4a,.mp4,.mov,.wav,.ogg,.flac" onChange={handleMediaFileChange} className="hidden"/>
+                              </button>
+                            </div>
+                            <div>
+                              <label className={`memora-field-label ${T.textMuted}`}>3. タイムスタンプ <small>（任意）</small></label>
+                              {isTimestampPasteMode ? (
+                                  <div className={`memora-file-picker relative flex flex-col p-0 rounded-xl border-2 ${T.border} overflow-hidden`}>
+                                      <textarea autoFocus value={timestampPasteContent} onChange={(e) => setTimestampPasteContent(e.target.value)} placeholder="タイムスタンプのデータを貼り付け" className={`w-full h-full p-3 text-xs ${T.button} ${T.textSecondary} resize-none focus:outline-none`} style={{ minHeight: '120px' }}/>
+                                      <button onClick={() => { setIsTimestampPasteMode(false); setTimestampPasteContent(''); }} className={`absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500`}><XMarkIcon className="w-4 h-4"/></button>
+                                  </div>
+                              ) : (
+                                  <button type="button" onClick={() => textInputRef.current?.click()} className={`memora-file-picker group relative flex w-full flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
+                                      <span className={`font-semibold ${T.textPrimary}`}>タイムスタンプを選ぶ</span>
+                                      <span className={`text-xs ${T.textMuted} mt-1 text-center max-w-full truncate px-2`}>{textFile?.name || 'ファイル未選択'}</span>
+                                      <input type="file" ref={textInputRef} accept=".txt,.json,text/plain,application/json" onChange={handleTextFileChange} className="hidden"/>
+                                      <span onClick={(e) => { e.stopPropagation(); setIsTimestampPasteMode(true); setTextFile(null); }} className="mt-2 text-xs text-sky-400 hover:underline z-10">データを直接貼り付ける</span>
+                                  </button>
+                              )}
+                            </div>
                          </div>
                     </div>
                      
                      <div>
-                        <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-2`}>3. Word Data (JSON)</label>
+                        <label className={`memora-field-label ${T.textMuted}`}>4. 単語カード <small>（任意・JSON形式）</small></label>
                         <div className="flex gap-2 mb-2">
                             <button type="button" onClick={() => wordInputRef.current?.click()} className={`px-4 py-2 ${T.button} rounded-lg text-xs font-bold`}>ファイル選択</button>
                             <span className={`flex items-center text-xs ${T.textMuted}`}>{wordFile?.name}</span>
                             <input type="file" ref={wordInputRef} accept=".json,.txt,text/plain,application/json" onChange={handleWordFileChange} className="hidden"/>
                         </div>
-                        <textarea value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); } }} placeholder="またはJSONデータを直接貼り付け..." rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                        <textarea value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div onPaste={handleImagePaste}>
-                        <label className={`text-sm font-bold uppercase tracking-wide ${T.textMuted} block mb-2`}>4. PRODUCT IMAGE (商品画像)</label>
+                        <label className={`memora-field-label ${T.textMuted}`}>5. 表紙画像 <small>（任意）</small></label>
                         <div className={`w-full border-2 border-dashed ${T.border} rounded-xl p-6 flex flex-col items-center justify-center transition-colors hover:bg-white/5 relative`}>
                             {thumbnailFile ? (
                                 <div className="relative w-full aspect-video flex items-center justify-center overflow-hidden rounded-lg">
@@ -873,7 +875,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
                                 </div>
                             ) : (
                                 <div className="text-center" onClick={() => imageInputRef.current?.click()}>
-                                    <div className="mb-2 text-4xl opacity-50">🖼️</div>
+                                    <PlusIcon className="mx-auto mb-2 h-7 w-7 opacity-60" />
                                     <p className={`text-sm font-bold ${T.textPrimary} mb-1`}>クリックして画像を選択</p>
                                     <p className={`text-xs ${T.textMuted}`}>または Ctrl+V で画像を貼り付け</p>
                                 </div>
@@ -884,7 +886,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onLoad, error, storedMateri
 
                 </div>
                 <div className={`p-6 border-t ${T.border} bg-black/10`}>
-                    <button onClick={handleLoadClick} disabled={!isLoadable && !thumbnailFile} className={`w-full py-4 ${T.buttonStrong} disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg`}>データを読み込んで作成</button>
+                    <button onClick={handleLoadClick} disabled={!isLoadable && !thumbnailFile} className="memora-button memora-button--primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all active:scale-[0.99] shadow-lg">教材として取り込む</button>
                 </div>
             </div>
         </div>

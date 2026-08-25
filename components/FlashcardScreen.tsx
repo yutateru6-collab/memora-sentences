@@ -204,7 +204,7 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
         {/* Main Card Content */}
         <div className="w-full max-w-3xl flex flex-col items-center justify-center relative flex-grow">
             <img
-                src="/mascots/01_青_VOCADONフラッシュカード.png"
+                src="/memora-world/memorize-v1.webp"
                 alt=""
                 aria-hidden="true"
                 loading="lazy"

@@ -87,7 +87,7 @@ const QuestionCard: React.FC<{
                 <div className={`mt-4 p-4 rounded-md animate-fade-in border ${selectedChoice === question.correctAnswerIndex ? `bg-green-500/10 border-green-500/30 ${T.textPrimary}` : `bg-red-500/10 border-red-500/30 ${T.textPrimary}`}`}>
                     <div className="flex items-start gap-3">
                         <img
-                            src="/mascots/07_黄_チェックリストラプター.png"
+                            src="/memora-world/quiz-v1.webp"
                             alt=""
                             aria-hidden="true"
                             loading="lazy"

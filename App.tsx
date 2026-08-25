@@ -20,6 +20,23 @@ import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial,
 
 type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
+const memoraRoleByView: Record<View, 'create' | 'read' | 'memorize' | 'quiz' | 'play' | 'organize' | 'explore'> = {
+  create: 'create',
+  upload: 'read',
+  reader: 'read',
+  deckList: 'memorize',
+  flashcard: 'memorize',
+  cardList: 'organize',
+  editDeck: 'organize',
+  game: 'play',
+  promptLibrary: 'explore',
+  quiz: 'quiz',
+  board: 'explore',
+  amazon: 'explore',
+  legend: 'explore',
+  sns: 'explore',
+};
+
 export interface Theme {
   name: string;
   bg: string;
@@ -969,7 +986,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen ${T.bg} flex flex-col font-sans text-base transition-colors duration-300 relative`}>
+    <div className={`memora-world memora-world--${memoraRoleByView[view]} min-h-screen ${T.bg} flex flex-col font-sans text-base transition-colors duration-300 relative`}>
       {view === 'create' && (
         <CreateHomeScreen
           onOpenLibrary={() => setView('upload')}
@@ -983,6 +1000,7 @@ const App: React.FC = () => {
       )}
       {view === 'upload' && (
         <UploadScreen 
+          onBack={() => setView('create')}
           onLoad={handleLoad} 
           error={error} 
           storedMaterials={storedMaterials} 
@@ -994,7 +1012,6 @@ const App: React.FC = () => {
           onUpdateFolder={handleUpdateFolder}
           onDeleteFolder={handleDeleteFolder}
           onGoToDeckList={() => setView('deckList')}
-          onGoToPromptLibrary={() => setView('promptLibrary')}
           onStudy={handleStudy}
           onGame={handleGame}
           onStartQuiz={handleStartQuiz}

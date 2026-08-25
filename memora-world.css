@@ -1,0 +1,511 @@
+.memora-world,
+.memora-world * {
+  box-sizing: border-box;
+}
+
+.memora-world {
+  --memora-accent: #9f7aea;
+  --memora-accent-strong: #7c3aed;
+  --memora-accent-soft: rgba(159, 122, 234, 0.18);
+  --memora-surface: rgba(10, 22, 55, 0.76);
+  --memora-surface-strong: rgba(12, 23, 58, 0.92);
+  --memora-border: rgba(197, 181, 253, 0.22);
+  --memora-text: #fffaff;
+  --memora-muted: #bcc3da;
+  isolation: isolate;
+  overflow-x: hidden;
+  color: var(--memora-text);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(112, 77, 207, 0.22), transparent 34%),
+    radial-gradient(circle at 94% 16%, rgba(33, 127, 150, 0.16), transparent 31%),
+    linear-gradient(165deg, #050b24 0%, #0b1640 46%, #111044 100%) !important;
+}
+
+.memora-world::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: min(220px, 26vh);
+  pointer-events: none;
+  background: url('/create-home/footer-flowers.webp') bottom center / cover no-repeat;
+  opacity: 0.16;
+}
+
+.memora-world:has(.create-home)::before {
+  display: none;
+}
+
+.memora-world > * {
+  position: relative;
+  z-index: 1;
+}
+
+.memora-world--read {
+  --memora-accent: #86e2b0;
+  --memora-accent-strong: #168b69;
+  --memora-accent-soft: rgba(69, 190, 139, 0.16);
+}
+
+.memora-world--memorize {
+  --memora-accent: #8bd7ff;
+  --memora-accent-strong: #1677b8;
+  --memora-accent-soft: rgba(74, 172, 231, 0.17);
+}
+
+.memora-world--quiz {
+  --memora-accent: #ffd36f;
+  --memora-accent-strong: #bc7c18;
+  --memora-accent-soft: rgba(242, 187, 66, 0.18);
+}
+
+.memora-world--play {
+  --memora-accent: #ffac6f;
+  --memora-accent-strong: #d56b27;
+  --memora-accent-soft: rgba(239, 123, 53, 0.18);
+}
+
+.memora-world--organize {
+  --memora-accent: #65ddd3;
+  --memora-accent-strong: #128d87;
+  --memora-accent-soft: rgba(43, 190, 181, 0.17);
+}
+
+.memora-world--explore {
+  --memora-accent: #f5a6d7;
+  --memora-accent-strong: #c34f95;
+  --memora-accent-soft: rgba(225, 101, 174, 0.17);
+}
+
+.memora-library-screen {
+  width: 100%;
+}
+
+.memora-app-header {
+  position: sticky;
+  top: 12px;
+  z-index: 40;
+  margin-bottom: 28px;
+  overflow: visible;
+  border: 1px solid var(--memora-border);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, var(--memora-accent-soft), transparent 48%),
+    rgba(6, 16, 46, 0.84);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
+  box-shadow: 0 22px 58px rgba(1, 5, 24, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.memora-app-header__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 0;
+}
+
+.memora-app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memora-app-header__body {
+  position: relative;
+  display: flex;
+  min-height: 126px;
+  align-items: center;
+  padding: 10px 156px 18px 22px;
+}
+
+.memora-app-header__copy {
+  min-width: 0;
+}
+
+.memora-app-header__role,
+.memora-empty-state__role,
+.memora-modal__eyebrow {
+  margin: 0 0 5px;
+  color: var(--memora-accent);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.24em;
+}
+
+.memora-app-header h1 {
+  margin: 0;
+  color: var(--memora-text);
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.memora-app-header__copy > p:last-child {
+  margin: 7px 0 0;
+  color: var(--memora-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.memora-app-header__character {
+  position: absolute;
+  right: 19px;
+  bottom: 10px;
+  width: 126px;
+  height: 126px;
+  border-radius: 26px;
+  object-fit: cover;
+  object-position: center;
+  border: 1px solid rgba(152, 232, 190, 0.3);
+  box-shadow: 0 12px 28px rgba(0, 8, 32, 0.34), 0 0 26px var(--memora-accent-soft);
+}
+
+.memora-header-button,
+.memora-button {
+  min-height: 42px;
+  border: 1px solid rgba(215, 221, 255, 0.17);
+  border-radius: 13px;
+  color: #fff;
+  font-weight: 750;
+  transition: transform 150ms ease, filter 150ms ease, background 150ms ease;
+}
+
+.memora-header-button:active,
+.memora-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.memora-header-button--back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8e7f5;
+  font-size: 12px;
+}
+
+.memora-header-button--back > span:first-child {
+  color: var(--memora-accent);
+  font-size: 18px;
+}
+
+.memora-header-button--primary,
+.memora-button--primary {
+  padding: 0 16px;
+  background: linear-gradient(135deg, var(--memora-accent-strong), var(--memora-accent));
+  box-shadow: 0 10px 24px var(--memora-accent-soft);
+}
+
+.memora-button--secondary {
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.075);
+  color: #f2f1fa;
+}
+
+.memora-header-button--icon {
+  display: grid;
+  width: 42px;
+  padding: 0;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.memora-header-button.is-active {
+  width: auto;
+  padding: 0 12px;
+  background: var(--memora-accent-strong);
+}
+
+.memora-header-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(280px, calc(100vw - 32px));
+  overflow: hidden;
+  border: 1px solid var(--memora-border);
+  border-radius: 17px;
+  background: rgba(7, 17, 48, 0.97);
+  box-shadow: 0 24px 58px rgba(0, 5, 25, 0.44);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+}
+
+.memora-header-menu > button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 15px;
+  border: 0;
+  border-bottom: 1px solid rgba(201, 196, 255, 0.09);
+  background: transparent;
+  color: #edeef8;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.memora-header-menu > button:hover {
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.memora-header-menu__theme {
+  display: grid;
+  grid-template-columns: 1fr 116px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  color: #c3c8dc;
+  font-size: 12px;
+}
+
+.memora-header-menu__theme select {
+  min-height: 34px;
+  border: 1px solid rgba(203, 213, 255, 0.16);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  padding: 0 8px;
+}
+
+.memora-header-menu__danger {
+  color: #ffb7c5 !important;
+}
+
+.memora-section-title {
+  margin: 0 0 11px;
+  color: #f8f6ff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.memora-recent > div,
+.memora-material-card,
+.memora-empty-state,
+.memora-modal {
+  border-color: var(--memora-border) !important;
+  background:
+    linear-gradient(145deg, var(--memora-accent-soft), transparent 50%),
+    var(--memora-surface) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(115%);
+  backdrop-filter: blur(16px) saturate(115%);
+}
+
+.memora-recent > div {
+  box-shadow: 0 20px 52px rgba(1, 5, 24, 0.28), 0 0 32px var(--memora-accent-soft) !important;
+}
+
+.memora-material-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 25px;
+  margin: 3px 0 12px;
+}
+
+.memora-material-card__meta span {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 0 9px;
+  border: 1px solid rgba(171, 229, 201, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #dce7e7;
+  font-size: 10px;
+  font-weight: 720;
+}
+
+.memora-empty-state {
+  display: flex;
+  min-height: 500px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 34px 22px;
+  border: 1px solid var(--memora-border);
+  border-radius: 26px;
+  text-align: center;
+  box-shadow: 0 22px 58px rgba(1, 5, 24, 0.24);
+}
+
+.memora-empty-state > img {
+  width: min(210px, 55vw);
+  aspect-ratio: 1;
+  margin-bottom: 16px;
+  border-radius: 34px;
+  object-fit: cover;
+  box-shadow: 0 18px 42px rgba(0, 7, 31, 0.36), 0 0 34px var(--memora-accent-soft);
+}
+
+.memora-empty-state h2 {
+  margin: 0;
+  color: #fffaff;
+  font-size: 26px;
+  font-weight: 820;
+}
+
+.memora-empty-state > p:not(.memora-empty-state__role) {
+  margin: 10px 0 0;
+  color: var(--memora-muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.memora-empty-state__actions {
+  display: flex;
+  width: min(100%, 520px);
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.memora-empty-state__actions > button {
+  flex: 1;
+}
+
+.memora-modal-backdrop {
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.memora-modal {
+  background:
+    linear-gradient(145deg, rgba(34, 121, 105, 0.15), transparent 46%),
+    var(--memora-surface-strong) !important;
+}
+
+.memora-modal__body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--memora-accent-strong) transparent;
+}
+
+.memora-field-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.memora-field-label small {
+  color: #9fa8c2;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.memora-field-help {
+  margin: -2px 0 8px;
+  color: #aab2ca;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.memora-file-picker {
+  min-height: 132px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+@media (max-width: 640px) {
+  .memora-world::before {
+    height: 155px;
+    opacity: 0.12;
+  }
+
+  .memora-library-screen {
+    padding: 10px 10px 90px !important;
+  }
+
+  .memora-app-header {
+    top: 8px;
+    margin-bottom: 20px;
+    border-radius: 20px;
+  }
+
+  .memora-app-header__topline {
+    padding: 8px 8px 0;
+  }
+
+  .memora-app-header__body {
+    min-height: 112px;
+    padding: 8px 112px 15px 15px;
+  }
+
+  .memora-app-header__character {
+    right: 11px;
+    bottom: 10px;
+    width: 91px;
+    height: 91px;
+    border-radius: 22px;
+  }
+
+  .memora-app-header h1 {
+    font-size: 22px;
+  }
+
+  .memora-app-header__copy > p:last-child {
+    margin-top: 5px;
+    font-size: 11px;
+  }
+
+  .memora-header-button {
+    min-height: 38px;
+  }
+
+  .memora-header-button--back {
+    padding: 0 9px;
+  }
+
+  .memora-header-button--back > span:last-child {
+    display: none;
+  }
+
+  .memora-header-button--primary {
+    padding: 0 12px;
+    font-size: 11px;
+  }
+
+  .memora-header-button--icon {
+    width: 38px;
+  }
+
+  .memora-empty-state {
+    min-height: 470px;
+    padding: 26px 17px;
+  }
+
+  .memora-empty-state h2 {
+    font-size: 22px;
+  }
+
+  .memora-empty-state__actions {
+    flex-direction: column;
+  }
+
+  .memora-empty-state__actions > button {
+    min-height: 48px;
+    flex: auto;
+  }
+
+  .memora-modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .memora-modal {
+    max-height: calc(100dvh - max(8px, env(safe-area-inset-top))) !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+
+  .memora-modal > div:first-child,
+  .memora-modal > div:last-child {
+    padding: 16px !important;
+  }
+
+  .memora-modal__body {
+    padding: 16px !important;
+  }
+}

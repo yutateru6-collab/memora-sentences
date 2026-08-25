@@ -175,7 +175,7 @@ export const RsvpScreen: React.FC<RsvpScreenProps> = ({ transcript, onClose, ini
       <div className="relative flex-grow flex flex-col items-center justify-center w-full max-w-7xl px-4">
         {!isPlaying && (
           <img
-            src="/mascots/04_ピンク_空飛ぶ翼竜.png"
+            src="/memora-world/explore-v1.webp"
             alt=""
             aria-hidden="true"
             loading="lazy"

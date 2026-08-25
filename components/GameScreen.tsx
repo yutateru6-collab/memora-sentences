@@ -74,7 +74,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ cards, deckName, onBack, T }) =
         <div className={`font-mono ${T.textSecondary}`}>{currentIndex + 1} / {cards.length}</div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <img
-            src="/mascots/03_オレンジ_ジャンプ恐竜.png"
+            src="/memora-world/play-v1.webp"
             alt=""
             aria-hidden="true"
             loading="lazy"

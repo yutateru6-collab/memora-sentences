@@ -1571,7 +1571,7 @@ export const PromptLibraryScreen: React.FC<PromptLibraryScreenProps> = ({ onBack
                         </p>
                     </div>
                     <img
-                        src="/mascots/06_紫_ノートを書くステゴサウルス.png"
+                        src="/memora-world/explore-v1.webp"
                         alt=""
                         aria-hidden="true"
                         loading="lazy"

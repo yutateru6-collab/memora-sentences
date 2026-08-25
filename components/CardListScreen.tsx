@@ -65,7 +65,7 @@ export const CardListScreen: React.FC<CardListScreenProps> = ({ cards, deckName,
               &larr; 戻る
             </button>
             <img
-                src="/mascots/05_ティール_Vノート恐竜.png"
+                src="/memora-world/organize-v1.webp"
                 alt=""
                 aria-hidden="true"
                 loading="lazy"

@@ -288,7 +288,7 @@ ${mnemonicRules}
         <section className="create-home__hero" aria-labelledby="create-home-title">
           <img
             className="create-home__hero-art"
-            src="/create-home/hero-garden.webp"
+            src="/memora-world/create-v1.webp"
             alt=""
             aria-hidden="true"
             draggable={false}
@@ -304,9 +304,10 @@ ${mnemonicRules}
           <div className="create-home__hero-copy">
             <h1 id="create-home-title">教材をつくる</h1>
             <p className="create-home__hero-description">
-              好きなテーマの英語長文をつくって、<br />
-              ペルソナがやさしく解説してくれるよ！
+              好きなテーマを、<br />
+              自分だけの英語教材に。
             </p>
+            <p className="create-home__hero-helper">英語レベルや長さ、解説キャラも自由に選べます。</p>
           </div>
 
         </section>
@@ -323,7 +324,7 @@ ${mnemonicRules}
           </label>
 
           <label className="create-home__field create-home__field--keyword">
-            <span className="create-home__field-label"><FeatherIcon /> 例文に入れたい情報 <small>（任意）</small></span>
+            <span className="create-home__field-label"><FeatherIcon /> 入れたいこと <small>（任意）</small></span>
             <input
               value={exampleKeyword}
               onChange={(event) => setExampleKeyword(event.target.value)}
@@ -333,7 +334,7 @@ ${mnemonicRules}
           </label>
         </section>
 
-        <section className="create-home__choice-grid" aria-label="長文のレベルと文量">
+        <section className="create-home__choice-grid" aria-label="教材の英語レベルと長さ">
           <label className="create-home__glass-card create-home__choice-card create-home__choice-card--level">
             <span className="create-home__choice-title"><span aria-hidden="true">✦</span> 英語レベル</span>
             <div className="create-home__select-wrap">
@@ -348,7 +349,7 @@ ${mnemonicRules}
           </label>
 
           <label className="create-home__glass-card create-home__choice-card create-home__choice-card--length">
-            <span className="create-home__choice-title"><span aria-hidden="true">★</span> 文量</span>
+            <span className="create-home__choice-title"><span aria-hidden="true">★</span> 長文の長さ</span>
             <div className="create-home__select-wrap">
               <FeatherIcon />
               <select value={length} onChange={(event) => setLength(event.target.value)} data-testid="create-length">
@@ -368,22 +369,10 @@ ${mnemonicRules}
           </div>
 
           <div className="create-home__persona-summary">
-            <div className="create-home__persona-avatar">
-              <img src="/create-home/persona-wink.webp" alt="" aria-hidden="true" draggable={false} />
-            </div>
             <div className="create-home__persona-copy">
               <p><span className="create-home__pill">役割</span> {role}</p>
-              <p><span className="create-home__pill create-home__pill--star">★ 特徴</span> {trait}</p>
+              <p><span className="create-home__pill create-home__pill--star">性格</span> {trait}</p>
             </div>
-            <img
-              className="create-home__persona-sleep"
-              src="/create-home/persona-sleep.webp"
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              loading="lazy"
-              decoding="async"
-            />
           </div>
 
           <div className="create-home__persona-controls">
@@ -394,7 +383,7 @@ ${mnemonicRules}
               </select>
             </label>
             <label>
-              <span>★ 特徴</span>
+              <span>性格</span>
               <select value={trait} onChange={(event) => setTrait(event.target.value)} data-testid="create-trait">
                 {traitOptions.map((option) => <option key={option} value={option}>{option}</option>)}
               </select>
@@ -405,7 +394,7 @@ ${mnemonicRules}
         <section className="create-home__actions" aria-label="教材作成アクション">
           <button type="button" className="create-home__action create-home__action--primary" onClick={handleOpenAiStudio} data-testid="create-open-ai-studio">
             <span className="create-home__action-icon"><WandIcon /></span>
-            <span className="create-home__action-copy"><strong>AI Studioで長文を作る</strong><small>プロンプトをコピーしてAI Studioを開きます</small></span>
+            <span className="create-home__action-copy"><strong>AI Studioで教材をつくる</strong><small>作成用の指示をコピーしてAI Studioを開きます</small></span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
 
@@ -416,13 +405,13 @@ ${mnemonicRules}
             data-testid="create-import"
           >
             <span className="create-home__action-icon"><ImportIcon /></span>
-            <span className="create-home__action-copy"><strong>生成結果を取り込む</strong><small>AI Studioで生成した長文を貼り付けます</small></span>
+            <span className="create-home__action-copy"><strong>できた教材を取り込む</strong><small>AI Studioで作った結果を貼り付けます</small></span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
 
           <button type="button" className="create-home__action create-home__action--copy" onClick={copyPrompt} data-testid="create-copy">
             <span className="create-home__action-icon"><ClipboardIcon /></span>
-            <span className="create-home__action-copy"><strong>{copied ? 'コピーしました！' : 'プロンプトだけコピー'}</strong><small>プロンプトをクリップボードにコピーします</small></span>
+            <span className="create-home__action-copy"><strong>{copied ? 'コピーしました！' : '作成用の指示だけコピー'}</strong><small>AI Studioへ貼り付ける内容をコピーします</small></span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
         </section>
