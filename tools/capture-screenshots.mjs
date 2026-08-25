@@ -5,16 +5,20 @@ const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const outDir = process.env.SCREENSHOT_DIR || 'qa-artifacts/screenshots';
 const reportPath = 'qa-artifacts/report.json';
 const sampleTitle = 'QA Ramen Culture';
-const sampleMaterial = JSON.stringify([
+const sampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Chinese wheat noodles transformed through Japanese innovation.
+ラーメンは、中国の小麦麺が日本独自の工夫で発展した、愛される食文化です。
+[解説] ゆきぽよ（ギャル）: a beloved culinary phenomenon は Ramen と同格だよ。主語は Ramen、動詞は originates！
+----------
+[
   {
-    start: 0,
-    end: 0,
-    english: 'Ramen is one of Japan’s most popular foods.',
-    japanese: 'ラーメンは日本で最も人気のある食べ物の一つです。',
-    explanation: '',
-    words: [],
-  },
-]);
+    "front": "originate",
+    "back": "由来する、始まる",
+    "pronunciation": "オ[リ]ジネイト",
+    "memo": "【語源・雑学】origin と同じ語源。\\n【覚え方】オリジンから始まる、と覚える。\\n【例文】Great ramen ideas originate after midnight."
+  }
+]
+----------
+ラーメンは中国由来の麺文化を、日本で独自に発展させた料理です。`;
 
 const targets = [
   {
@@ -122,6 +126,39 @@ for (const target of targets) {
     await page.waitForTimeout(400);
     result.actions.push('open-create-home');
 
+    await page.getByTestId('create-topic').fill('らーめん');
+    await page.getByTestId('create-keyword').fill('チャーシューと地域文化');
+    await page.getByTestId('create-keyword').blur();
+    const createFlow = await page.evaluate(() => {
+      const rect = selector => {
+        const value = document.querySelector(selector)?.getBoundingClientRect();
+        return value ? { top: value.top, bottom: value.bottom, height: value.height } : null;
+      };
+      const topic = rect('.create-home__topic-card');
+      const choices = rect('.create-home__choice-grid');
+      const persona = rect('.create-home__persona-card');
+      const actions = rect('.create-home__actions');
+      const keyword = document.querySelector('[data-testid="create-keyword"]');
+      return {
+        topic,
+        choices,
+        persona,
+        actions,
+        gaps: {
+          topicToChoices: topic && choices ? choices.top - topic.bottom : null,
+          choicesToPersona: choices && persona ? persona.top - choices.bottom : null,
+          personaToActions: persona && actions ? actions.top - persona.bottom : null,
+        },
+        keywordFontSize: keyword ? Number.parseFloat(getComputedStyle(keyword).fontSize) : null,
+      };
+    });
+    for (const [name, gap] of Object.entries(createFlow.gaps)) {
+      if (gap === null || gap < -1 || gap > 40) throw new Error(`Create mobile flow gap is invalid (${name}=${gap}): ${JSON.stringify(createFlow)}`);
+    }
+    if (target.name === 'iphone-16' && createFlow.keywordFontSize < 16) {
+      throw new Error(`Keyword input must use at least 16px on iPhone: ${JSON.stringify(createFlow)}`);
+    }
+
     const createBodyText = (await page.locator('body').innerText()).replace(/\s+/g, '');
     for (const text of [
       '好きなテーマを、自分だけの英語教材に。',
@@ -140,6 +177,7 @@ for (const target of targets) {
     result.states.create = {
       document: await assertNoOverflow(page, 'Create'),
       mascot: await assertMascot(page, '/memora-world/create-v1.webp', 'Create'),
+      flow: createFlow,
     };
     result.screenshots.create = await saveScreenshots(page, target, 'create');
 
@@ -178,6 +216,37 @@ for (const target of targets) {
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     result.actions.push('import-material-and-open-reader');
+
+    await page.getByText('教材を読む', { exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    const word = page.locator('[data-word-card]').first();
+    await word.waitFor({ state: 'visible', timeout: 10_000 });
+    await word.click();
+    const wordDialog = page.getByRole('dialog', { name: /originate の単語情報/ });
+    await wordDialog.waitFor({ state: 'visible', timeout: 10_000 });
+    if (!(await wordDialog.getByText('単語メモ', { exact: true }).isVisible())) throw new Error('Word memo heading is missing.');
+    if (!(await wordDialog.getByText(/origin と同じ語源/).isVisible())) throw new Error('Word memo content is missing.');
+    result.actions.push('open-word-memo');
+    result.states.readerWordMemo = { document: await assertNoOverflow(page, 'Reader word memo') };
+    result.screenshots.readerWordMemo = await saveScreenshots(page, target, 'reader-word-memo');
+    await page.locator('div.fixed.inset-0.z-40').last().click({ position: { x: 2, y: 2 } });
+
+    await page.locator('button[title="解説を表示"]').first().click();
+    const grammarTerm = page.getByRole('button', { name: '同格', exact: true }).first();
+    await grammarTerm.waitFor({ state: 'visible', timeout: 10_000 });
+    await grammarTerm.click();
+    const grammarDialog = page.getByRole('dialog', { name: '同格 の文法メモ' });
+    await grammarDialog.waitFor({ state: 'visible', timeout: 10_000 });
+    const grammarBounds = await grammarDialog.boundingBox();
+    if (!grammarBounds || grammarBounds.x < 0 || grammarBounds.y < 0 || grammarBounds.x + grammarBounds.width > target.context.viewport.width + 0.5 || grammarBounds.y + grammarBounds.height > target.context.viewport.height + 0.5) {
+      throw new Error(`Grammar memo is clipped: ${JSON.stringify(grammarBounds)}`);
+    }
+    result.actions.push('open-grammar-memo');
+    result.states.readerGrammarMemo = {
+      document: await assertNoOverflow(page, 'Reader grammar memo'),
+      bounds: grammarBounds,
+    };
+    result.screenshots.readerGrammarMemo = await saveScreenshots(page, target, 'reader-grammar-memo');
+    await page.locator('div.fixed.inset-0.z-40').last().click({ position: { x: 2, y: 2 } });
 
     await page.getByRole('button').first().click();
     await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
