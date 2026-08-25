@@ -229,6 +229,458 @@
   --memora-accent-soft: rgba(43, 190, 181, 0.17);
 }
 
+.memora-deck-screen,
+.memora-card-list-screen,
+.memora-flashcard-screen {
+  width: 100%;
+  color: var(--memora-text);
+}
+
+.memora-deck-screen {
+  min-height: 100dvh;
+  padding: 18px 18px 80px;
+}
+
+.memora-deck-screen__inner {
+  width: min(100%, 960px);
+  margin: 0 auto;
+}
+
+.memora-deck-header {
+  overflow: hidden;
+  border: 1px solid var(--memora-border);
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(45, 131, 192, 0.18), rgba(8, 18, 52, 0.86));
+  box-shadow: 0 22px 58px rgba(1, 5, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
+}
+
+.memora-deck-header__topline {
+  padding: 10px 12px 0;
+}
+
+.memora-deck-header__body {
+  position: relative;
+  display: flex;
+  min-height: 160px;
+  align-items: center;
+  padding: 16px 210px 24px 24px;
+}
+
+.memora-deck-header__body p,
+.memora-deck-empty > p,
+.memora-deck-card__copy > span,
+.memora-card-list-header__title > p,
+.memora-flashcard-header__title > span,
+.memora-flashcard-complete__card > p {
+  margin: 0;
+  color: var(--memora-accent);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.22em;
+}
+
+.memora-deck-header__body h1 {
+  margin: 4px 0 0;
+  font-size: clamp(27px, 4vw, 38px);
+  line-height: 1.2;
+}
+
+.memora-deck-header__body > div > span {
+  display: block;
+  margin-top: 8px;
+  color: var(--memora-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.memora-deck-header__body img {
+  position: absolute;
+  right: 22px;
+  bottom: 14px;
+  width: 150px;
+  height: 150px;
+  border: 1px solid rgba(139, 215, 255, 0.26);
+  border-radius: 28px;
+  object-fit: cover;
+  box-shadow: 0 14px 34px rgba(0, 7, 31, 0.36), 0 0 28px var(--memora-accent-soft);
+}
+
+.memora-deck-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.memora-deck-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 1.05fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 136px;
+  padding: 20px;
+  border: 1px solid var(--memora-border);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(40, 113, 176, 0.13), rgba(10, 22, 55, 0.78));
+  box-shadow: 0 16px 42px rgba(1, 6, 26, 0.22);
+}
+
+.memora-deck-card__copy {
+  min-width: 0;
+}
+
+.memora-deck-card__copy h2 {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  color: #fffaff;
+  font-size: 21px;
+  line-height: 1.35;
+}
+
+.memora-deck-card__copy p {
+  margin: 6px 0 0;
+  color: #abb8ce;
+  font-size: 11px;
+}
+
+.memora-deck-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.memora-deck-card__actions button,
+.memora-card-list-header__actions button,
+.memora-card-list-empty button,
+.memora-flashcard-complete__card button,
+.memora-deck-empty button {
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid rgba(201, 218, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef3ff;
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.memora-deck-card__actions button.is-primary,
+.memora-card-list-header__actions button.is-primary,
+.memora-flashcard-complete__card button.is-primary,
+.memora-deck-empty button {
+  border-color: rgba(139, 215, 255, 0.28);
+  background: linear-gradient(135deg, #14659b, #238fc1);
+  box-shadow: 0 9px 22px rgba(28, 137, 193, 0.18);
+}
+
+.memora-deck-empty {
+  display: flex;
+  min-height: 520px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 34px 20px;
+  border: 1px solid var(--memora-border);
+  border-radius: 24px;
+  background: rgba(9, 21, 55, 0.74);
+  text-align: center;
+}
+
+.memora-deck-empty img {
+  width: min(190px, 52vw);
+  aspect-ratio: 1;
+  margin-bottom: 16px;
+  border-radius: 30px;
+  object-fit: cover;
+  box-shadow: 0 18px 42px rgba(0, 7, 31, 0.34);
+}
+
+.memora-deck-empty h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+}
+
+.memora-deck-empty > span {
+  margin-top: 9px;
+  color: var(--memora-muted);
+  font-size: 13px;
+}
+
+.memora-deck-empty button {
+  margin-top: 22px;
+}
+
+.memora-card-list-screen {
+  min-height: 100dvh;
+  padding: 16px 18px 72px;
+}
+
+.memora-card-list-header {
+  position: sticky;
+  z-index: 30;
+  top: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 82px auto;
+  align-items: center;
+  gap: 13px;
+  width: min(100%, 1180px);
+  min-height: 112px;
+  margin: 0 auto 18px;
+  padding: 12px;
+  border: 1px solid var(--memora-border);
+  border-radius: 21px;
+  background: rgba(6, 24, 51, 0.88);
+  box-shadow: 0 18px 48px rgba(1, 6, 27, 0.28);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(120%);
+}
+
+.memora-card-list-header__title {
+  min-width: 0;
+}
+
+.memora-card-list-header__title h1 {
+  margin: 3px 0 0;
+  color: #fffaff;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.memora-card-list-header__title > span {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #a9becd;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memora-card-list-header > img {
+  width: 78px;
+  height: 78px;
+  border: 1px solid rgba(101, 221, 211, 0.25);
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 9px 25px rgba(0, 8, 31, 0.34);
+}
+
+.memora-card-list-header__actions {
+  display: flex;
+  gap: 7px;
+}
+
+.memora-card-list-header__actions button.is-primary {
+  background: linear-gradient(135deg, #117e78, #27aca4);
+}
+
+.memora-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.memora-card-tile {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  aspect-ratio: 4 / 3;
+  align-items: center;
+  justify-content: center;
+  padding: 29px 14px 24px;
+  overflow: hidden;
+  border: 1px solid rgba(101, 221, 211, 0.18);
+  border-radius: 17px;
+  background: linear-gradient(145deg, rgba(20, 70, 88, 0.33), rgba(10, 23, 58, 0.84));
+  color: #fffaff;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(1, 7, 28, 0.2);
+}
+
+.memora-card-tile.is-back {
+  border-color: rgba(101, 221, 211, 0.38);
+  background: linear-gradient(145deg, rgba(21, 117, 111, 0.28), rgba(19, 29, 73, 0.82));
+}
+
+.memora-card-tile__face {
+  position: absolute;
+  top: 9px;
+  left: 10px;
+  color: #7fe4dc;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.memora-card-tile strong {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.memora-card-tile__dots {
+  position: absolute;
+  right: 0;
+  bottom: 10px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.memora-card-tile__dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(183, 198, 220, 0.35);
+}
+
+.memora-card-tile__dots i.is-active {
+  width: 13px;
+  border-radius: 999px;
+  background: #65ddd3;
+}
+
+.memora-card-list-empty {
+  grid-column: 1 / -1;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid var(--memora-border);
+  border-radius: 22px;
+  background: rgba(8, 22, 55, 0.74);
+}
+
+.memora-card-list-empty h2 {
+  font-size: 22px;
+}
+
+.memora-card-list-empty button {
+  margin-top: 18px;
+}
+
+.memora-flashcard-screen {
+  position: relative;
+  background: linear-gradient(165deg, rgba(4, 12, 35, 0.98), rgba(8, 24, 58, 0.98)) !important;
+}
+
+.memora-flashcard-header {
+  border-bottom: 1px solid rgba(139, 215, 255, 0.16);
+  background: rgba(5, 17, 47, 0.88) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  backdrop-filter: blur(18px) saturate(120%);
+}
+
+.memora-flashcard-header__title {
+  min-width: 0;
+  text-align: center;
+}
+
+.memora-flashcard-header__title h1 {
+  max-width: min(48vw, 520px);
+  margin: 2px 0 0;
+  overflow: hidden;
+  font-size: 17px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memora-flashcard-main {
+  background: transparent !important;
+}
+
+.memora-flashcard-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.memora-flashcard-status > span {
+  padding: 3px 8px;
+  border: 1px solid rgba(139, 215, 255, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.memora-flashcard-card {
+  border-color: rgba(139, 215, 255, 0.21) !important;
+  background: linear-gradient(145deg, rgba(19, 39, 87, 0.88), rgba(21, 22, 72, 0.78)) !important;
+  box-shadow: 0 24px 58px rgba(1, 6, 27, 0.32), 0 0 34px rgba(74, 172, 231, 0.08) !important;
+}
+
+.memora-flashcard-card.is-back {
+  background: linear-gradient(145deg, rgba(17, 72, 106, 0.72), rgba(34, 31, 96, 0.76)) !important;
+}
+
+.memora-grade-grid button {
+  min-height: 66px;
+}
+
+.memora-flashcard-complete {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(3, 9, 29, 0.9);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.memora-flashcard-complete__card {
+  width: min(100%, 460px);
+  padding: 24px;
+  border: 1px solid rgba(139, 215, 255, 0.28);
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(25, 65, 117, 0.88), rgba(23, 20, 77, 0.92));
+  box-shadow: 0 28px 72px rgba(1, 6, 27, 0.46), 0 0 42px rgba(74, 172, 231, 0.12);
+  text-align: center;
+}
+
+.memora-flashcard-complete__card > img {
+  width: min(210px, 58vw);
+  aspect-ratio: 1;
+  margin: 0 auto 15px;
+  border: 1px solid rgba(139, 215, 255, 0.28);
+  border-radius: 30px;
+  object-fit: cover;
+  box-shadow: 0 16px 40px rgba(0, 7, 31, 0.38);
+}
+
+.memora-flashcard-complete__card h2 {
+  margin: 6px 0 0;
+  color: #fffaff;
+  font-size: 25px;
+}
+
+.memora-flashcard-complete__card > span {
+  display: block;
+  margin-top: 7px;
+  color: #c3d2e3;
+  font-size: 13px;
+}
+
+.memora-flashcard-complete__card > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 20px;
+}
+
 .memora-world--explore {
   --memora-accent: #f5a6d7;
   --memora-accent-strong: #c34f95;
@@ -569,6 +1021,166 @@
   .memora-world::before {
     height: 155px;
     opacity: 0.12;
+  }
+
+  .memora-deck-screen {
+    padding: 9px 10px 70px;
+  }
+
+  .memora-deck-header {
+    border-radius: 20px;
+  }
+
+  .memora-deck-header__topline {
+    padding: 8px 8px 0;
+  }
+
+  .memora-deck-header__body {
+    min-height: 118px;
+    padding: 10px 108px 16px 15px;
+  }
+
+  .memora-deck-header__body h1 {
+    font-size: 23px;
+  }
+
+  .memora-deck-header__body > div > span {
+    margin-top: 5px;
+    font-size: 10px;
+    line-height: 1.55;
+  }
+
+  .memora-deck-header__body img {
+    right: 10px;
+    bottom: 10px;
+    width: 91px;
+    height: 91px;
+    border-radius: 21px;
+  }
+
+  .memora-deck-list {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .memora-deck-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 15px;
+    border-radius: 18px;
+  }
+
+  .memora-deck-card__copy h2 {
+    font-size: 18px;
+  }
+
+  .memora-deck-card__actions button {
+    min-height: 46px;
+  }
+
+  .memora-card-list-screen {
+    padding: 8px 9px 64px;
+  }
+
+  .memora-card-list-header {
+    top: 6px;
+    grid-template-columns: auto minmax(0, 1fr) 58px;
+    gap: 8px;
+    min-height: 126px;
+    margin-bottom: 12px;
+    padding: 9px;
+    border-radius: 18px;
+  }
+
+  .memora-card-list-header__title h1 {
+    font-size: 17px;
+  }
+
+  .memora-card-list-header > img {
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
+  }
+
+  .memora-card-list-header__actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .memora-card-list-header__actions button {
+    min-height: 40px;
+    font-size: 11px;
+  }
+
+  .memora-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .memora-card-tile {
+    padding: 27px 10px 22px;
+    border-radius: 15px;
+  }
+
+  .memora-card-tile strong {
+    font-size: 13px;
+  }
+
+  .memora-flashcard-header {
+    padding: 8px !important;
+  }
+
+  .memora-flashcard-header .memora-header-button--back {
+    min-width: 38px;
+    justify-content: center;
+  }
+
+  .memora-flashcard-header__title h1 {
+    max-width: 42vw;
+    font-size: 14px;
+  }
+
+  .memora-flashcard-main {
+    padding: 10px !important;
+  }
+
+  .memora-flashcard-main > div:first-child > img {
+    width: 54px !important;
+    max-height: 54px !important;
+    border-radius: 14px;
+  }
+
+  .memora-flashcard-status {
+    max-width: calc(100% - 62px);
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .memora-flashcard-card {
+    height: min(42dvh, 330px) !important;
+    padding: 24px 16px !important;
+  }
+
+  .memora-grade-grid button {
+    min-height: 57px;
+    padding: 8px !important;
+    font-size: 12px;
+  }
+
+  .memora-flashcard-complete__card {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .memora-flashcard-complete__card > img {
+    width: min(170px, 48vw);
+    border-radius: 25px;
+  }
+
+  .memora-flashcard-complete__card h2 {
+    font-size: 21px;
   }
 
   .memora-reader-scroll {
