@@ -225,6 +225,28 @@ for (const target of targets) {
     await page.getByText('教材を読む', { exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
     const word = page.locator('[data-word-card]').first();
     await word.waitFor({ state: 'visible', timeout: 10_000 });
+    const highlightedWordClass = await word.getAttribute('class');
+    if (!highlightedWordClass?.includes('bg-yellow-300/25')) {
+      throw new Error(`Registered word is not highlighted in yellow: ${highlightedWordClass}`);
+    }
+    result.actions.push('verify-yellow-word-highlight');
+    result.states.readerWordHighlight = { document: await assertNoOverflow(page, 'Reader word highlight') };
+    result.screenshots.readerWordHighlight = await saveScreenshots(page, target, 'reader-word-highlight');
+
+    if (target.name === 'iphone-16') {
+      await page.getByRole('button', { name: 'その他の機能を開く' }).click();
+      await page.getByRole('button', { name: /単語・メモ/ }).click();
+    } else {
+      await page.getByRole('button', { name: '単語の黄色表示とメモを切り替える' }).click();
+    }
+    const hiddenWordClass = await word.getAttribute('class');
+    if (hiddenWordClass?.includes('bg-yellow-300/25')) {
+      throw new Error(`Registered word remains yellow after the display toggle: ${hiddenWordClass}`);
+    }
+    result.actions.push('hide-yellow-word-highlight');
+    result.states.readerWordHighlightHidden = { document: await assertNoOverflow(page, 'Reader hidden word highlight') };
+    result.screenshots.readerWordHighlightHidden = await saveScreenshots(page, target, 'reader-word-highlight-hidden');
+
     await word.click();
     const wordDialog = page.getByRole('dialog', { name: /originate の単語情報/ });
     await wordDialog.waitFor({ state: 'visible', timeout: 10_000 });
@@ -236,6 +258,17 @@ for (const target of targets) {
     await page.locator('div.fixed.inset-0.z-40').last().click({ position: { x: 2, y: 2 } });
 
     await page.locator('button[title="解説を表示"]:visible').first().click();
+    const personaAvatar = page.locator('img[data-persona-avatar="/personas/01_ギャル.png"]').first();
+    await personaAvatar.waitFor({ state: 'visible', timeout: 10_000 });
+    const personaImageState = await personaAvatar.evaluate(image => ({
+      complete: image.complete,
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
+    }));
+    if (!personaImageState.complete || personaImageState.naturalWidth <= 0 || personaImageState.naturalHeight <= 0) {
+      throw new Error(`Explanation persona avatar did not load: ${JSON.stringify(personaImageState)}`);
+    }
+    result.actions.push('verify-explanation-persona-avatar');
     const grammarTerm = page.getByRole('button', { name: '同格', exact: true }).first();
     await grammarTerm.waitFor({ state: 'visible', timeout: 10_000 });
     await grammarTerm.click();

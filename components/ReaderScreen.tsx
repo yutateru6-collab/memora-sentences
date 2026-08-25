@@ -956,7 +956,10 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                   }
 
                   const initial = Array.from(speaker.name.trim())[0] || '？';
-                  const avatarTitle = speaker.role ? `${speaker.name}・${speaker.role}` : speaker.name;
+                  const inlineRole = PERSONA_ROLE_KEYS.find(role => line.includes(role));
+                  const resolvedRole = speaker.role || inlineRole;
+                  const resolvedAvatar = speaker.avatar || (resolvedRole ? PERSONA_AVATAR_BY_ROLE[resolvedRole] : undefined);
+                  const avatarTitle = resolvedRole ? `${speaker.name}・${resolvedRole}` : speaker.name;
 
                   return (
                       <div key={`exp-line-${lineIndex}`} className="flex items-start gap-2.5">
@@ -967,13 +970,14 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                   setPersonaRolePicker({ name: speaker.name });
                               }}
                               className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full flex-shrink-0 border border-white/15 shadow-md bg-gradient-to-br from-sky-500/70 to-violet-500/70 flex items-center justify-center active:scale-95 transition-transform"
-                              title={speaker.avatar ? `${avatarTitle}（タップでキャラ変更）` : `${speaker.name}のキャラを選ぶ`}
-                              aria-label={speaker.avatar ? `${speaker.name}のキャラを変更` : `${speaker.name}のキャラを選ぶ`}
+                              title={resolvedAvatar ? `${avatarTitle}（タップでキャラ変更）` : `${speaker.name}のキャラを選ぶ`}
+                              aria-label={resolvedAvatar ? `${speaker.name}のキャラを変更` : `${speaker.name}のキャラを選ぶ`}
                           >
                               <span className="text-sm font-black text-white" aria-hidden="true">{initial}</span>
-                              {speaker.avatar && (
+                              {resolvedAvatar && (
                                   <img
-                                      src={speaker.avatar}
+                                      src={resolvedAvatar}
+                                      data-persona-avatar={resolvedAvatar}
                                       alt=""
                                       aria-hidden="true"
                                       loading="lazy"
@@ -982,7 +986,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                       className="absolute inset-0 w-full h-full rounded-full object-cover"
                                   />
                               )}
-                              {!speaker.avatar && (
+                              {!resolvedAvatar && (
                                   <span className="absolute -right-1 -bottom-1 w-4 h-4 rounded-full bg-sky-500 text-white border border-white/70 text-[11px] font-black leading-[14px] shadow" aria-hidden="true">+</span>
                               )}
                           </button>
@@ -1392,7 +1396,8 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                     <button
                         onClick={() => setShowInlineNotes(!showInlineNotes)}
                         className={`p-2 rounded-full flex-shrink-0 ${T.button} hover:bg-white/10 ${showInlineNotes ? 'text-yellow-400' : 'text-gray-500'}`}
-                        title="メモの表示/非表示"
+                        title="単語の黄色表示とメモの表示/非表示"
+                        aria-label="単語の黄色表示とメモを切り替える"
                     >
                         <EyeIcon off={!showInlineNotes} />
                     </button>
@@ -1587,7 +1592,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                           <div>
                               <span>READ</span>
                               <strong>教材を読む</strong>
-                              <small>気になる単語は、本文の下線をタップすると確認できます。</small>
+                              <small>黄色の単語をタップすると、意味とメモを確認できます。</small>
                           </div>
                           <img src="/memora-world/read-v1.webp" alt="" aria-hidden="true" draggable={false} />
                       </aside>
@@ -1653,7 +1658,8 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                                       className={`inline-block pr-1.5 transition-all duration-100 rounded-sm cursor-text select-text relative
                                                         ${isPacerActive ? `border-b-2 ${T.textPrimary}` : ''}
                                                         ${note ? 'border-b-2 border-dotted border-yellow-400 bg-yellow-400/20 cursor-pointer' : ''}
-                                                        ${registeredCard ? 'text-amber-400 font-bold decoration-dotted decoration-amber-600 underline underline-offset-2 cursor-pointer' : ''}
+                                                        ${registeredCard && showInlineNotes ? 'border-b-2 border-yellow-300 bg-yellow-300/25 text-yellow-100 font-bold cursor-pointer' : ''}
+                                                        ${registeredCard && !showInlineNotes ? 'cursor-pointer' : ''}
                                                       `}
                                                       style={{
                                                           ...(isPacerActive ? { borderColor: 'var(--accent-color, #38bdf8)', color: 'var(--accent-color, #38bdf8)' } : {}),
@@ -2005,7 +2011,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                           <div className="grid grid-cols-2 gap-2">
                               <button type="button" onClick={() => { setShowInlineNotes(prev => !prev); setIsMoreMenuOpen(false); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button}`}>
                                   <EyeIcon off={!showInlineNotes} className={`w-5 h-5 ${showInlineNotes ? 'text-yellow-400' : ''}`} />
-                                  <span className="min-w-0"><span className="block text-sm font-bold">メモ表示</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{showInlineNotes ? '表示中' : '非表示'}</span></span>
+                                  <span className="min-w-0"><span className="block text-sm font-bold">単語・メモ</span><span className={`block text-[10px] mt-0.5 ${T.textMuted}`}>{showInlineNotes ? '黄色で表示' : '色を非表示'}</span></span>
                               </button>
                               <button type="button" onClick={() => { setIsMoreMenuOpen(false); setIsGlobalMemoOpen(true); }} className={`flex items-center gap-3 p-3 rounded-xl text-left ${T.button}`}>
                                   <NoteIcon className="w-5 h-5" />
