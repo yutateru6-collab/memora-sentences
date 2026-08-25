@@ -288,7 +288,7 @@ ${mnemonicRules}
         <section className="create-home__hero" aria-labelledby="create-home-title">
           <img
             className="create-home__hero-art"
-            src="/memora-world/readon-hero.jpeg"
+            src="/memora-world/create-v1.webp"
             alt=""
             aria-hidden="true"
             draggable={false}
