@@ -76,7 +76,9 @@ const assertCreateLayout = (snapshot, label) => {
     }
   }
 
-  const heightLimits = [280, 260, 360, 320];
+  // Mobile now stacks English level, topic knowledge depth, and passage length.
+  // Keep a finite ceiling so accidental vertical bloat is still caught.
+  const heightLimits = [280, 340, 360, 320];
   ordered.forEach((rect, index) => {
     if (rect.height <= 0 || rect.height > heightLimits[index]) {
       throw new Error(`${label}: implausible section height at index ${index}: ${JSON.stringify(snapshot)}`);
