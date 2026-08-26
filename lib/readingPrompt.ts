@@ -1,7 +1,17 @@
+export type KnowledgeDepth = 'beginner' | 'familiar' | 'advanced' | 'expert';
+
+export const KNOWLEDGE_DEPTH_OPTIONS: ReadonlyArray<{ value: KnowledgeDepth; label: string }> = [
+  { value: 'beginner', label: '初心者｜全体像から' },
+  { value: 'familiar', label: 'ある程度｜もう一歩深く' },
+  { value: 'advanced', label: 'かなり詳しい｜細部まで' },
+  { value: 'expert', label: 'マニア・専門家級｜とことん' },
+];
+
 export interface ReadingPromptConfig {
   topic: string;
   additionalRequest?: string;
   level: string;
+  knowledgeDepth?: KnowledgeDepth;
   length: string;
   role: string;
   trait: string;
@@ -11,6 +21,56 @@ export interface ReadingPromptConfig {
 
 export const getReaderCompatibleRole = (role: string) =>
   role === 'やさしく導く先生' ? 'やさしく導く高校教師' : role;
+
+const KNOWLEDGE_DEPTH_PROFILES: Record<KnowledgeDepth, {
+  label: string;
+  contentRules: string[];
+  backgroundRule: string;
+}> = {
+  beginner: {
+    label: '初心者｜全体像から',
+    contentRules: [
+      '読者はテーマについてほとんど知らない想定にする。まず全体像、基本構造、代表例、重要な違いを優先し、前提知識がなくても話の筋を追えるようにする。',
+      '専門用語、細かな例外、マニア向けの固有名詞を前提にしない。必要な用語は本文の流れの中で短く意味が分かるように扱う。',
+      '「これは何か」「なぜ重要か」「代表的に何が違うか」が読み終わったときに分かる内容にし、細部を詰め込みすぎない。',
+    ],
+    backgroundRule: '背景知識は、本文を理解するための基礎・前提・代表例を補強し、初めて触れる読者の足場を作る。',
+  },
+  familiar: {
+    label: 'ある程度｜もう一歩深く',
+    contentRules: [
+      '読者は基本的な用語や代表例をある程度知っている想定にする。初歩的な定義の繰り返しは最小限にする。',
+      '概要説明だけで終わらず、理由、比較、仕組み、背景、少し意外な事実のうち確実に扱えるものを中心に、一段深く掘る。',
+      '全体像を保ちながら、初心者向けの記事では省略されやすい具体的な違いや因果関係を少なくとも一つは扱う。',
+    ],
+    backgroundRule: '背景知識は、本文で触れ切れなかった理由・比較・関連事情を一歩広げ、既知の内容に新しいつながりを加える。',
+  },
+  advanced: {
+    label: 'かなり詳しい｜細部まで',
+    contentRules: [
+      '読者は一般向けの概要や定番の説明をかなり知っている想定にする。よくある入門説明に文章を使いすぎない。',
+      '細分類、例外、似たもの同士の違い、相互作用、歴史的な変化、技術的な差異、条件による変化、トレードオフなどから、確実に説明できる論点を優先する。',
+      '「何が違うか」だけでなく「なぜそうなるのか」「どの条件で変わるのか」まで踏み込み、一般論より具体性の高い内容にする。',
+    ],
+    backgroundRule: '背景知識は、本文の隣接領域にある高度な論点、例外、比較軸、技術的・歴史的な補足を優先する。',
+  },
+  expert: {
+    label: 'マニア・専門家級｜とことん',
+    contentRules: [
+      '読者は熱心なマニアまたは専門家級の前提知識を持つ想定にする。一般的な入門説明や有名な基本事項の再説明は原則として避ける。',
+      'テーマ全体を薄く網羅するのではなく、狭く具体的な切り口を選び、専門的な細部、例外、条件差、技術上の違い、歴史的なニュアンス、分類上の境界など、一般向け記事では省かれやすい論点を中心にする。',
+      '専門家や熱心なファンが読んでも「一般論だけ」と感じない密度を目指す。ただし、マニアックさを出すために不確かな固有名詞・数値・逸話・因果関係を作らない。確信できない細部しかない場合は、確実に扱える別の深掘り論点へ切り替える。',
+    ],
+    backgroundRule: '背景知識は、本文よりさらに一段深い専門的な補足、周辺論点、例外、比較軸を扱う。入門的な言い換えで文字数を使わない。',
+  },
+};
+
+const buildKnowledgeDepthInstructions = (knowledgeDepth: KnowledgeDepth) => {
+  const profile = KNOWLEDGE_DEPTH_PROFILES[knowledgeDepth];
+  return `・テーマへの詳しさ: ${profile.label}。
+・英語レベルとテーマへの詳しさは別軸である。英語レベルは「英文の語彙・文法・構文の難しさ」、テーマへの詳しさは「扱う情報・論点の深さ」を決める。詳しい読者向けだからといって、指定英語レベルを超える難語でごまかさない。
+${profile.contentRules.map(rule => `・${rule}`).join('\n')}`;
+};
 
 const buildMnemonicRules = () => `【覚え方のルール】
 ・英単語の主要な音を、元の順番をできるだけ保ちながら日本語の空耳に変換する。
@@ -38,6 +98,7 @@ export const buildReadingPrompt = ({
   topic,
   additionalRequest = '',
   level,
+  knowledgeDepth = 'familiar',
   length,
   role,
   trait,
@@ -48,13 +109,14 @@ export const buildReadingPrompt = ({
   const requestText = additionalRequest.trim();
   const readerRole = getReaderCompatibleRole(role);
   const personaName = '（役割と性格にふさわしい日本の下の名前またはあだ名を1つだけ決める）';
+  const depthProfile = KNOWLEDGE_DEPTH_PROFILES[knowledgeDepth];
   const extraRequest = requestText
     ? `\n【追加要望】\n${requestText}\nこの追加要望は、英文の内容・使う語・例文・解説に、自然で教育的な範囲で反映してください。無理に毎回入れないでください。`
     : '';
   const personalInstructions = buildPersonalInstructions(inspirationSeed, angerSeed);
 
   return `あなたはREADON用の英語長文教材を作る編集者兼英語講師です。
-テーマは「${topicText}」です。英文の難易度は、指定された英語レベルだけを基準に調整し、日本語の訳と解説はそのレベルの学習者が理解しやすい表現にしてください。${extraRequest}${personalInstructions}
+テーマは「${topicText}」です。英文の難易度は指定された英語レベルだけを基準に調整し、扱う情報・論点の深さは指定された「テーマへの詳しさ」に合わせてください。日本語の訳と解説は、その英語レベルの学習者が理解しやすい表現にしてください。${extraRequest}${personalInstructions}
 
 【最優先：アプリが正しく解析するための機械的ルール】
 ・最終回答は、教材データだけを出力する。挨拶、前置き、あとがき、Markdownコードフェンスは付けない。
@@ -94,9 +156,9 @@ export const buildReadingPrompt = ({
 
 【英文の内容・難易度】
 ・英語レベル: ${level}。必ずこのレベルを守り、特に語彙だけを不必要に難しくしない。
+${buildKnowledgeDepthInstructions(knowledgeDepth)}
 ・長さ: 約${length}語。
 ・論理構成: 4段落相当。導入→具体化→別角度または対比→まとめ、を基本にする。ただし、アプリ解析のため段落番号や段落見出しは出力しない。
-・読者はそのテーマに関心があり、基本的な背景知識をある程度持っている想定にする。
 ・具体例を使い、一面的な礼賛や批判にせず、読み物として内容のあるバランスの取れた英文にする。
 ・事実、歴史、語源、統計、固有名詞を作り話で補わない。確信できない細部は断定せず、本文の主張に不要なら省く。
 ・独創性は、比喩、語呂、例文、キャラクターのリアクションに使い、事実の創作には使わない。
@@ -125,7 +187,8 @@ ${buildMnemonicRules()}
 
 【背景知識】
 ・2つ目の区切り行の後に、この長文をより深く理解するための背景知識・関連情報・うんちくを日本語で約400文字書く。
-・本文の言い換えだけにせず、理解が広がる補足を優先する。
+・${depthProfile.backgroundRule}
+・本文の言い換えだけにせず、選択された「テーマへの詳しさ」より一歩理解が広がる補足を優先する。
 ・事実確認に自信がない固有名詞・年号・数値は無理に入れない。
 ・Markdownの強調記法は使わず、プレーンテキストにする。
 
@@ -144,5 +207,6 @@ ${buildMnemonicRules()}
 11. JSON文字列内の改行・引用符が正しくエスケープされているか。
 12. JSONやmemoの中に「----------」が紛れ込んでいないか。
 13. 背景知識がJSONの外、2つ目の区切り行の後だけにあるか。
-14. 余計な挨拶、前置き、コードフェンス、英文全文の重複がないか。`;
+14. 余計な挨拶、前置き、コードフェンス、英文全文の重複がないか。
+15. 選択された「テーマへの詳しさ」に内容が合っているか。初心者なのに前提知識を要求していないか。専門家級なのに一般的な入門説明ばかりになっていないか。内容の深さを英語語彙の難しさだけで表現していないか。`;
 };

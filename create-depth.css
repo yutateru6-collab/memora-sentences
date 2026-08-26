@@ -1,0 +1,15 @@
+.create-home__choice-card--knowledge {
+  background: linear-gradient(145deg, rgba(82, 47, 104, 0.92), rgba(18, 39, 78, 0.9));
+}
+
+@media (max-width: 699px) {
+  .create-home__choice-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 700px) {
+  .create-home__choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

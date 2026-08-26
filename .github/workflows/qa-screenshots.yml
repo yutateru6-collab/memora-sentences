@@ -64,6 +64,11 @@ jobs:
           QA_RUN_NUMBER: ${{ github.run_number }}
           QA_EVENT_NAME: ${{ github.event_name }}
 
+      - name: Run READON knowledge depth QA
+        run: node tools/knowledge-depth-qa.mjs
+        env:
+          APP_URL: http://127.0.0.1:3000
+
       - name: Run READON strict contract QA
         run: node tools/readon-strict-contract-qa.mjs
         env:

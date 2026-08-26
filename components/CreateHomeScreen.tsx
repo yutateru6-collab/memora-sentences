@@ -1,7 +1,13 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PromptPersonaSelection } from './PromptLibraryScreen';
-import { buildReadingPrompt, getReaderCompatibleRole } from '../lib/readingPrompt';
+import {
+  buildReadingPrompt,
+  getReaderCompatibleRole,
+  KNOWLEDGE_DEPTH_OPTIONS,
+  type KnowledgeDepth,
+} from '../lib/readingPrompt';
 import '../create-home.css';
+import '../create-depth.css';
 
 interface CreateHomeScreenProps {
   onOpenLibrary: () => void;
@@ -98,6 +104,7 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
   const [topic, setTopic] = useState('');
   const [exampleKeyword, setExampleKeyword] = useState('');
   const [level, setLevel] = useState('日本の「英検準1級」レベル');
+  const [knowledgeDepth, setKnowledgeDepth] = useState<KnowledgeDepth>('familiar');
   const [length, setLength] = useState('400');
   const [role, setRole] = useState('やさしく導く先生');
   const [trait, setTrait] = useState('やさしくて、まなびを楽しませてくれる！');
@@ -114,13 +121,14 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
       topic,
       additionalRequest: exampleKeyword,
       level,
+      knowledgeDepth,
       length,
       role,
       trait,
       inspirationSeed: usePersonalSettings ? localStorage.getItem('inspiration_seed') || '' : '',
       angerSeed: usePersonalSettings ? localStorage.getItem('anger_seed') || '' : '',
     });
-  }, [topic, exampleKeyword, level, length, role, trait]);
+  }, [topic, exampleKeyword, level, knowledgeDepth, length, role, trait]);
 
   const copyPrompt = useCallback(async () => {
     const text = generatePrompt();
@@ -210,7 +218,7 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
           </label>
         </section>
 
-        <section className="create-home__choice-grid" aria-label="教材の英語レベルと長さ">
+        <section className="create-home__choice-grid" aria-label="教材の英語レベル、テーマへの詳しさ、長さ">
           <label className="create-home__glass-card create-home__choice-card create-home__choice-card--level">
             <span className="create-home__choice-title"><span aria-hidden="true">✦</span> 英語レベル</span>
             <div className="create-home__select-wrap">
@@ -222,6 +230,23 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
               </select>
             </div>
             <small>長文の難易度を選びます</small>
+          </label>
+
+          <label className="create-home__glass-card create-home__choice-card create-home__choice-card--knowledge">
+            <span className="create-home__choice-title"><span aria-hidden="true">✦</span> テーマへの詳しさ</span>
+            <div className="create-home__select-wrap">
+              <BookIcon />
+              <select
+                value={knowledgeDepth}
+                onChange={(event) => setKnowledgeDepth(event.target.value as KnowledgeDepth)}
+                data-testid="create-depth"
+              >
+                {KNOWLEDGE_DEPTH_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <small>背景知識・マニアック度を選びます</small>
           </label>
 
           <label className="create-home__glass-card create-home__choice-card create-home__choice-card--length">
