@@ -16,6 +16,18 @@
 }
 
 @media (max-width: 699px) {
+  /* Keep the Create screen on the document's root scroll instead of creating
+     nested scroll containers. With overflow-x:hidden, CSS computes the other
+     axis as scrollable; that is fragile when iOS changes the visual viewport
+     for the software keyboard. clip blocks horizontal spill without creating
+     a scrolling box, while 100svh avoids keyboard-driven dynamic-height churn. */
+  .memora-world--create,
+  .create-home {
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    min-height: 100svh !important;
+  }
+
   /* WKWebView/Safari can leave large stale compositor tiles after the keyboard
      changes the visual viewport when blur/backdrop-filter layers are present.
      Mobile cards are already opaque enough without the blur, so prefer stable
