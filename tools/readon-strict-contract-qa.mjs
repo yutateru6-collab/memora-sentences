@@ -76,6 +76,11 @@ for (const target of targets) {
     // The expected rejection is logged by App.tsx. Clear it so any later console error is unexpected.
     consoleErrors.length = 0;
 
+    // UploadScreen closes the add modal after a submit. The READON validation context remains active,
+    // so exercise the real recovery path: reopen the importer, correct the data, then submit again.
+    await page.getByRole('button', { name: '教材を追加', exact: true }).click();
+    await page.getByRole('heading', { name: '新しい教材を追加', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(strictTitle);
     await materialInput.fill(buildMaterial(cards));
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: strictTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
