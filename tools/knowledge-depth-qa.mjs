@@ -110,13 +110,56 @@ for (const target of targets) {
     const lengthRect = await rect(length);
 
     if (target.name === 'webkit-iphone') {
-      if (!(levelRect.y < depthRect.y && depthRect.y < lengthRect.y)) {
-        throw new Error(`${target.name}: mobile order must be level -> depth -> length: ${JSON.stringify({ levelRect, depthRect, lengthRect })}`);
+      const tops = [levelRect.y, depthRect.y, lengthRect.y];
+      if (Math.max(...tops) - Math.min(...tops) > 4) {
+        throw new Error(`${target.name}: mobile controls must share one row: ${JSON.stringify({ levelRect, depthRect, lengthRect })}`);
+      }
+      if (!(levelRect.x < depthRect.x && depthRect.x < lengthRect.x)) {
+        throw new Error(`${target.name}: mobile order must be left level -> center depth -> right length: ${JSON.stringify({ levelRect, depthRect, lengthRect })}`);
       }
       for (const candidate of [levelRect, depthRect, lengthRect]) {
-        if (candidate.width < 300) {
-          throw new Error(`${target.name}: stacked select is unexpectedly narrow: ${JSON.stringify(candidate)}`);
+        if (candidate.width < 80) {
+          throw new Error(`${target.name}: compact select became too narrow: ${JSON.stringify(candidate)}`);
         }
+      }
+
+      const compactState = await page.evaluate(() => {
+        const grid = document.querySelector('.create-home__choice-grid');
+        const gridRect = grid?.getBoundingClientRect();
+        const selects = [...document.querySelectorAll('.create-home__choice-card select')].map(select => {
+          const style = getComputedStyle(select);
+          return {
+            fontSize: Number.parseFloat(style.fontSize),
+            textOverflow: style.textOverflow,
+            overflowX: style.overflowX,
+          };
+        });
+        const helperDisplays = [...document.querySelectorAll('.create-home__choice-card > small')].map(node => getComputedStyle(node).display);
+        const iconDisplays = [...document.querySelectorAll('.create-home__choice-card .create-home__select-wrap > svg')].map(node => getComputedStyle(node).display);
+        return {
+          gridHeight: gridRect?.height || 0,
+          selects,
+          helperDisplays,
+          iconDisplays,
+        };
+      });
+
+      if (compactState.gridHeight <= 0 || compactState.gridHeight > 110) {
+        throw new Error(`${target.name}: compact three-column row is too tall: ${JSON.stringify(compactState)}`);
+      }
+      for (const style of compactState.selects) {
+        if (style.fontSize < 16) {
+          throw new Error(`${target.name}: compact select must stay at 16px+ to prevent iOS zoom: ${JSON.stringify(compactState)}`);
+        }
+        if (style.textOverflow !== 'ellipsis') {
+          throw new Error(`${target.name}: compact select must ellipsize long labels: ${JSON.stringify(compactState)}`);
+        }
+      }
+      if (compactState.helperDisplays.some(display => display !== 'none')) {
+        throw new Error(`${target.name}: helper copy should be hidden inside the compact row: ${JSON.stringify(compactState)}`);
+      }
+      if (compactState.iconDisplays.some(display => display !== 'none')) {
+        throw new Error(`${target.name}: select icons should be hidden inside the compact row: ${JSON.stringify(compactState)}`);
       }
     } else {
       const tops = [levelRect.y, depthRect.y, lengthRect.y];
