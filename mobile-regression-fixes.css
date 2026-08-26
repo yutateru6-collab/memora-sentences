@@ -20,7 +20,8 @@
      nested scroll containers. With overflow-x:hidden, CSS computes the other
      axis as scrollable; that is fragile when iOS changes the visual viewport
      for the software keyboard. clip blocks horizontal spill without creating
-     a scrolling box, while 100svh avoids keyboard-driven dynamic-height churn. */
+     a scrolling box, while 100svh avoids keyboard-driven dynamic-height churn.
+     Keep this scoped to Create; Reader intentionally owns its viewport scroll. */
   .memora-world--create,
   .create-home {
     overflow-x: clip !important;
