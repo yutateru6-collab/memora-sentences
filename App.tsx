@@ -17,6 +17,7 @@ import CreateHomeScreen from './components/CreateHomeScreen';
 import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
+import { formatReadingMaterialValidationError, validateGeneratedReadingMaterial } from './lib/readingMaterialValidation';
 
 type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
@@ -137,6 +138,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('create');
   const [openPasteJsonMode, setOpenPasteJsonMode] = useState(false);
   const [pendingPromptPersonas, setPendingPromptPersonas] = useState<PromptPersonaSelection[] | null>(null);
+  const [pendingReadonStrictValidation, setPendingReadonStrictValidation] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
@@ -291,9 +293,10 @@ const App: React.FC = () => {
   }) => {
     setError(null);
     const selectedPromptPersonas = data.plainTextContent ? pendingPromptPersonas : null;
-    if (data.plainTextContent && pendingPromptPersonas) {
+    const clearPendingImportContext = () => {
         setPendingPromptPersonas(null);
-    }
+        setPendingReadonStrictValidation(false);
+    };
     try {
         // Check for Board/Amazon/Legend/SNS Data in plainTextContent first
         if (data.plainTextContent) {
@@ -312,6 +315,7 @@ const App: React.FC = () => {
                          mediaFile: data.mediaFile,
                          thumbnail: data.thumbnail
                      });
+                     clearPendingImportContext();
                      await loadStoredData();
                      handleLoadFromDB(id);
                      return;
@@ -328,6 +332,7 @@ const App: React.FC = () => {
                          mediaFile: data.mediaFile,
                          thumbnail: data.thumbnail
                      });
+                     clearPendingImportContext();
                      await loadStoredData();
                      handleLoadFromDB(id);
                      return;
@@ -344,6 +349,7 @@ const App: React.FC = () => {
                          mediaFile: data.mediaFile,
                          thumbnail: data.thumbnail
                      });
+                     clearPendingImportContext();
                      await loadStoredData();
                      handleLoadFromDB(id);
                      return;
@@ -365,6 +371,7 @@ const App: React.FC = () => {
                          mediaFile: data.mediaFile,
                          thumbnail: data.thumbnail
                      });
+                     clearPendingImportContext();
                      await loadStoredData();
                      handleLoadFromDB(id);
                      return;
@@ -372,6 +379,13 @@ const App: React.FC = () => {
 
              } catch (e) {
                  // Not JSON or specific data, proceed as normal text
+             }
+        }
+
+        if (data.plainTextContent && selectedPromptPersonas && pendingReadonStrictValidation) {
+             const validation = validateGeneratedReadingMaterial(data.plainTextContent);
+             if (!validation.valid) {
+                 throw new Error(formatReadingMaterialValidationError(validation));
              }
         }
 
@@ -423,6 +437,7 @@ const App: React.FC = () => {
              }
         }
         
+        clearPendingImportContext();
         await loadStoredData();
         
         if (data.mediaFile || data.textFile || data.plainTextContent) {
@@ -431,7 +446,7 @@ const App: React.FC = () => {
 
     } catch (err) {
       console.error(err);
-      setError("データの読み込みに失敗しました。");
+      setError(err instanceof Error && err.message ? err.message : "データの読み込みに失敗しました。");
     }
   };
   
@@ -989,10 +1004,18 @@ const App: React.FC = () => {
     <div className={`memora-world memora-world--${memoraRoleByView[view]} min-h-screen ${T.bg} flex flex-col font-sans text-base transition-colors duration-300 relative`}>
       {view === 'create' && (
         <CreateHomeScreen
-          onOpenLibrary={() => setView('upload')}
-          onOpenOtherModes={() => setView('promptLibrary')}
+          onOpenLibrary={() => {
+            setPendingPromptPersonas(null);
+            setPendingReadonStrictValidation(false);
+            setView('upload');
+          }}
+          onOpenOtherModes={() => {
+            setPendingReadonStrictValidation(false);
+            setView('promptLibrary');
+          }}
           onNavigateToPasteJSON={(personas) => {
             setPendingPromptPersonas(personas);
+            setPendingReadonStrictValidation(true);
             setOpenPasteJsonMode(true);
             setView('upload');
           }}
@@ -1155,6 +1178,7 @@ const App: React.FC = () => {
             onBack={() => setView('create')}
             onNavigateToPasteJSON={(personas) => {
                 setPendingPromptPersonas(personas);
+                setPendingReadonStrictValidation(false);
                 setOpenPasteJsonMode(true);
                 setView('upload');
             }}

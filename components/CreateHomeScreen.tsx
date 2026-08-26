@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import type { PromptPersonaSelection } from './PromptLibraryScreen';
+import { buildReadingPrompt, getReaderCompatibleRole } from '../lib/readingPrompt';
 import '../create-home.css';
 
 interface CreateHomeScreenProps {
@@ -53,37 +54,6 @@ const traitOptions = [
   '無理やりすぎる例え話が好き',
   '空気も凍るダジャレを挟む',
 ];
-
-const mnemonicRules = `【覚え方】
-[語源と雑学]の文章の最後に、必ず【覚え方】という見出しを付け、以下の「絶対的生成ルール」に従って、面白くて覚えやすい語呂合わせを作成してください。
-
-絶対的生成ルール（Think Harder & Create Impact）
-
-1. 音の解体と再構築（空耳化）
-* 英単語の発音を忠実なカタカナにするのではなく、「日本語の何に聞こえるか（空耳）」で分解してください。
-* 例: Universe → ユニ・バース → 「ウニ」＋「バス」
-
-2. 異常な映像の喚起（シュールレアリスム）
-* 平凡な文章は禁止です。「ありえない状況」「感情的な場面（怒り・悲しみ・恐怖）」「シュールな絵」が脳裏に浮かぶようなストーリーにしてください。
-* インパクト重視で、多少強引でも構いません。
-
-3. 文末着地（意味の固定）
-* 語呂合わせの文章の最後（または文中の重要なオチ部分）に、必ずその英単語の「日本語訳」を配置してください。
-* 「音（A）といえば、意味（B）」という回路を脳に焼き付けるためです。
-
-4. 形式の統一（シンプル・イズ・ベスト）
-* 出力は以下の1行形式のみとしてください。余計な記号やカッコは排除し、リズムを重視してください。
-* 形式: [空耳を使った文章] + [日本語訳]
-* 日本語訳の部分は【 】で囲んで強調してください。
-
-悪い例（禁止）
-* × Specific → スペース引くほど広いね（意味が含まれていない）
-* × Struggle → ストライキでラグビー部がもがく（映像が弱く、リズムが悪い）
-
-良い例（合格ライン）
-* ○ Specific → スペース引くほど【具体的】に
-* ○ Struggle → 素手で虎来る、必死に【もがく】
-* ○ Ambiguous → 案、微妙で具体性なく【曖昧】っす`;
 
 const BookIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -140,115 +110,16 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
 
   const generatePrompt = useCallback(() => {
     const usePersonalSettings = localStorage.getItem('use_personal_settings') !== 'false';
-    const inspirationSeed = localStorage.getItem('inspiration_seed') || '';
-    const angerSeed = localStorage.getItem('anger_seed') || '';
-
-    let personalInstructions = '';
-    if (usePersonalSettings) {
-      if (inspirationSeed.trim()) {
-        personalInstructions += `\n【重要：ひらめきの種（パーソナライズ指示）】\nユーザーの好きなことや近況として以下の情報があります。作成する英語長文の内容や、キャラクターの解説、例文の中に、これらの要素を自然に散りばめてください：\n${inspirationSeed}\n`;
-      }
-      if (angerSeed.trim()) {
-        personalInstructions += `\n【重要：怒りの種（毒舌・皮肉指示）】\nユーザーの嫌いなことや絶対に許せないこととして以下の情報があります。キャラクターが英文の解説やツッコミを行う際、以下の内容についてユーモアを交えた皮肉や憤りとして自然に散りばめてください：\n${angerSeed}\n`;
-      }
-    }
-
-    const personaName = '（この役割と性格にふさわしい日本の名前（下の名前やあだ名）をランダムに命名してください）';
-    const topicText = topic.trim() || '日本のラーメン文化';
-    const keywordText = exampleKeyword.trim() || '指定なし';
-
-    return `命令書${personalInstructions ? '\nまた、以下のパーソナライズ指示に絶対に従ってください：' + personalInstructions : ''}
-あなたは、英語文章を作成する際は「${topicText}」についてユーザーの理解に合わせたレベルでその内容について書いてください。一方で、文章の解説を行う際は、後述するキャラクターになりきって解説を行ってください。
-
-以下の形式はMEMORA Sentencesへそのまま貼り付けて解析するためのアプリ用データです。
-完成した英文全文を別の場所へ先に出力したり、同じ英文を二重に出力したりしないでください。
-Markdownのコードフェンス（\`\`\`markdown、\`\`\`text、\`\`\`json等）も付けないでください。
-最終回答は、以下に指定する1つのデータブロックだけを出力してください。
-
-【出力形式】
-
-【解説担当】
-名前: ${personaName}
-役割: ${role}
-性格: ${trait}
-（ここからキャラの自己紹介と意気込みを一言）
-
-[英語の原文一文]
-[その日本語訳一文]
-[解説] （AIが決めた名前）（${role}）: [${trait}という特徴を反映したコメント]
-
-[次の英語の原文一文]
-[その日本語訳一文]
-[解説] （AIが決めた名前）（${role}）: [${trait}という特徴を反映したコメント]
-
-（同じセットを全文の文数だけ繰り返す）
-
-----------
-[
-  {
-    "front": "ramen",
-    "back": "ラーメン、中華麺",
-    "pronunciation": "[ラ]ーメン",
-    "memo": "【語源・雑学】語源・関連語・雑学をここに記述。\\n【覚え方】覚えやすい語呂やイメージをここに記述。\\n【例文】英単語を使った面白い英語例文をここに記述。"
-  }
-]
-----------
-[背景知識を日本語で約400文字]
-
-【最重要：対訳・解説のルール】
-・英語は必ず一文ずつ出力し、その直後にその一文だけの自然な日本語訳を置いてください。
-・各解説コメントは必ず「[解説] 名前（役割）: コメント」の1行形式で開始してください。
-・各[解説]行の「名前」と「役割」は、【解説担当】プロフィール内の同じ人物の表記と一字一句同じにしてください。
-・コメントには文法構造（主語S・動詞Vなどを実際の英単語と共に示す）、重要語句、内容の要約、関連雑学を入れてください。
-・キャラクターの口調と個性を反映しつつ、解説として意味が通る内容にしてください。
-・「命名した」「名前:」など、人物名そのものではない余計な接頭辞を人物名に付けないでください。
-
-【最重要：単語JSONのルール】
-・単語リスト部分だけを、有効なJSON配列として30語出力してください。長文全体をJSONにしないでください。
-・各要素で使用できるキーは "front", "back", "pronunciation", "memo" の4つだけです。
-・front: 英単語のみ。絵文字、発音、品詞記号などを混ぜないでください。
-・back: 日本語の主な意味を2〜3個。
-・pronunciation: 一般的なカタカナ発音。最も強く読む部分を半角の[ ]で囲んでください（例: ネ[ゴ]シエイト）。
-・memo: 「【語源・雑学】」「【覚え方】」「【例文】」の3見出しをこの順で1つの文字列に入れてください。改行はJSON文字列内の \\n で表現してください。
-・JSON内ではダブルクォートを使用し、末尾カンマ、コメント、Markdown、JSON前後の説明文を入れないでください。
-・【語源・雑学】では語源、同語源の関連語、文化・歴史・科学などの面白い雑学を含めてください。
-・【覚え方】は以下のルールに従って、音と意味が結びつく印象的な覚え方を作ってください。
-${mnemonicRules}
-・【例文】では対象単語を必ず使い、ユニークで少し笑える自然な英語例文を作ってください。ユーザー情報「${keywordText}」がある場合は、3回に1回程度の自然な頻度でパーソナライズしてください。
-
-【背景知識】
-単語JSONの後に「----------」だけの行を1行置き、この英語長文の内容に関する背景知識・関連情報・うんちく・雑学を日本語で約400文字記述してください。Markdownの強調記法は使わずプレーンテキストにしてください。
-
-絶対的制約条件
-読者層と前提
-読者: そのトピックに興味を持つ人。
-前提知識: 読者はトピックについてある程度の知識を持っています。
-内容と分析の方向性
-内容の深さ: 具体的な例を交えながら、バランスの取れた分析を行ってください。
-構成と文章量
-段落数: 4段落
-文章の長さ: 約${length}語
-言語と表現
-言語: 英語。
-英語レベル: ${level}※必ずその英検レベルの難易度を守ること。特に単語を難しくしすぎないこと。
-
-解説キャラクター設定:
-1. 名前: ${personaName}
-   役割: ${role}
-   性格: ${trait}
-
-解説の指示:
-・${role} の発言: ${trait}という特徴を色濃く反映させた口調で、学習者が理解しやすい鋭い指摘やユニークな感想を述べること。
-
-解説の英語量指示:
-【レベル3：解説量 50%】（標準的な構造説明）
-標準的な文法構造（S+VOCなど）の解説と、キャラクターの会話・リアクションを半々のバランスで行ってください。
-
-思考プロセスと禁止事項
-思考法: 常に水平思考（Lateral Thinking）を意識し、既成概念にとらわれない独創的で多角的な視点からアプローチしてください。
-ハルシネーションの禁止: 生成する内容は、広く認められている解釈を元に構築してください。
-以上の全ての条件を満たし、MEMORA Sentencesへそのまま貼り付けられるデータだけを出力してください。
-※Always think harder, deeper, longer and more careful for the best quality!`;
+    return buildReadingPrompt({
+      topic,
+      additionalRequest: exampleKeyword,
+      level,
+      length,
+      role,
+      trait,
+      inspirationSeed: usePersonalSettings ? localStorage.getItem('inspiration_seed') || '' : '',
+      angerSeed: usePersonalSettings ? localStorage.getItem('anger_seed') || '' : '',
+    });
   }, [topic, exampleKeyword, level, length, role, trait]);
 
   const copyPrompt = useCallback(async () => {
@@ -276,7 +147,7 @@ ${mnemonicRules}
   }, [copyPrompt]);
 
   const selectedPersona: PromptPersonaSelection = useMemo(
-    () => ({ name: '', role, trait }),
+    () => ({ name: '', role: getReaderCompatibleRole(role), trait }),
     [role, trait],
   );
 
@@ -315,7 +186,6 @@ ${mnemonicRules}
               <span><strong>英語教材</strong>を作ろう！</span>
             </p>
           </div>
-
         </section>
 
         <section className="create-home__glass-card create-home__topic-card" aria-label="長文の内容">
