@@ -16,17 +16,64 @@
 }
 
 @media (max-width: 699px) {
-  /* Keep the Create screen on the document's root scroll instead of creating
-     nested scroll containers. With overflow-x:hidden, CSS computes the other
-     axis as scrollable; that is fragile when iOS changes the visual viewport
-     for the software keyboard. clip blocks horizontal spill without creating
-     a scrolling box, while 100svh avoids keyboard-driven dynamic-height churn.
-     Keep this scoped to Create; Reader intentionally owns its viewport scroll. */
-  .memora-world--create,
-  .create-home {
+  /* The Create screen is deliberately flattened to one root paint/scroll tree.
+     The previous body -> app shell -> create nesting combined multiple isolated
+     layers with iOS keyboard viewport changes. In an in-app WebKit browser that
+     could leave the body-colored keyboard tile above the lower form even while
+     the DOM and its geometry were still correct. */
+  html.is-create-home,
+  html.is-create-home body,
+  html.is-create-home body.bg-slate-900 {
     overflow-x: clip !important;
-    overflow-y: visible !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+    background-color: #071333 !important;
+    background-image: linear-gradient(180deg, #07102f 0%, #101044 43%, #071333 100%) !important;
+  }
+
+  html.is-create-home #root {
     min-height: 100svh !important;
+    background: #071333 !important;
+  }
+
+  .memora-world--create {
+    min-height: 100svh !important;
+    overflow: visible !important;
+    isolation: auto !important;
+    background-color: #071333 !important;
+    background-image: linear-gradient(180deg, #07102f 0%, #101044 43%, #071333 100%) !important;
+  }
+
+  .memora-world--create::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .memora-world--create > .create-home {
+    position: relative !important;
+    z-index: auto !important;
+  }
+
+  .create-home {
+    min-height: 100svh !important;
+    overflow: visible !important;
+    isolation: auto !important;
+    background-color: #071333 !important;
+    background-image:
+      radial-gradient(circle at 8% 18%, rgba(100, 65, 196, 0.16), transparent 28%),
+      radial-gradient(circle at 90% 58%, rgba(23, 101, 150, 0.12), transparent 30%),
+      linear-gradient(180deg, #07102f 0%, #101044 43%, #071333 100%) !important;
+  }
+
+  .create-home::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .create-home__content {
+    z-index: auto !important;
+    transform: none !important;
+    will-change: auto !important;
   }
 
   /* WKWebView/Safari can leave large stale compositor tiles after the keyboard
@@ -52,9 +99,14 @@
   .create-home__topic-card,
   .create-home__choice-grid,
   .create-home__persona-card,
-  .create-home__actions {
+  .create-home__actions,
+  .create-home__footer {
     height: auto !important;
     max-height: none !important;
     contain: none !important;
+  }
+
+  .create-home--keyboard-recovering {
+    background-color: #071333 !important;
   }
 }
