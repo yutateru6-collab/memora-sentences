@@ -148,6 +148,10 @@ const forceCreateRepaint = (reason: string, requestedScrollX: number, requestedS
     root.dataset.keyboardRecoveryDeferred = 'native-select-open';
     return;
   }
+  if (isCreateTextField(activeElement) && !reason.startsWith('viewport-restored')) {
+    root.dataset.keyboardRecoveryDeferred = 'text-field-active';
+    return;
+  }
 
   createRecoveryInProgress = true;
   createRecoveryCount += 1;
@@ -220,7 +224,7 @@ const scheduleCreateRecovery = (reason: string, delay = 320) => {
   createRecoveryFollowUpTimer = window.setTimeout(() => {
     createRecoveryFollowUpTimer = null;
     if (!document.querySelector(CREATE_SELECTOR)) return;
-    forceCreateRepaint(`${reason}-settled`, scrollX, scrollY);
+    forceCreateRepaint(`${reason}-settled`, window.scrollX, window.scrollY);
   }, delay + 520);
 };
 
@@ -305,14 +309,10 @@ const installCreateKeyboardRecovery = () => {
     }, 520);
   }, { passive: true });
 
-  window.addEventListener('pageshow', () => {
-    syncCreateDocumentMode();
-    if (document.querySelector(CREATE_SELECTOR)) scheduleCreateRecovery('pageshow', 120);
-  });
+  window.addEventListener('pageshow', syncCreateDocumentMode);
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible' || !document.querySelector(CREATE_SELECTOR)) return;
-    scheduleCreateRecovery('visibility-restored', 160);
+    if (document.visibilityState === 'visible') syncCreateDocumentMode();
   });
 };
 
