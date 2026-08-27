@@ -143,6 +143,12 @@ const forceCreateRepaint = (reason: string, requestedScrollX: number, requestedS
   const content = root?.querySelector<HTMLElement>(CREATE_CONTENT_SELECTOR);
   if (!root || !content) return;
 
+  const activeElement = document.activeElement;
+  if (activeElement instanceof HTMLSelectElement && activeElement.closest(CREATE_SELECTOR)) {
+    root.dataset.keyboardRecoveryDeferred = 'native-select-open';
+    return;
+  }
+
   createRecoveryInProgress = true;
   createRecoveryCount += 1;
   root.dataset.keyboardRecoveryCount = String(createRecoveryCount);
@@ -271,9 +277,21 @@ const installCreateKeyboardRecovery = () => {
   }, { capture: true });
 
   document.addEventListener('focusout', (event) => {
-    if (createRecoveryInProgress || !isCreateTextField(event.target)) return;
-    createFocusedField = null;
-    scheduleCreateRecovery('text-field-blur', 300);
+    if (createRecoveryInProgress) return;
+
+    if (isCreateTextField(event.target)) {
+      createFocusedField = null;
+      scheduleCreateRecovery('text-field-blur', 300);
+      return;
+    }
+
+    if (
+      event.target instanceof HTMLSelectElement
+      && event.target.closest(CREATE_SELECTOR)
+      && createKeyboardWasOpen
+    ) {
+      scheduleCreateRecovery('native-select-closed-after-keyboard', 180);
+    }
   }, { capture: true });
 
   window.visualViewport?.addEventListener('resize', handleCreateViewportChange, { passive: true });
