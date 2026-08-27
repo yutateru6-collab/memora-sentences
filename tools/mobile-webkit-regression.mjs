@@ -49,6 +49,9 @@ const layoutSnapshot = async page => page.evaluate(() => {
   const glassStyle = glass instanceof HTMLElement ? getComputedStyle(glass) : null;
   const createStyle = createNode instanceof HTMLElement ? getComputedStyle(createNode) : null;
   const shellStyle = shellNode instanceof HTMLElement ? getComputedStyle(shellNode) : null;
+  const htmlStyle = getComputedStyle(document.documentElement);
+  const bodyStyle = getComputedStyle(document.body);
+  const shellBeforeStyle = shellNode instanceof HTMLElement ? getComputedStyle(shellNode, '::before') : null;
 
   return {
     topic,
@@ -70,18 +73,37 @@ const layoutSnapshot = async page => page.evaluate(() => {
       scrollHeight: document.documentElement.scrollHeight,
       clientHeight: document.documentElement.clientHeight,
       horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      htmlCreateClass: document.documentElement.classList.contains('is-create-home'),
+      bodyCreateClass: document.body.classList.contains('is-create-home'),
+      htmlOverflowX: htmlStyle.overflowX,
+      htmlOverflowY: htmlStyle.overflowY,
+      bodyOverflowX: bodyStyle.overflowX,
+      bodyOverflowY: bodyStyle.overflowY,
+      bodyOverscrollY: bodyStyle.overscrollBehaviorY,
+      bodyBackgroundColor: bodyStyle.backgroundColor,
     },
     scrollStructure: {
       create: {
         overflowX: createStyle?.overflowX || '',
         overflowY: createStyle?.overflowY || '',
         minHeight: createStyle?.minHeight || '',
+        isolation: createStyle?.isolation || '',
       },
       shell: {
         overflowX: shellStyle?.overflowX || '',
         overflowY: shellStyle?.overflowY || '',
         minHeight: shellStyle?.minHeight || '',
+        isolation: shellStyle?.isolation || '',
+        beforeDisplay: shellBeforeStyle?.display || '',
+        beforeContent: shellBeforeStyle?.content || '',
       },
+    },
+    recovery: {
+      count: Number(createNode?.dataset.keyboardRecoveryCount || 0),
+      scheduled: createNode?.dataset.keyboardRecoveryScheduled || '',
+      reason: createNode?.dataset.keyboardRecoveryReason || '',
+      complete: createNode?.dataset.keyboardRecoveryComplete || '',
+      keyboardState: createNode?.dataset.keyboardState || '',
     },
     glassBackdropFilter: glassStyle?.backdropFilter || '',
     glassWebkitBackdropFilter: glassStyle?.webkitBackdropFilter || '',
@@ -118,9 +140,29 @@ const assertCreateLayout = (snapshot, label) => {
   }
 
   for (const [name, structure] of Object.entries(snapshot.scrollStructure)) {
-    if (structure.overflowX !== 'clip' || structure.overflowY !== 'visible') {
+    if (structure.overflowX !== 'visible' || structure.overflowY !== 'visible') {
       throw new Error(`${label}: ${name} must not be a nested scroll container: ${JSON.stringify(snapshot.scrollStructure)}`);
     }
+    if (structure.isolation !== 'auto') {
+      throw new Error(`${label}: ${name} must not create an isolated compositor group: ${JSON.stringify(snapshot.scrollStructure)}`);
+    }
+  }
+
+  if (!snapshot.document.htmlCreateClass || !snapshot.document.bodyCreateClass) {
+    throw new Error(`${label}: create document mode class is missing: ${JSON.stringify(snapshot.document)}`);
+  }
+  if (snapshot.document.bodyOverscrollY !== 'auto') {
+    throw new Error(`${label}: create root overscroll must be restored to auto: ${JSON.stringify(snapshot.document)}`);
+  }
+  if (!['clip', 'hidden'].includes(snapshot.document.bodyOverflowX)) {
+    throw new Error(`${label}: body must own horizontal clipping: ${JSON.stringify(snapshot.document)}`);
+  }
+  if (!['auto', 'visible'].includes(snapshot.document.bodyOverflowY)) {
+    throw new Error(`${label}: body must own vertical scrolling: ${JSON.stringify(snapshot.document)}`);
+  }
+
+  if (snapshot.scrollStructure.shell.beforeDisplay !== 'none' && snapshot.scrollStructure.shell.beforeContent !== 'none') {
+    throw new Error(`${label}: create shell fixed flower layer must be disabled: ${JSON.stringify(snapshot.scrollStructure.shell)}`);
   }
 
   if (snapshot.glassBackdropFilter !== 'none' || snapshot.glassWebkitBackdropFilter !== 'none') {
@@ -150,10 +192,12 @@ try {
 
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await page.getByRole('heading', { name: 'リードン READON', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+  await page.waitForFunction(() => document.documentElement.classList.contains('is-create-home'), null, { timeout: 10_000 });
   result.actions.push('open-create-home-webkit');
 
   const before = await layoutSnapshot(page);
   assertCreateLayout(before, 'before-input');
+  const recoveryCountBeforeInput = before.recovery.count;
 
   const topic = page.getByTestId('create-topic');
   await topic.tap();
@@ -172,10 +216,28 @@ try {
   await topic.evaluate(element => element.blur());
   await page.waitForTimeout(100);
   await page.setViewportSize({ width: 393, height: 852 });
-  await page.waitForTimeout(300);
+
+  await page.waitForFunction(
+    expected => Number(document.querySelector('.create-home')?.getAttribute('data-keyboard-recovery-count') || 0) > expected,
+    recoveryCountBeforeInput,
+    { timeout: 8_000 },
+  );
+  await page.waitForFunction(
+    () => document.querySelector('.create-home')?.getAttribute('data-keyboard-recovery-complete') === 'true',
+    null,
+    { timeout: 8_000 },
+  );
+  await page.waitForTimeout(900);
+
   const restored = await layoutSnapshot(page);
   assertCreateLayout(restored, 'restored-after-keyboard');
-  result.actions.push('restore-viewport-after-keyboard');
+  if (restored.recovery.count <= recoveryCountBeforeInput) {
+    throw new Error(`restored-after-keyboard: repaint recovery did not run: ${JSON.stringify(restored.recovery)}`);
+  }
+  if (restored.recovery.complete !== 'true') {
+    throw new Error(`restored-after-keyboard: repaint recovery did not complete: ${JSON.stringify(restored.recovery)}`);
+  }
+  result.actions.push('restore-viewport-and-verify-repaint-recovery');
 
   const restoredDocumentDelta = Math.abs(restored.document.scrollHeight - before.document.scrollHeight);
   if (restoredDocumentDelta > 80) {
@@ -183,7 +245,10 @@ try {
   }
 
   result.states.create = { before, focused, keyboardSized, restored };
-  result.screenshots.create = `${screenshotDir}/iphone-16-webkit-create-after-keyboard-cycle.png`;
+  const actions = page.locator('.create-home__actions');
+  await actions.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(120);
+  result.screenshots.create = `${screenshotDir}/iphone-16-webkit-create-lower-form-after-keyboard-cycle.png`;
   await page.screenshot({ path: result.screenshots.create, fullPage: false, scale: 'device' });
 
   await page.evaluate(() => {
