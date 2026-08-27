@@ -81,6 +81,7 @@ const layoutSnapshot = async page => page.evaluate(() => {
       bodyOverflowY: bodyStyle.overflowY,
       bodyOverscrollY: bodyStyle.overscrollBehaviorY,
       bodyBackgroundColor: bodyStyle.backgroundColor,
+      scrollingElement: document.scrollingElement?.tagName || '',
     },
     scrollStructure: {
       create: {
@@ -154,11 +155,17 @@ const assertCreateLayout = (snapshot, label) => {
   if (snapshot.document.bodyOverscrollY !== 'auto') {
     throw new Error(`${label}: create root overscroll must be restored to auto: ${JSON.stringify(snapshot.document)}`);
   }
-  if (!['clip', 'hidden'].includes(snapshot.document.bodyOverflowX)) {
-    throw new Error(`${label}: body must own horizontal clipping: ${JSON.stringify(snapshot.document)}`);
+  if (!['clip', 'hidden'].includes(snapshot.document.htmlOverflowX)) {
+    throw new Error(`${label}: document root must own horizontal clipping: ${JSON.stringify(snapshot.document)}`);
   }
-  if (!['auto', 'visible'].includes(snapshot.document.bodyOverflowY)) {
-    throw new Error(`${label}: body must own vertical scrolling: ${JSON.stringify(snapshot.document)}`);
+  if (!['auto', 'scroll'].includes(snapshot.document.htmlOverflowY)) {
+    throw new Error(`${label}: document root must own vertical scrolling: ${JSON.stringify(snapshot.document)}`);
+  }
+  if (snapshot.document.bodyOverflowX !== 'visible' || snapshot.document.bodyOverflowY !== 'visible') {
+    throw new Error(`${label}: body must not become a nested scroll container: ${JSON.stringify(snapshot.document)}`);
+  }
+  if (snapshot.document.scrollingElement !== 'HTML') {
+    throw new Error(`${label}: scrolling element must remain the document root: ${JSON.stringify(snapshot.document)}`);
   }
 
   if (snapshot.scrollStructure.shell.beforeDisplay !== 'none' && snapshot.scrollStructure.shell.beforeContent !== 'none') {
