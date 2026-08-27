@@ -21,11 +21,18 @@
      layers with iOS keyboard viewport changes. In an in-app WebKit browser that
      could leave the body-colored keyboard tile above the lower form even while
      the DOM and its geometry were still correct. */
-  html.is-create-home,
-  html.is-create-home body,
-  html.is-create-home body.bg-slate-900 {
+  html.is-create-home {
     overflow-x: clip !important;
     overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+    background-color: #071333 !important;
+    background-image: linear-gradient(180deg, #07102f 0%, #101044 43%, #071333 100%) !important;
+  }
+
+  html.is-create-home body,
+  html.is-create-home body.bg-slate-900 {
+    min-height: 100svh !important;
+    overflow: visible !important;
     overscroll-behavior-y: auto !important;
     background-color: #071333 !important;
     background-image: linear-gradient(180deg, #07102f 0%, #101044 43%, #071333 100%) !important;
