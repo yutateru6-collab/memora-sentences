@@ -119,7 +119,13 @@
 }
 
 .memora-reader-document {
+  width: 100%;
+  min-width: 0;
   padding: 2px;
+}
+
+.memora-reader-scroll {
+  overflow-x: hidden !important;
 }
 
 .memora-reader-complete > div > span {
@@ -131,6 +137,9 @@
 }
 
 .memora-reader-sentence {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   border: 1px solid rgba(191, 203, 232, 0.09);
   background: linear-gradient(145deg, rgba(13, 25, 58, 0.72), rgba(17, 23, 62, 0.5));
   box-shadow: 0 12px 32px rgba(1, 6, 25, 0.16);

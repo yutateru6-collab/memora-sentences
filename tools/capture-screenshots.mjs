@@ -90,6 +90,16 @@ async function assertNoOverflow(page, label) {
   return state;
 }
 
+async function waitForReaderReady(page) {
+  await page.locator('.memora-reader-screen').waitFor({ state: 'visible', timeout: 20_000 });
+  await page.locator('.memora-reader-sentence').first().waitFor({ state: 'visible', timeout: 20_000 });
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  await page.waitForTimeout(300);
+}
+
 async function readerLayoutState(page) {
   return page.evaluate(() => {
     const rect = node => {
@@ -131,7 +141,12 @@ async function readerLayoutState(page) {
       actions: rect(actions),
       actionButtons: visibleActionButtons.map(rect),
       main: rect(main),
-      scroll: rect(scroll),
+      scroll: scroll instanceof HTMLElement ? {
+        ...rect(scroll),
+        clientWidth: scroll.clientWidth,
+        scrollWidth: scroll.scrollWidth,
+        scrollLeft: scroll.scrollLeft,
+      } : null,
       firstSentence: rect(firstSentence),
     };
   });
@@ -146,6 +161,9 @@ function assertReaderLayout(state, label, mobile) {
   }
   if (!state.header || !state.main || !state.scroll || !state.firstSentence) {
     throw new Error(`${label}: Reader layout nodes are missing: ${JSON.stringify(state)}`);
+  }
+  if (state.scroll.scrollWidth > state.scroll.clientWidth || state.scroll.scrollLeft !== 0) {
+    throw new Error(`${label}: Reader text area is horizontally clipped or scrollable: ${JSON.stringify(state)}`);
   }
   if (state.main.top < state.header.bottom - 0.5) {
     throw new Error(`${label}: Reader content overlaps the header: ${JSON.stringify(state)}`);
@@ -446,6 +464,7 @@ for (const target of targets) {
     await assertImporterScrollable(page, target, result, sampleMaterial);
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+    await waitForReaderReady(page);
     result.actions.push('import-material-and-open-reader');
 
     const readerLayout = await readerLayoutState(page);

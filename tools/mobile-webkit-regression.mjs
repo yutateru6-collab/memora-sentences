@@ -282,6 +282,9 @@ const readerSnapshot = async page => page.evaluate(() => {
     main: rect(main),
     scroll: scroll instanceof HTMLElement ? {
       ...rect(scroll),
+      clientWidth: scroll.clientWidth,
+      scrollWidth: scroll.scrollWidth,
+      scrollLeft: scroll.scrollLeft,
       clientHeight: scroll.clientHeight,
       scrollHeight: scroll.scrollHeight,
     } : null,
@@ -307,6 +310,9 @@ const assertReaderLayout = (snapshot, label) => {
   }
   if (snapshot.document.horizontalOverflow || snapshot.document.scrollX !== 0) {
     throw new Error(`${label}: Reader is horizontally clipped or scrollable: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.scroll.scrollWidth > snapshot.scroll.clientWidth || snapshot.scroll.scrollLeft !== 0) {
+    throw new Error(`${label}: Reader text area is horizontally clipped or scrollable: ${JSON.stringify(snapshot)}`);
   }
   if (snapshot.scroll.height < 200
       || snapshot.scroll.bottom > snapshot.viewportHeight + 1
@@ -334,6 +340,16 @@ const assertReaderLayout = (snapshot, label) => {
   if (snapshot.title.right > snapshot.actions.left + 0.5) {
     throw new Error(`${label}: title overlaps the mobile action group: ${JSON.stringify(snapshot)}`);
   }
+};
+
+const waitForReaderReady = async page => {
+  await page.locator('.memora-reader-screen').waitFor({ state: 'visible', timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+  await page.waitForTimeout(300);
 };
 
 let browser;
@@ -519,7 +535,7 @@ try {
     throw new Error(`importer-submit: WebKit persistence failed: ${alert}`);
   }
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
-  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
+  await waitForReaderReady(page);
   const importedReader = await readerSnapshot(page);
   assertReaderLayout(importedReader, 'import-reader');
   await page.locator('.memora-reader-scroll').evaluate(element => {
@@ -530,7 +546,11 @@ try {
   if (readerScrollTop <= 0) {
     throw new Error(`import-reader: valid content cannot scroll: ${JSON.stringify({ importedReader, readerScrollTop })}`);
   }
-  await page.locator('.memora-reader-scroll').evaluate(element => { element.scrollTop = 0; });
+  await page.locator('.memora-reader-scroll').evaluate(element => {
+    element.scrollTop = 0;
+    element.scrollLeft = 0;
+  });
+  await page.waitForTimeout(300);
   result.states.importedReader = importedReader;
   result.actions.push('import-material-and-open-reader-webkit');
   result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
@@ -544,7 +564,9 @@ try {
   await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
   await page.getByRole('button', { name: '読む' }).first().click();
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
-  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
+  await waitForReaderReady(page);
+  await page.locator('.memora-reader-scroll').evaluate(element => { element.scrollLeft = 0; });
+  await page.waitForTimeout(300);
   const reloadedReader = await readerSnapshot(page);
   assertReaderLayout(reloadedReader, 'import-reload');
   result.states.reloadedReader = reloadedReader;
