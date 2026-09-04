@@ -1338,7 +1338,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   };
 
   return (
-    <div ref={readerScreenRef} className={`memora-reader-screen flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
+    <div ref={readerScreenRef} className={`memora-reader-screen ${isHeaderVisible ? 'memora-reader-screen--header-visible' : ''} flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
       {/* RSVP Screen Overlay */}
       {isRsvpModeOpen && (
           <RsvpScreen 
