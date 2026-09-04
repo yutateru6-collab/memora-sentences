@@ -357,6 +357,7 @@ for (const target of targets) {
     await page.locator('button[title="解説を表示"]:visible').first().click();
     const personaAvatar = page.locator('img[data-persona-avatar="/personas/01_ギャル.png"]').first();
     await personaAvatar.waitFor({ state: 'visible', timeout: 10_000 });
+    await personaAvatar.evaluate(image => image.decode().catch(() => {}));
     const personaImageState = await personaAvatar.evaluate(image => ({
       complete: image.complete,
       naturalWidth: image.naturalWidth,

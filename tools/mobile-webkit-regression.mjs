@@ -317,6 +317,9 @@ try {
   await page.setViewportSize({ width: 393, height: 520 });
   await page.waitForTimeout(220);
   const importerKeyboardSized = await importerSnapshot(page);
+  if (!importerKeyboardSized || importerKeyboardSized.dialog.height > importerKeyboardSized.viewportHeight + 0.5) {
+    throw new Error(`importer-keyboard-sized: dialog ignored the visual viewport: ${JSON.stringify(importerKeyboardSized)}`);
+  }
   if (!importerKeyboardSized?.submit.fullyVisible) {
     throw new Error(`importer-keyboard-sized: submit is clipped: ${JSON.stringify(importerKeyboardSized)}`);
   }

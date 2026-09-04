@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { StoredMaterial, StoredFolder, TranscriptEntry, Word } from '../types';
 import { Theme, Themes } from '../App';
 import TrashIcon from './icons/TrashIcon';
@@ -674,15 +674,11 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
     };
   }, [isAddModalOpen]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isAddModalOpen || !plainTextInputRef.current) return;
-    const frame = window.requestAnimationFrame(() => {
-        const textarea = plainTextInputRef.current;
-        if (!textarea) return;
-        textarea.style.height = 'auto';
-        textarea.style.height = `${Math.max(132, textarea.scrollHeight)}px`;
-    });
-    return () => window.cancelAnimationFrame(frame);
+    const textarea = plainTextInputRef.current;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.max(132, textarea.scrollHeight + 2)}px`;
   }, [isAddModalOpen, plainTextContent]);
 
   useEffect(() => { if (isCreatingFolder) newFolderInputRef.current?.focus(); }, [isCreatingFolder]);
@@ -917,7 +913,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                     <div>
                         <label htmlFor="add-material-data" className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
                         <p className="memora-field-help">AI Studioで作った結果を貼り付けます。</p>
-                        <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none overflow-hidden`}/>
+                        <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onInput={(e) => { const textarea = e.currentTarget; textarea.style.height = 'auto'; textarea.style.height = `${Math.max(132, textarea.scrollHeight + 2)}px`; }} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none overflow-hidden`}/>
                     </div>
 
                     <div>
