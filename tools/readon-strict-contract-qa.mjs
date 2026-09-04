@@ -115,6 +115,16 @@ const assertStoredMaterial = (stored, expectedCards, label) => {
   }
 };
 
+const assertReaderSentences = async (page, label) => {
+  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 12, null, { timeout: 20_000 });
+  const texts = await page.locator('.memora-reader-sentence').allTextContents();
+  const compact = value => value.replace(/\s+/g, '');
+  if (!compact(texts[0] || '').includes(compact(firstSentenceFragment))
+      || !compact(texts.at(-1) || '').includes(compact(lastSentenceFragment))) {
+    throw new Error(`${label}: reader did not render the persisted first and last sentences.`);
+  }
+};
+
 for (const target of targets) {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(target.context);
@@ -180,8 +190,7 @@ for (const target of targets) {
 
     await submit.click();
     await dialog.waitFor({ state: 'hidden', timeout: 20_000 });
-    await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 12, null, { timeout: 20_000 });
-    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), lastSentenceFragment, { timeout: 20_000 });
+    await assertReaderSentences(page, `${target.name}/exact-render`);
     await page.screenshot({ path: `${screenshotDir}/${target.name}-chiikawa-reader.png`, scale: 'css' });
 
     let stored = await readStoredMaterials(page);
@@ -193,7 +202,7 @@ for (const target of targets) {
     await page.getByRole('button', { name: '教材一覧' }).click();
     await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
     await page.getByRole('button', { name: '読む' }).first().click();
-    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 15_000 });
+    await assertReaderSentences(page, `${target.name}/reload-render`);
 
     // A structurally invalid paste must not enable submit or create an orphan/blank record.
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -217,7 +226,7 @@ for (const target of targets) {
     await tolerantPreview.getByText('自動で補正して取り込みます', { exact: false }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('dialog', { name: '新しい教材を追加' }).waitFor({ state: 'hidden', timeout: 20_000 });
-    await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 12, null, { timeout: 20_000 });
+    await assertReaderSentences(page, `${target.name}/tolerant-render`);
     stored = await readStoredMaterials(page);
     if (stored.length !== 2) throw new Error(`${target.name}: tolerant import did not create exactly one additional record.`);
     assertStoredMaterial(stored.at(-1), 29, `${target.name}/tolerant`);
