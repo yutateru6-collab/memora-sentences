@@ -7,6 +7,36 @@ const FOLDER_STORE_NAME = 'folders';
 
 let db: IDBDatabase;
 
+interface SerializedTextFile {
+    __memoraTextFile: 1;
+    name: string;
+    type: string;
+    lastModified: number;
+    text: string;
+}
+
+const serializeTextFile = async (file: File | undefined | null): Promise<File | SerializedTextFile | undefined | null> => {
+    if (file === undefined || file === null) return file;
+    return {
+        __memoraTextFile: 1,
+        name: file.name,
+        type: file.type || 'text/plain',
+        lastModified: file.lastModified,
+        text: await file.text(),
+    };
+};
+
+const reviveTextFile = (value: File | SerializedTextFile | undefined): File | undefined => {
+    if (!value) return undefined;
+    if (typeof value === 'object' && '__memoraTextFile' in value && value.__memoraTextFile === 1) {
+        return new File([value.text], value.name, {
+            type: value.type,
+            lastModified: value.lastModified,
+        });
+    }
+    return value as File;
+};
+
 export const initDB = (): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     if (db) {
@@ -50,7 +80,7 @@ export const initDB = (): Promise<boolean> => {
   });
 };
 
-export const saveMaterial = (material: { 
+export const saveMaterial = async (material: {
     name: string; 
     mediaFile?: File; 
     textFile?: File; 
@@ -58,10 +88,15 @@ export const saveMaterial = (material: {
     wordFile?: File;
     thumbnail?: string;
 }): Promise<number> => {
+  const storedMaterial = {
+      ...material,
+      textFile: await serializeTextFile(material.textFile),
+      wordFile: await serializeTextFile(material.wordFile),
+  };
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
-    const request = store.add({ ...material, createdAt: new Date() });
+    const request = store.add({ ...storedMaterial, createdAt: new Date() });
 
     transaction.oncomplete = () => {
         resolve(request.result as number);
@@ -123,6 +158,10 @@ export const getMaterialById = (id: number): Promise<StoredMaterialWithFiles> =>
         request.onsuccess = () => {
             if (request.result) {
                 const material = request.result;
+                material.textFile = reviveTextFile(material.textFile);
+                material.wordFile = reviveTextFile(material.wordFile);
+                material.quizFile = reviveTextFile(material.quizFile);
+                material.annotationFile = reviveTextFile(material.annotationFile);
                 material.quizBookmarks = material.quizBookmarks || [];
                 material.globalMemo = material.globalMemo || '';
                 material.inlineNotes = material.inlineNotes || [];
@@ -135,7 +174,7 @@ export const getMaterialById = (id: number): Promise<StoredMaterialWithFiles> =>
     });
 };
 
-export const updateMaterial = (
+export const updateMaterial = async (
     id: number, 
     data: { 
         name?: string; 
@@ -154,6 +193,13 @@ export const updateMaterial = (
         cardStats?: Record<number, SRSState>;
     }
 ): Promise<void> => {
+    const storedData = {
+        ...data,
+        textFile: data.textFile instanceof File ? await serializeTextFile(data.textFile) : data.textFile,
+        wordFile: data.wordFile instanceof File ? await serializeTextFile(data.wordFile) : data.wordFile,
+        quizFile: data.quizFile instanceof File ? await serializeTextFile(data.quizFile) : data.quizFile,
+        annotationFile: data.annotationFile instanceof File ? await serializeTextFile(data.annotationFile) : data.annotationFile,
+    };
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
@@ -178,11 +224,11 @@ export const updateMaterial = (
                         material.bgmFile = data.bgmFile;
                     }
                 }
-                if (data.wordFile !== undefined) {
-                    if (data.wordFile === null) {
+                if (storedData.wordFile !== undefined) {
+                    if (storedData.wordFile === null) {
                         delete material.wordFile;
                     } else {
-                        material.wordFile = data.wordFile;
+                        material.wordFile = storedData.wordFile;
                     }
                 }
                 if (data.mediaFile !== undefined) {
@@ -193,28 +239,28 @@ export const updateMaterial = (
                         material.mediaFile = data.mediaFile;
                     }
                 }
-                if (data.textFile !== undefined) {
-                    if (data.textFile === null) {
+                if (storedData.textFile !== undefined) {
+                    if (storedData.textFile === null) {
                         delete material.textFile;
                     } else {
-                        material.textFile = data.textFile;
+                        material.textFile = storedData.textFile;
                     }
                 }
                 if (data.duration !== undefined) {
                     material.duration = data.duration;
                 }
-                if (data.quizFile !== undefined) {
-                    if (data.quizFile === null) {
+                if (storedData.quizFile !== undefined) {
+                    if (storedData.quizFile === null) {
                         delete material.quizFile;
                     } else {
-                        material.quizFile = data.quizFile;
+                        material.quizFile = storedData.quizFile;
                     }
                 }
-                if (data.annotationFile !== undefined) {
-                    if (data.annotationFile === null) {
+                if (storedData.annotationFile !== undefined) {
+                    if (storedData.annotationFile === null) {
                         delete material.annotationFile;
                     } else {
-                        material.annotationFile = data.annotationFile;
+                        material.annotationFile = storedData.annotationFile;
                     }
                 }
                 if (data.quizBookmarks !== undefined) {

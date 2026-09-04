@@ -402,33 +402,28 @@ try {
   result.screenshots.importer = `${screenshotDir}/iphone-16-webkit-importer-bottom-reachable.png`;
   await page.screenshot({ path: result.screenshots.importer, fullPage: false, scale: 'device' });
   await page.getByRole('button', { name: '教材として取り込む' }).click();
-  await page.waitForTimeout(1_400);
+  await page.waitForTimeout(1_000);
   if (await importerDialog.isVisible()) {
-    // Headless Playwright WebKit cannot persist Blob/File values in IndexedDB
-    // on the CI runner. Verify that the real submit was activated and that the
-    // user's draft remains recoverable, while Chromium covers full persistence.
-    const expectedPersistenceError = result.consoleErrors.find(message => message.includes('Error preparing Blob/File data to be stored in object store'));
     const importAlert = page.getByRole('alert');
-    if (!expectedPersistenceError || !(await importAlert.isVisible()) || !(await page.getByTestId('material-paste-preview').isVisible())) {
-      throw new Error(`importer-submit: unexpected WebKit persistence result: ${JSON.stringify({ expectedPersistenceError, alertVisible: await importAlert.isVisible() })}`);
-    }
-    result.states.importer.expectedHeadlessPersistenceLimit = {
-      message: expectedPersistenceError,
-      alert: await importAlert.innerText(),
-      draftCharacterCount: await page.getByTestId('material-paste-preview').getAttribute('data-character-count'),
-    };
-    result.actions.push('activate-import-submit-webkit', 'preserve-draft-after-headless-webkit-indexeddb-limit');
-    result.screenshots.importSubmit = `${screenshotDir}/iphone-16-webkit-import-submit-activated.png`;
-    await page.screenshot({ path: result.screenshots.importSubmit, fullPage: false, scale: 'device' });
-    result.consoleErrors = result.consoleErrors.filter(message => !message.includes('Error preparing Blob/File data to be stored in object store'));
-    await page.getByRole('button', { name: '教材の追加を閉じる' }).click();
-    await importerDialog.waitFor({ state: 'hidden', timeout: 5_000 });
-  } else {
-    await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
-    result.actions.push('import-material-and-open-reader-webkit');
-    result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
-    await page.screenshot({ path: result.screenshots.importSuccess, fullPage: false, scale: 'device' });
+    const alert = await importAlert.isVisible() ? await importAlert.innerText() : 'no visible alert';
+    throw new Error(`importer-submit: WebKit persistence failed: ${alert}`);
   }
+  await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+  result.actions.push('import-material-and-open-reader-webkit');
+  result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
+  await page.screenshot({ path: result.screenshots.importSuccess, fullPage: false, scale: 'device' });
+
+  // Recreate the document and reopen the saved record. A successful transient
+  // render is insufficient: WebKit must be able to read the serialized files
+  // back from IndexedDB after a real reload.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: '教材一覧' }).click();
+  await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+  await page.getByRole('button', { name: '読む' }).first().click();
+  await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+  result.actions.push('reload-and-reopen-imported-material-webkit');
+  result.screenshots.importReloaded = `${screenshotDir}/iphone-16-webkit-import-reloaded.png`;
+  await page.screenshot({ path: result.screenshots.importReloaded, fullPage: false, scale: 'device' });
 
   await page.evaluate(() => {
     const probe = document.createElement('div');
