@@ -72,6 +72,12 @@ const openImporter = async page => {
 };
 
 const readStoredMaterials = async page => page.evaluate(async () => {
+  const readStoredText = async value => {
+    if (!value) return null;
+    if (typeof value.text === 'function') return value.text();
+    if (typeof value.text === 'string') return value.text;
+    throw new TypeError('Stored text payload is neither a File nor a serialized text file.');
+  };
   const database = await new Promise((resolve, reject) => {
     const request = indexedDB.open('AudioSyncReaderDB', 2);
     request.onsuccess = () => resolve(request.result);
@@ -85,8 +91,8 @@ const readStoredMaterials = async page => page.evaluate(async () => {
   });
   return Promise.all(materials.map(async material => ({
     name: material.name,
-    transcript: material.textFile ? JSON.parse(await material.textFile.text()) : null,
-    cards: material.wordFile ? JSON.parse(await material.wordFile.text()) : null,
+    transcript: material.textFile ? JSON.parse(await readStoredText(material.textFile)) : null,
+    cards: material.wordFile ? JSON.parse(await readStoredText(material.wordFile)) : null,
   })));
 });
 
