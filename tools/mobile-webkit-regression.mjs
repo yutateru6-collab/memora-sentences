@@ -518,3 +518,48 @@ try {
   const wordStyle = await word.evaluate(element => {
     const style = getComputedStyle(element);
     return {
+      userSelect: style.userSelect,
+      webkitUserSelect: style.webkitUserSelect,
+      touchAction: style.touchAction,
+    };
+  });
+  const effectiveUserSelect = wordStyle.webkitUserSelect || wordStyle.userSelect;
+  if (effectiveUserSelect !== 'none' || wordStyle.touchAction !== 'manipulation') {
+    throw new Error(`Registered word touch style is not effective on WebKit: ${JSON.stringify(wordStyle)}`);
+  }
+
+  await word.tap();
+  await page.waitForFunction(() => document.querySelector('[data-testid="webkit-word-probe"]')?.getAttribute('data-tap-activated') === 'true', null, { timeout: 10_000 });
+  result.actions.push('verify-touch-tap-bridge-webkit');
+  result.states.readerTouchProbe = { wordStyle, effectiveUserSelect, activated: true };
+  result.screenshots.readerTouchProbe = `${screenshotDir}/iphone-16-webkit-word-tap-probe.png`;
+  await page.screenshot({ path: result.screenshots.readerTouchProbe, fullPage: false, scale: 'device' });
+
+  if (result.consoleErrors.length) throw new Error(`Console errors: ${result.consoleErrors.join(' | ')}`);
+  if (result.pageErrors.length) throw new Error(`Page errors: ${result.pageErrors.join(' | ')}`);
+
+  result.status = 'success';
+} catch (error) {
+  result.failure = errorText(error);
+  if (page) {
+    try {
+      result.screenshots.failure = `${screenshotDir}/iphone-16-webkit-regression-failure.png`;
+      await page.screenshot({ path: result.screenshots.failure, fullPage: false, scale: 'device' });
+    } catch {}
+  }
+} finally {
+  await context?.close().catch(() => {});
+  await browser?.close().catch(() => {});
+}
+
+let report = {};
+try {
+  report = JSON.parse(await fs.readFile(reportPath, 'utf8'));
+} catch {}
+
+report.mobileWebKit = result;
+if (result.status !== 'success') report.status = 'failure';
+await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
+
+console.log(`MOBILE_WEBKIT_REPORT=${JSON.stringify(result)}`);
+if (result.status !== 'success') process.exitCode = 1;
