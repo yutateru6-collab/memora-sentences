@@ -409,6 +409,28 @@ try {
     throw new Error(`importer-submit: WebKit persistence failed: ${alert}`);
   }
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
+  const importedReader = await page.evaluate(() => {
+    const scroll = document.querySelector('.memora-reader-scroll');
+    const first = document.querySelector('.memora-reader-sentence');
+    const scrollRect = scroll?.getBoundingClientRect();
+    const firstRect = first?.getBoundingClientRect();
+    return {
+      sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
+      firstText: first?.textContent?.replace(/\s+/g, '') || '',
+      scroll: scrollRect ? { top: scrollRect.top, bottom: scrollRect.bottom, height: scrollRect.height } : null,
+      first: firstRect ? { top: firstRect.top, bottom: firstRect.bottom, height: firstRect.height } : null,
+    };
+  });
+  if (importedReader.sentenceCount !== 8
+      || !importedReader.firstText.includes('Studentsanalyzeramenculture')
+      || !importedReader.scroll
+      || importedReader.scroll.height < 200
+      || !importedReader.first
+      || importedReader.first.height <= 0) {
+    throw new Error(`import-reader: valid content is blank or unreachable: ${JSON.stringify(importedReader)}`);
+  }
+  result.states.importedReader = importedReader;
   result.actions.push('import-material-and-open-reader-webkit');
   result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
   await page.screenshot({ path: result.screenshots.importSuccess, fullPage: false, scale: 'device' });
@@ -421,6 +443,15 @@ try {
   await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
   await page.getByRole('button', { name: '読む' }).first().click();
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
+  const reloadedReader = await page.evaluate(() => ({
+    sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
+    firstText: document.querySelector('.memora-reader-sentence')?.textContent?.replace(/\s+/g, '') || '',
+  }));
+  if (reloadedReader.sentenceCount !== 8 || !reloadedReader.firstText.includes('Studentsanalyzeramenculture')) {
+    throw new Error(`import-reload: persisted content is blank: ${JSON.stringify(reloadedReader)}`);
+  }
+  result.states.reloadedReader = reloadedReader;
   result.actions.push('reload-and-reopen-imported-material-webkit');
   result.screenshots.importReloaded = `${screenshotDir}/iphone-16-webkit-import-reloaded.png`;
   await page.screenshot({ path: result.screenshots.importReloaded, fullPage: false, scale: 'device' });

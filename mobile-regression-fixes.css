@@ -16,6 +16,30 @@
 }
 
 @media (max-width: 699px) {
+  /* Keep the Reader text in normal flex flow on iOS. An absolutely positioned
+     overflow layer can remain visually blank after the import modal closes or
+     the software keyboard changes the visual viewport, even though its DOM is
+     populated. The regular flow scroller repaints reliably in Safari/WebKit. */
+  .memora-reader-main {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+  }
+
+  .memora-reader-scroll {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    transition: none !important;
+  }
+
+  .memora-reader-document {
+    position: relative;
+  }
+
   /* The Create screen is deliberately flattened to one root paint/scroll tree.
      The previous body -> app shell -> create nesting combined multiple isolated
      layers with iOS keyboard viewport changes. In an in-app WebKit browser that

@@ -1558,7 +1558,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       )}
       
       {/* Main Content Area */}
-      <div className="flex-grow relative overflow-hidden bg-transparent" ref={contentWrapperRef}>
+      <div className="memora-reader-main flex-grow relative overflow-hidden bg-transparent" ref={contentWrapperRef}>
           
           {/* Backdrop for closing popups (Selection Menu / Note Input) */}
           {(selectionMenu || isNoteInputOpen) && (
