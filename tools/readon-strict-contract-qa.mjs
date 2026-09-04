@@ -33,6 +33,20 @@ ${JSON.stringify(selectedCards, null, 2)}
 ----------
 ${background}`;
 
+const pasteMaterial = async (page, textarea, content) => {
+  await textarea.focus();
+  await textarea.evaluate((element, pastedText) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', pastedText);
+    element.dispatchEvent(new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    }));
+  }, content);
+  await page.getByTestId('material-paste-preview').waitFor({ state: 'visible', timeout: 10_000 });
+};
+
 const targets = [
   { name: 'chromium-desktop', browserType: chromium, context: { viewport: { width: 1440, height: 900 } } },
   {
@@ -68,14 +82,16 @@ for (const target of targets) {
     await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(strictTitle);
 
     const materialInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
-    await materialInput.fill(buildMaterial(cards.slice(0, 1)));
+    const rejectedMaterial = buildMaterial(cards.slice(0, 1));
+    await pasteMaterial(page, materialInput, rejectedMaterial);
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByText('READON教材データを取り込めません。', { exact: false }).waitFor({ state: 'visible', timeout: 15_000 });
     await page.getByText('単語カードは厳密に30件必要です（現在 1 件）。', { exact: false }).waitFor({ state: 'visible', timeout: 15_000 });
     if (await page.getByPlaceholder('例：Japan’s Ramen Culture').inputValue() !== strictTitle) {
       throw new Error(`${target.name}: material title was cleared after a rejected import.`);
     }
-    if (await materialInput.inputValue() !== buildMaterial(cards.slice(0, 1))) {
+    const retainedPreview = page.getByTestId('material-paste-preview').locator('pre');
+    if (await retainedPreview.textContent() !== rejectedMaterial) {
       throw new Error(`${target.name}: pasted material was cleared after a rejected import.`);
     }
 
@@ -100,7 +116,9 @@ for (const target of targets) {
     }
 
     // Correct the rejected data in place. The importer must stay open and preserve the user's draft.
-    await materialInput.fill(buildMaterial(cards));
+    await page.getByRole('button', { name: '内容を編集' }).click();
+    const correctedInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
+    await correctedInput.fill(buildMaterial(cards));
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: strictTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     await page.locator('button[title="解説を表示"]:visible').first().click();

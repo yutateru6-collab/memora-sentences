@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StoredMaterial, StoredFolder, TranscriptEntry, Word } from '../types';
 import { Theme, Themes } from '../App';
 import TrashIcon from './icons/TrashIcon';
@@ -550,6 +550,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
   const [materialName, setMaterialName] = useState('');
   const [wordContent, setWordContent] = useState('');
   const [plainTextContent, setPlainTextContent] = useState('');
+  const [isPlainTextEditing, setIsPlainTextEditing] = useState(true);
   const [thumbnailFile, setThumbnailFile] = useState<string | undefined>(undefined);
   
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -690,13 +691,6 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
     };
   }, [isAddModalOpen]);
 
-  useLayoutEffect(() => {
-    if (!isAddModalOpen || !plainTextInputRef.current) return;
-    const textarea = plainTextInputRef.current;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.max(132, textarea.scrollHeight + 2)}px`;
-  }, [isAddModalOpen, plainTextContent]);
-
   useEffect(() => { if (isCreatingFolder) newFolderInputRef.current?.focus(); }, [isCreatingFolder]);
 
   const handleMediaFileChange = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) { setMediaFile(file); if (!materialName) setMaterialName(file.name.replace(/\.[^/.]+$/, "")); } };
@@ -726,6 +720,39 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
               return;
           }
       }
+  };
+
+  const clearPlainTextAlternatives = () => {
+      setWordFile(null);
+      setTextFile(null);
+      setWordContent('');
+  };
+
+  const handlePlainTextPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const pastedText = e.clipboardData.getData('text/plain');
+      if (!pastedText) return;
+
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const selectionStart = textarea.selectionStart ?? plainTextContent.length;
+      const selectionEnd = textarea.selectionEnd ?? selectionStart;
+      const nextValue = `${plainTextContent.slice(0, selectionStart)}${pastedText}${plainTextContent.slice(selectionEnd)}`;
+      setPlainTextContent(nextValue);
+      clearPlainTextAlternatives();
+      setIsPlainTextEditing(false);
+      window.setTimeout(() => textarea.blur(), 0);
+  };
+
+  const beginPlainTextEditing = (clearFirst = false) => {
+      if (clearFirst) setPlainTextContent('');
+      setIsPlainTextEditing(true);
+      window.requestAnimationFrame(() => {
+          const textarea = plainTextInputRef.current;
+          if (!textarea) return;
+          textarea.focus({ preventScroll: true });
+          const caret = clearFirst ? 0 : textarea.value.length;
+          textarea.setSelectionRange(caret, caret);
+      });
   };
 
 
@@ -763,6 +790,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
         setMaterialName('');
         setWordContent('');
         setPlainTextContent('');
+        setIsPlainTextEditing(true);
         setIsTimestampPasteMode(false);
         setTimestampPasteContent('');
         setThumbnailFile(undefined);
@@ -927,9 +955,26 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                     </div>
                     
                     <div>
-                        <label htmlFor="add-material-data" className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
+                        <label htmlFor={plainTextContent && !isPlainTextEditing ? 'add-material-data-preview' : 'add-material-data'} className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
                         <p className="memora-field-help">AI Studioで作った結果を貼り付けます。</p>
-                        <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onInput={(e) => { const textarea = e.currentTarget; textarea.style.height = 'auto'; textarea.style.height = `${Math.max(132, textarea.scrollHeight + 2)}px`; }} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none overflow-hidden`}/>
+                        {plainTextContent && !isPlainTextEditing ? (
+                            <div id="add-material-data-preview" data-testid="material-paste-preview" data-character-count={plainTextContent.length} tabIndex={0} aria-live="polite" className={`memora-import-preview ${T.button} ${T.textSecondary} border ${T.border}`}>
+                                <div className="memora-import-preview__status">
+                                    <strong>教材データを貼り付けました</strong>
+                                    <span>{plainTextContent.length.toLocaleString('ja-JP')}文字</span>
+                                </div>
+                                <pre>{plainTextContent}</pre>
+                                <div className="memora-import-preview__actions">
+                                    <button type="button" onClick={() => beginPlainTextEditing(false)}>内容を編集</button>
+                                    <button type="button" onClick={() => beginPlainTextEditing(true)}>貼り直す</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onPaste={handlePlainTextPaste} onBlur={() => { if (plainTextContent.trim()) setIsPlainTextEditing(false); }} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) clearPlainTextAlternatives(); }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={6} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none`}/>
+                                {plainTextContent && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setIsPlainTextEditing(false)} className="memora-import-edit-done">編集を完了</button>}
+                            </div>
+                        )}
                     </div>
 
                     <div>
@@ -971,7 +1016,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                             <span className={`flex items-center text-xs ${T.textMuted}`}>{wordFile?.name}</span>
                             <input type="file" ref={wordInputRef} accept=".json,.txt,text/plain,application/json" onChange={handleWordFileChange} className="hidden"/>
                         </div>
-                            <textarea aria-label="単語カードのデータ" value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                            <textarea aria-label="単語カードのデータ" value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); setIsPlainTextEditing(true); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div onPaste={handleImagePaste}>

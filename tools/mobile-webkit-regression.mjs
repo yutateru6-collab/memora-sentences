@@ -181,18 +181,20 @@ const importerSnapshot = async page => page.evaluate(() => {
   const dialog = document.querySelector('[role="dialog"][aria-labelledby="add-material-title"]');
   const body = document.querySelector('.memora-modal__body');
   const textarea = document.querySelector('.memora-import-textarea');
+  const preview = document.querySelector('[data-testid="material-paste-preview"]');
   const submit = [...document.querySelectorAll('button')].find(button => button.textContent?.includes('教材として取り込む'));
   const coverLabel = [...document.querySelectorAll('.memora-field-label')].find(label => label.textContent?.includes('5. 表紙画像'));
-  if (!(dialog instanceof HTMLElement) || !(body instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement) || !(submit instanceof HTMLElement)) return null;
+  if (!(dialog instanceof HTMLElement) || !(body instanceof HTMLElement) || !(submit instanceof HTMLElement)) return null;
   const dialogRect = dialog.getBoundingClientRect();
   const bodyRect = body.getBoundingClientRect();
   const submitRect = submit.getBoundingClientRect();
   const coverRect = coverLabel?.getBoundingClientRect();
-  const textareaStyle = getComputedStyle(textarea);
+  const previewRect = preview?.getBoundingClientRect();
+  const textareaStyle = textarea ? getComputedStyle(textarea) : null;
   const viewportHeight = window.visualViewport?.height || window.innerHeight;
   return {
     viewportHeight,
-    dialog: { top: dialogRect.top, bottom: dialogRect.bottom, height: dialogRect.height },
+    dialog: { top: dialogRect.top, bottom: dialogRect.bottom, left: dialogRect.left, right: dialogRect.right, width: dialogRect.width, height: dialogRect.height },
     body: {
       top: bodyRect.top,
       bottom: bodyRect.bottom,
@@ -202,12 +204,18 @@ const importerSnapshot = async page => page.evaluate(() => {
       overflowY: getComputedStyle(body).overflowY,
       touchAction: getComputedStyle(body).touchAction,
     },
-    textarea: {
+    textarea: textarea && textareaStyle ? {
       clientHeight: textarea.clientHeight,
       scrollHeight: textarea.scrollHeight,
       overflowY: textareaStyle.overflowY,
       fontSize: Number.parseFloat(textareaStyle.fontSize),
-    },
+    } : null,
+    preview: previewRect ? {
+      top: previewRect.top,
+      bottom: previewRect.bottom,
+      height: previewRect.height,
+      characterCount: Number(preview?.getAttribute('data-character-count') || 0),
+    } : null,
     submit: {
       top: submitRect.top,
       bottom: submitRect.bottom,
@@ -310,12 +318,19 @@ try {
   result.actions.push('open-importer-webkit');
 
   const importerTextarea = page.locator('.memora-import-textarea');
-  const longMaterial = Array.from({ length: 10 }, (_, index) => `Section ${index + 1}: A deliberately long reading passage keeps the import form taller than the phone viewport.\nセクション${index + 1}：長い教材を貼り付けても、一番下まで移動できることを確認します。`).join('\n');
-  await page.getByLabel('教材名').fill('WebKit importer regression');
-  await importerTextarea.fill(longMaterial);
+  const materialTitle = 'WebKit importer regression';
+  const longMaterial = `${Array.from({ length: 8 }, (_, index) => `Section ${index + 1}: A predictable interface keeps every control available after a long passage is pasted.\nセクション${index + 1}：長い教材を貼り付けても、確認表示と取り込みボタンを操作できることを確かめます。\n[解説] Section ${index + 1}: keeps every control available は「すべての操作を使える状態に保つ」という意味です。`).join('\n')}\n----------\n[{"front":"predictable","back":"予測できる","pronunciation":"プリディクタブル","memo":"動作が予測しやすいこと"}]\n----------\n長文貼り付けから保存完了までを確認するWebKit QA教材です。`;
+  await page.getByLabel('教材名').fill(materialTitle);
   await importerTextarea.focus();
   await page.setViewportSize({ width: 393, height: 520 });
-  await page.waitForTimeout(220);
+  await page.waitForTimeout(180);
+  await importerTextarea.evaluate((element, pastedText) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', pastedText);
+    element.dispatchEvent(new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData }));
+  }, longMaterial);
+  await page.getByTestId('material-paste-preview').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(240);
   const importerKeyboardSized = await importerSnapshot(page);
   if (!importerKeyboardSized || importerKeyboardSized.dialog.height > importerKeyboardSized.viewportHeight + 0.5) {
     throw new Error(`importer-keyboard-sized: dialog ignored the visual viewport: ${JSON.stringify(importerKeyboardSized)}`);
@@ -323,17 +338,18 @@ try {
   if (!importerKeyboardSized?.submit.fullyVisible) {
     throw new Error(`importer-keyboard-sized: submit is clipped: ${JSON.stringify(importerKeyboardSized)}`);
   }
+  if (!importerKeyboardSized.preview || importerKeyboardSized.preview.characterCount !== longMaterial.length || importerKeyboardSized.textarea) {
+    throw new Error(`importer-keyboard-sized: paste did not become a compact confirmation: ${JSON.stringify(importerKeyboardSized)}`);
+  }
+  result.screenshots.importerPasted = `${screenshotDir}/iphone-16-webkit-importer-after-paste.png`;
+  await page.screenshot({ path: result.screenshots.importerPasted, fullPage: false, scale: 'device' });
 
-  await importerTextarea.blur();
   await page.setViewportSize({ width: 393, height: 852 });
   await page.waitForTimeout(260);
   const importerBeforeScroll = await importerSnapshot(page);
   if (!importerBeforeScroll) throw new Error('importer-restored: layout snapshot is unavailable.');
-  if (importerBeforeScroll.textarea.fontSize < 16) {
-    throw new Error(`importer-restored: textarea font size can trigger iOS zoom: ${JSON.stringify(importerBeforeScroll)}`);
-  }
-  if (importerBeforeScroll.textarea.scrollHeight > importerBeforeScroll.textarea.clientHeight + 2) {
-    throw new Error(`importer-restored: textarea is still an inner scroll trap: ${JSON.stringify(importerBeforeScroll)}`);
+  if (!importerBeforeScroll.preview || importerBeforeScroll.textarea) {
+    throw new Error(`importer-restored: pasted data is not in the compact confirmation: ${JSON.stringify(importerBeforeScroll)}`);
   }
   if (importerBeforeScroll.body.scrollHeight <= importerBeforeScroll.body.clientHeight || importerBeforeScroll.body.overflowY !== 'auto') {
     throw new Error(`importer-restored: modal body is not the scroll owner: ${JSON.stringify(importerBeforeScroll)}`);
@@ -367,9 +383,12 @@ try {
   result.actions.push('scroll-importer-to-bottom-webkit');
   result.screenshots.importer = `${screenshotDir}/iphone-16-webkit-importer-bottom-reachable.png`;
   await page.screenshot({ path: result.screenshots.importer, fullPage: false, scale: 'device' });
-  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '教材として取り込む' }).click();
   await importerDialog.waitFor({ state: 'hidden', timeout: 5_000 });
-  result.actions.push('close-importer-with-escape-webkit');
+  await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
+  result.actions.push('import-material-and-open-reader-webkit');
+  result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
+  await page.screenshot({ path: result.screenshots.importSuccess, fullPage: false, scale: 'device' });
 
   await page.evaluate(() => {
     const probe = document.createElement('div');

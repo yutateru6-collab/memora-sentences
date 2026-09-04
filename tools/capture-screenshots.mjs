@@ -103,19 +103,46 @@ async function assertMascot(page, expectedPath, label) {
   return state;
 }
 
+async function pasteMaterial(page, textarea, content) {
+  await textarea.focus();
+  await textarea.evaluate((element, pastedText) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData('text/plain', pastedText);
+    element.dispatchEvent(new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData,
+    }));
+  }, content);
+  await page.getByTestId('material-paste-preview').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(180);
+}
+
 async function importerState(page) {
   return page.evaluate(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-labelledby="add-material-title"]');
     const body = document.querySelector('.memora-modal__body');
     const textarea = document.querySelector('.memora-import-textarea');
+    const preview = document.querySelector('[data-testid="material-paste-preview"]');
     const submit = [...document.querySelectorAll('button')].find(button => button.textContent?.includes('教材として取り込む'));
     const coverLabel = [...document.querySelectorAll('.memora-field-label')].find(label => label.textContent?.includes('5. 表紙画像'));
-    if (!(body instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement) || !(submit instanceof HTMLElement)) return null;
+    if (!(dialog instanceof HTMLElement) || !(body instanceof HTMLElement) || !(submit instanceof HTMLElement)) return null;
+    const dialogRect = dialog.getBoundingClientRect();
     const bodyRect = body.getBoundingClientRect();
     const submitRect = submit.getBoundingClientRect();
     const coverRect = coverLabel?.getBoundingClientRect();
+    const previewRect = preview?.getBoundingClientRect();
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const textareaStyle = getComputedStyle(textarea);
+    const textareaStyle = textarea ? getComputedStyle(textarea) : null;
     return {
+      dialog: {
+        top: dialogRect.top,
+        bottom: dialogRect.bottom,
+        left: dialogRect.left,
+        right: dialogRect.right,
+        width: dialogRect.width,
+        height: dialogRect.height,
+      },
       body: {
         clientHeight: body.clientHeight,
         scrollHeight: body.scrollHeight,
@@ -123,12 +150,18 @@ async function importerState(page) {
         top: bodyRect.top,
         bottom: bodyRect.bottom,
       },
-      textarea: {
+      textarea: textarea && textareaStyle ? {
         clientHeight: textarea.clientHeight,
         scrollHeight: textarea.scrollHeight,
         overflowY: textareaStyle.overflowY,
         fontSize: Number.parseFloat(textareaStyle.fontSize),
-      },
+      } : null,
+      preview: previewRect ? {
+        top: previewRect.top,
+        bottom: previewRect.bottom,
+        height: previewRect.height,
+        characterCount: Number(preview?.getAttribute('data-character-count') || 0),
+      } : null,
       submit: {
         top: submitRect.top,
         bottom: submitRect.bottom,
@@ -144,7 +177,7 @@ async function importerState(page) {
   });
 }
 
-async function assertImporterScrollable(page, target, result) {
+async function assertImporterScrollable(page, target, result, materialContent) {
   const body = page.locator('.memora-modal__body');
   const textarea = page.locator('.memora-import-textarea');
   await textarea.focus();
@@ -153,11 +186,22 @@ async function assertImporterScrollable(page, target, result) {
   if (target.name === 'iphone-16') {
     await page.setViewportSize({ width: 393, height: 520 });
     await page.waitForTimeout(180);
-    const keyboardSized = await importerState(page);
-    if (!keyboardSized?.submit.fullyVisible) {
-      throw new Error(`Importer submit is clipped while the iPhone keyboard is open: ${JSON.stringify(keyboardSized)}`);
-    }
-    await textarea.blur();
+  }
+
+  await pasteMaterial(page, textarea, materialContent);
+  const pasted = await importerState(page);
+  if (!pasted?.preview || pasted.preview.characterCount !== materialContent.length || pasted.textarea) {
+    throw new Error(`Importer did not switch to the compact paste confirmation: ${JSON.stringify(pasted)}`);
+  }
+  if (!pasted.submit.fullyVisible) {
+    throw new Error(`Importer submit is clipped after pasting: ${JSON.stringify(pasted)}`);
+  }
+  result.states.importerPasted = pasted;
+  result.actions.push('paste-material-and-show-compact-confirmation');
+  result.screenshots.importerPasted = await saveScreenshots(page, target, 'importer-pasted');
+
+  if (target.name === 'iphone-16') {
+    const keyboardSized = pasted;
     await page.setViewportSize({ width: 393, height: 852 });
     await page.waitForTimeout(240);
     result.states.importerKeyboardSized = keyboardSized;
@@ -168,11 +212,8 @@ async function assertImporterScrollable(page, target, result) {
   if (!beforeScroll.submit.fullyVisible) {
     throw new Error(`Importer submit is outside the visible viewport: ${JSON.stringify(beforeScroll)}`);
   }
-  if (target.name === 'iphone-16' && beforeScroll.textarea.fontSize < 16) {
-    throw new Error(`Importer textarea must use at least 16px on iPhone: ${JSON.stringify(beforeScroll)}`);
-  }
-  if (beforeScroll.textarea.scrollHeight > beforeScroll.textarea.clientHeight + 2) {
-    throw new Error(`Main importer textarea is still stealing vertical scroll: ${JSON.stringify(beforeScroll)}`);
+  if (!beforeScroll.preview || beforeScroll.textarea) {
+    throw new Error(`Importer must keep pasted data in the compact confirmation: ${JSON.stringify(beforeScroll)}`);
   }
   if (beforeScroll.body.scrollHeight <= beforeScroll.body.clientHeight) {
     throw new Error(`Importer body is not scrollable with long pasted data: ${JSON.stringify(beforeScroll)}`);
@@ -319,8 +360,7 @@ for (const target of targets) {
     result.screenshots.importer = await saveScreenshots(page, target, 'importer');
 
     await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(sampleTitle);
-    await page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください').fill(sampleMaterial);
-    await assertImporterScrollable(page, target, result);
+    await assertImporterScrollable(page, target, result, sampleMaterial);
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     result.actions.push('import-material-and-open-reader');

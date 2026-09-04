@@ -1015,8 +1015,83 @@
 }
 
 .memora-import-textarea {
-  overflow-y: hidden !important;
-  touch-action: manipulation;
+  height: clamp(132px, 24vh, 220px);
+  min-height: 132px;
+  max-height: 220px;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.memora-import-preview {
+  padding: 13px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+
+.memora-import-preview__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.memora-import-preview__status strong {
+  color: #dffcf1;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.memora-import-preview__status span {
+  flex: none;
+  color: #8ee8b8;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.memora-import-preview pre {
+  display: -webkit-box;
+  margin: 10px 0 0;
+  overflow: hidden;
+  color: #bec8da;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+}
+
+.memora-import-preview__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.memora-import-preview__actions button,
+.memora-import-edit-done {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(142, 232, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(142, 232, 184, 0.09);
+  color: #bdf2d4;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.memora-import-preview__actions button:last-child {
+  border-color: rgba(218, 224, 243, 0.16);
+  background: rgba(255, 255, 255, 0.055);
+  color: #d7dced;
+}
+
+.memora-import-edit-done {
+  width: 100%;
+  margin-top: 8px;
 }
 
 body.memora-import-modal-open {
@@ -1349,6 +1424,8 @@ body.memora-import-modal-open .memora-world--read {
   .memora-modal-backdrop {
     align-items: flex-end !important;
     padding: 0 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 
   .memora-modal {
@@ -1358,6 +1435,8 @@ body.memora-import-modal-open .memora-world--read {
     height: calc(var(--memora-modal-viewport-height, 100dvh) - max(8px, env(safe-area-inset-top)));
     max-height: calc(var(--memora-modal-viewport-height, 100dvh) - max(8px, env(safe-area-inset-top))) !important;
     border-radius: 24px 24px 0 0 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 
   .memora-modal__header,
@@ -1377,5 +1456,16 @@ body.memora-import-modal-open .memora-world--read {
   .memora-modal textarea,
   .memora-modal select {
     font-size: 16px !important;
+  }
+
+  .memora-import-textarea {
+    height: min(180px, 28dvh);
+    min-height: 132px;
+    max-height: min(180px, 28dvh);
+  }
+
+  .memora-import-preview pre {
+    font-size: 11px;
+    -webkit-line-clamp: 4;
   }
 }
