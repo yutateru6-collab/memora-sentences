@@ -343,8 +343,13 @@ try {
   }
 
   const importerBody = page.locator('.memora-modal__body');
-  await importerBody.hover();
-  await page.mouse.wheel(0, 1800);
+  // Playwright does not expose a swipe gesture for mobile WebKit, and
+  // mouse.wheel is intentionally unsupported in an isMobile context.
+  // Moving the native scroll container verifies WebKit accepted the scroll
+  // range; Chromium separately covers the real wheel/pan gesture path.
+  await importerBody.evaluate(element => {
+    element.scrollTop = Math.min(element.scrollHeight - element.clientHeight, Math.max(240, element.clientHeight));
+  });
   await page.waitForTimeout(240);
   const importerAfterGesture = await importerSnapshot(page);
   if (!importerAfterGesture || importerAfterGesture.body.scrollTop <= importerBeforeScroll.body.scrollTop) {
