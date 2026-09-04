@@ -1,4 +1,5 @@
 import { chromium, webkit } from 'playwright';
+import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const strictTitle = 'QA READON Strict Contract';
@@ -82,7 +83,7 @@ for (const target of targets) {
     await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(strictTitle);
 
     const materialInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
-    const rejectedMaterial = buildMaterial(cards.slice(0, 1));
+    const rejectedMaterial = buildValidQaMaterial({ cardCount: 1 });
     await pasteMaterial(page, materialInput, rejectedMaterial);
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByText('READON教材データを取り込めません。', { exact: false }).waitFor({ state: 'visible', timeout: 15_000 });
@@ -118,7 +119,7 @@ for (const target of targets) {
     // Correct the rejected data in place. The importer must stay open and preserve the user's draft.
     await page.getByRole('button', { name: '内容を編集' }).click();
     const correctedInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
-    await correctedInput.fill(buildMaterial(cards));
+    await correctedInput.fill(buildValidQaMaterial());
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: strictTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     await page.locator('button[title="解説を表示"]:visible').first().click();

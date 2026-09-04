@@ -1,11 +1,12 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs/promises';
+import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const outDir = process.env.SCREENSHOT_DIR || 'qa-artifacts/screenshots';
 const reportPath = 'qa-artifacts/report.json';
 const sampleTitle = 'QA Ramen Culture';
-const sampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Chinese wheat noodles transformed through Japanese innovation.
+const _legacySampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Chinese wheat noodles transformed through Japanese innovation.
 ラーメンは、中国の小麦麺が日本独自の工夫で発展した、愛される食文化です。
 [解説] ゆきぽよ（ギャル）: a beloved culinary phenomenon は Ramen と同格だよ。主語は Ramen、動詞は originates！
 ----------
@@ -19,6 +20,7 @@ const sampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Ch
 ]
 ----------
 ラーメンは中国由来の麺文化を、日本で独自に発展させた料理です。`;
+const sampleMaterial = buildValidQaMaterial();
 
 const targets = [
   {

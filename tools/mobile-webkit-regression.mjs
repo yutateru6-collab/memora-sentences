@@ -1,5 +1,6 @@
 import { webkit } from 'playwright';
 import fs from 'node:fs/promises';
+import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const reportPath = 'qa-artifacts/report.json';
@@ -319,7 +320,7 @@ try {
 
   const importerTextarea = page.locator('.memora-import-textarea');
   const materialTitle = 'WebKit importer regression';
-  const longMaterial = `${Array.from({ length: 8 }, (_, index) => `Section ${index + 1}: A predictable interface keeps every control available after a long passage is pasted.\nセクション${index + 1}：長い教材を貼り付けても、確認表示と取り込みボタンを操作できることを確かめます。\n[解説] Section ${index + 1}: keeps every control available は「すべての操作を使える状態に保つ」という意味です。`).join('\n')}\n----------\n[{"front":"predictable","back":"予測できる","pronunciation":"プリディクタブル","memo":"動作が予測しやすいこと"}]\n----------\n長文貼り付けから保存完了までを確認するWebKit QA教材です。`;
+  const longMaterial = buildValidQaMaterial({ paragraphCount: 8 });
   await page.getByLabel('教材名').fill(materialTitle);
   await importerTextarea.focus();
   await page.setViewportSize({ width: 393, height: 520 });
