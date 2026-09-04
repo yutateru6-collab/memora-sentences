@@ -89,6 +89,12 @@ async function assertNoOverflow(page, label) {
 }
 
 async function assertMascot(page, expectedPath, label) {
+  await page.waitForFunction(path => {
+    const images = [...document.images].filter(image => image.src.includes('/memora-world/'));
+    if (images.length !== 1) return false;
+    const image = images[0];
+    return new URL(image.src).pathname === path && image.complete && image.naturalWidth > 0;
+  }, expectedPath, { timeout: 10_000 }).catch(() => {});
   const state = await mascotState(page);
   if (state.count !== 1) throw new Error(`${label} must show exactly one MEMORA mascot: ${JSON.stringify(state)}`);
   if (state.images[0]?.src !== expectedPath || !state.images[0]?.loaded) {
