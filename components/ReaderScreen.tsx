@@ -1398,12 +1398,12 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
         ) : (
             // Normal Header
             <>
-                <div className="flex items-center gap-2 overflow-hidden min-w-0 flex-1">
+                <div className="memora-reader-header__normal flex items-center gap-2 overflow-hidden min-w-0 flex-1">
                     <button onClick={onBack} className={`p-2 rounded-full ${T.button} hover:bg-white/10 transition-colors flex-shrink-0`}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
                     </button>
-                    <h1 className="font-bold text-lg truncate min-w-0 flex-1">{title}</h1>
-                    <div className="sm:hidden flex items-center gap-1 flex-shrink-0">
+                    <h1 className="memora-reader-header__title font-bold text-lg truncate min-w-0 flex-1">{title}</h1>
+                    <div className="memora-reader-header__mobile-actions sm:hidden flex items-center gap-1 flex-shrink-0">
                         <button
                             onClick={() => {
                                 const nextShow = !showJapanese;
@@ -1640,14 +1640,6 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                   </div>
               ) : (
                   <div className="memora-reader-document max-w-4xl mx-auto space-y-6">
-                      <aside className="memora-reader-guide" aria-label="読解担当キャラクター">
-                          <div>
-                              <span>READ</span>
-                              <strong>教材を読む</strong>
-                              <small>黄色の単語をタップすると、意味とメモを確認できます。</small>
-                          </div>
-                          <img src="/memora-world/read-v1.webp" alt="" aria-hidden="true" draggable={false} />
-                      </aside>
                       {transcript.map((entry, index) => {
                           const isActive = currentTime >= entry.start && currentTime < entry.end;
                           const sentenceStartIndex = sentenceStartIndices[index];

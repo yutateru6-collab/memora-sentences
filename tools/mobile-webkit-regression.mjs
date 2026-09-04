@@ -234,6 +234,108 @@ const importerSnapshot = async page => page.evaluate(() => {
   };
 });
 
+const readerSnapshot = async page => page.evaluate(() => {
+  const rect = node => {
+    if (!(node instanceof HTMLElement)) return null;
+    const value = node.getBoundingClientRect();
+    return {
+      top: value.top,
+      right: value.right,
+      bottom: value.bottom,
+      left: value.left,
+      width: value.width,
+      height: value.height,
+    };
+  };
+  const header = document.querySelector('.memora-reader-header');
+  const title = document.querySelector('.memora-reader-header__title');
+  const actions = document.querySelector('.memora-reader-header__mobile-actions');
+  const main = document.querySelector('.memora-reader-main');
+  const scroll = document.querySelector('.memora-reader-scroll');
+  const first = document.querySelector('.memora-reader-sentence');
+  const visibleActionButtons = actions instanceof HTMLElement
+    ? [...actions.querySelectorAll('button')].filter(button => {
+        const style = getComputedStyle(button);
+        const bounds = button.getBoundingClientRect();
+        return style.display !== 'none' && bounds.width > 0 && bounds.height > 0;
+      })
+    : [];
+
+  return {
+    viewportHeight: window.innerHeight,
+    viewportVariable: getComputedStyle(document.documentElement).getPropertyValue('--memora-reader-viewport-height').trim(),
+    sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
+    firstText: first?.textContent?.replace(/\s+/g, '') || '',
+    document: {
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+      scrollX: window.scrollX,
+      horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    },
+    guideCount: document.querySelectorAll('.memora-reader-guide').length,
+    screen: rect(document.querySelector('.memora-reader-screen')),
+    shell: rect(document.querySelector('.memora-world--read')),
+    header: rect(header),
+    title: rect(title),
+    actions: rect(actions),
+    actionButtons: visibleActionButtons.map(rect),
+    main: rect(main),
+    scroll: scroll instanceof HTMLElement ? {
+      ...rect(scroll),
+      clientHeight: scroll.clientHeight,
+      scrollHeight: scroll.scrollHeight,
+    } : null,
+    first: rect(first),
+  };
+});
+
+const assertReaderLayout = (snapshot, label) => {
+  if (snapshot.sentenceCount !== 8
+      || !snapshot.firstText.includes('Studentsanalyzeramenculture')
+      || !snapshot.screen
+      || !snapshot.shell
+      || !snapshot.header
+      || !snapshot.title
+      || !snapshot.actions
+      || !snapshot.main
+      || !snapshot.scroll
+      || !snapshot.first) {
+    throw new Error(`${label}: valid Reader content or layout nodes are missing: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.guideCount !== 0) {
+    throw new Error(`${label}: obsolete Reader mascot guide is still visible: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.document.horizontalOverflow || snapshot.document.scrollX !== 0) {
+    throw new Error(`${label}: Reader is horizontally clipped or scrollable: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.scroll.height < 200
+      || snapshot.scroll.bottom > snapshot.viewportHeight + 1
+      || snapshot.scroll.scrollHeight <= snapshot.scroll.clientHeight
+      || snapshot.first.height <= 0) {
+    throw new Error(`${label}: Reader content is blank or unreachable: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.main.top < snapshot.header.bottom - 0.5) {
+    throw new Error(`${label}: Reader content overlaps the header: ${JSON.stringify(snapshot)}`);
+  }
+  const firstSentenceOffset = snapshot.first.top - snapshot.scroll.top;
+  if (firstSentenceOffset < -0.5 || firstSentenceOffset > 64) {
+    throw new Error(`${label}: first sentence is covered or an obsolete guide still reserves space: ${JSON.stringify(snapshot)}`);
+  }
+  const insideHeader = value => value.top >= snapshot.header.top - 0.5
+    && value.bottom <= snapshot.header.bottom + 0.5
+    && value.left >= snapshot.header.left - 0.5
+    && value.right <= snapshot.header.right + 0.5;
+  if (snapshot.actionButtons.length < 2
+      || !insideHeader(snapshot.title)
+      || !insideHeader(snapshot.actions)
+      || snapshot.actionButtons.some(value => !insideHeader(value))) {
+    throw new Error(`${label}: title or controls escape the mobile header: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.title.right > snapshot.actions.left + 0.5) {
+    throw new Error(`${label}: title overlaps the mobile action group: ${JSON.stringify(snapshot)}`);
+  }
+};
+
 let browser;
 let context;
 let page;
@@ -331,7 +433,7 @@ try {
   result.actions.push('open-importer-webkit');
 
   const importerTextarea = page.locator('.memora-import-textarea');
-  const materialTitle = 'WebKit importer regression';
+  const materialTitle = 'WebKit Reader regression with an intentionally long material title';
   const longMaterial = buildValidQaMaterial({ paragraphCount: 8 });
   await page.getByLabel('教材名').fill(materialTitle);
   await importerTextarea.focus();
@@ -418,45 +520,8 @@ try {
   }
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
-  const importedReader = await page.evaluate(() => {
-    const screen = document.querySelector('.memora-reader-screen');
-    const shell = document.querySelector('.memora-world--read');
-    const main = document.querySelector('.memora-reader-main');
-    const scroll = document.querySelector('.memora-reader-scroll');
-    const first = document.querySelector('.memora-reader-sentence');
-    const screenRect = screen?.getBoundingClientRect();
-    const shellRect = shell?.getBoundingClientRect();
-    const mainRect = main?.getBoundingClientRect();
-    const scrollRect = scroll?.getBoundingClientRect();
-    const firstRect = first?.getBoundingClientRect();
-    return {
-      viewportHeight: window.innerHeight,
-      viewportVariable: getComputedStyle(document.documentElement).getPropertyValue('--memora-reader-viewport-height').trim(),
-      sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
-      firstText: first?.textContent?.replace(/\s+/g, '') || '',
-      screen: screenRect ? { top: screenRect.top, bottom: screenRect.bottom, height: screenRect.height } : null,
-      shell: shellRect ? { top: shellRect.top, bottom: shellRect.bottom, height: shellRect.height } : null,
-      main: mainRect ? { top: mainRect.top, bottom: mainRect.bottom, height: mainRect.height } : null,
-      scroll: scrollRect ? {
-        top: scrollRect.top,
-        bottom: scrollRect.bottom,
-        height: scrollRect.height,
-        clientHeight: scroll.clientHeight,
-        scrollHeight: scroll.scrollHeight,
-      } : null,
-      first: firstRect ? { top: firstRect.top, bottom: firstRect.bottom, height: firstRect.height } : null,
-    };
-  });
-  if (importedReader.sentenceCount !== 8
-      || !importedReader.firstText.includes('Studentsanalyzeramenculture')
-      || !importedReader.scroll
-      || importedReader.scroll.height < 200
-      || importedReader.scroll.bottom > importedReader.viewportHeight + 1
-      || importedReader.scroll.scrollHeight <= importedReader.scroll.clientHeight
-      || !importedReader.first
-      || importedReader.first.height <= 0) {
-    throw new Error(`import-reader: valid content is blank or unreachable: ${JSON.stringify(importedReader)}`);
-  }
+  const importedReader = await readerSnapshot(page);
+  assertReaderLayout(importedReader, 'import-reader');
   await page.locator('.memora-reader-scroll').evaluate(element => {
     element.scrollTop = Math.min(240, element.scrollHeight - element.clientHeight);
   });
@@ -480,13 +545,8 @@ try {
   await page.getByRole('button', { name: '読む' }).first().click();
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
-  const reloadedReader = await page.evaluate(() => ({
-    sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
-    firstText: document.querySelector('.memora-reader-sentence')?.textContent?.replace(/\s+/g, '') || '',
-  }));
-  if (reloadedReader.sentenceCount !== 8 || !reloadedReader.firstText.includes('Studentsanalyzeramenculture')) {
-    throw new Error(`import-reload: persisted content is blank: ${JSON.stringify(reloadedReader)}`);
-  }
+  const reloadedReader = await readerSnapshot(page);
+  assertReaderLayout(reloadedReader, 'import-reload');
   result.states.reloadedReader = reloadedReader;
   result.actions.push('reload-and-reopen-imported-material-webkit');
   result.screenshots.importReloaded = `${screenshotDir}/iphone-16-webkit-import-reloaded.png`;

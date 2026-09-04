@@ -5,7 +5,7 @@ import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
 const outDir = process.env.SCREENSHOT_DIR || 'qa-artifacts/screenshots';
 const reportPath = 'qa-artifacts/report.json';
-const sampleTitle = 'QA Ramen Culture';
+const sampleTitle = 'QA Ramen Culture with an intentionally long Reader title';
 const _legacySampleMaterial = `Ramen, a beloved culinary phenomenon, originates from Chinese wheat noodles transformed through Japanese innovation.
 ラーメンは、中国の小麦麺が日本独自の工夫で発展した、愛される食文化です。
 [解説] ゆきぽよ（ギャル）: a beloved culinary phenomenon は Ramen と同格だよ。主語は Ramen、動詞は originates！
@@ -88,6 +88,87 @@ async function assertNoOverflow(page, label) {
   const state = await documentState(page);
   if (state.horizontalOverflow) throw new Error(`${label} has horizontal overflow: ${JSON.stringify(state)}`);
   return state;
+}
+
+async function readerLayoutState(page) {
+  return page.evaluate(() => {
+    const rect = node => {
+      if (!(node instanceof HTMLElement)) return null;
+      const value = node.getBoundingClientRect();
+      return {
+        top: value.top,
+        right: value.right,
+        bottom: value.bottom,
+        left: value.left,
+        width: value.width,
+        height: value.height,
+      };
+    };
+    const header = document.querySelector('.memora-reader-header');
+    const title = document.querySelector('.memora-reader-header__title');
+    const actions = document.querySelector('.memora-reader-header__mobile-actions');
+    const main = document.querySelector('.memora-reader-main');
+    const scroll = document.querySelector('.memora-reader-scroll');
+    const firstSentence = document.querySelector('.memora-reader-sentence');
+    const visibleActionButtons = actions instanceof HTMLElement
+      ? [...actions.querySelectorAll('button')].filter(button => {
+          const style = getComputedStyle(button);
+          const bounds = button.getBoundingClientRect();
+          return style.display !== 'none' && bounds.width > 0 && bounds.height > 0;
+        })
+      : [];
+
+    return {
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      document: {
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+        horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      },
+      guideCount: document.querySelectorAll('.memora-reader-guide').length,
+      header: rect(header),
+      title: rect(title),
+      actions: rect(actions),
+      actionButtons: visibleActionButtons.map(rect),
+      main: rect(main),
+      scroll: rect(scroll),
+      firstSentence: rect(firstSentence),
+    };
+  });
+}
+
+function assertReaderLayout(state, label, mobile) {
+  if (state.guideCount !== 0) {
+    throw new Error(`${label}: obsolete Reader mascot guide is still visible: ${JSON.stringify(state)}`);
+  }
+  if (state.document.horizontalOverflow) {
+    throw new Error(`${label}: Reader has horizontal overflow: ${JSON.stringify(state)}`);
+  }
+  if (!state.header || !state.main || !state.scroll || !state.firstSentence) {
+    throw new Error(`${label}: Reader layout nodes are missing: ${JSON.stringify(state)}`);
+  }
+  if (state.main.top < state.header.bottom - 0.5) {
+    throw new Error(`${label}: Reader content overlaps the header: ${JSON.stringify(state)}`);
+  }
+  const firstSentenceOffset = state.firstSentence.top - state.scroll.top;
+  if (firstSentenceOffset < -0.5 || firstSentenceOffset > 64) {
+    throw new Error(`${label}: first sentence is covered or an obsolete guide still reserves space: ${JSON.stringify(state)}`);
+  }
+
+  if (!mobile) return;
+  if (!state.title || !state.actions || state.actionButtons.length < 2) {
+    throw new Error(`${label}: mobile Reader header controls are missing: ${JSON.stringify(state)}`);
+  }
+  const insideHeader = value => value.top >= state.header.top - 0.5
+    && value.bottom <= state.header.bottom + 0.5
+    && value.left >= state.header.left - 0.5
+    && value.right <= state.header.right + 0.5;
+  if (!insideHeader(state.title) || !insideHeader(state.actions) || state.actionButtons.some(value => !insideHeader(value))) {
+    throw new Error(`${label}: mobile title or actions escape the header: ${JSON.stringify(state)}`);
+  }
+  if (state.title.right > state.actions.left + 0.5) {
+    throw new Error(`${label}: mobile title overlaps the action group: ${JSON.stringify(state)}`);
+  }
 }
 
 async function assertMascot(page, expectedPath, label) {
@@ -367,7 +448,8 @@ for (const target of targets) {
     await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     result.actions.push('import-material-and-open-reader');
 
-    await page.getByText('教材を読む', { exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    const readerLayout = await readerLayoutState(page);
+    assertReaderLayout(readerLayout, `${target.name}/Reader`, target.name === 'iphone-16');
     const word = page.locator('[data-word-card]').first();
     await word.waitFor({ state: 'visible', timeout: 10_000 });
     const highlightedWordClass = await word.getAttribute('class');
@@ -375,7 +457,10 @@ for (const target of targets) {
       throw new Error(`Registered word is not highlighted in yellow: ${highlightedWordClass}`);
     }
     result.actions.push('verify-yellow-word-highlight');
-    result.states.readerWordHighlight = { document: await assertNoOverflow(page, 'Reader word highlight') };
+    result.states.readerWordHighlight = {
+      document: await assertNoOverflow(page, 'Reader word highlight'),
+      layout: readerLayout,
+    };
     result.screenshots.readerWordHighlight = await saveScreenshots(page, target, 'reader-word-highlight');
 
     if (target.name === 'iphone-16') {

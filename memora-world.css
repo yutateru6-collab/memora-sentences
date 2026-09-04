@@ -83,59 +83,51 @@
   backdrop-filter: blur(18px) saturate(120%);
 }
 
+/* Keep the compact Reader actions in one deterministic row on iOS WebKit.
+ * A nested flex row can let the unbroken title claim its intrinsic width,
+ * pushing the action chips below the fixed-height header. */
+@media (max-width: 639px) {
+  .memora-reader-header__normal {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) max-content;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .memora-reader-header__title {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .memora-reader-header__mobile-actions {
+    display: flex !important;
+    flex: none;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: max-content;
+    min-width: max-content;
+    white-space: nowrap;
+  }
+}
+
 .memora-reader-document {
   padding: 2px;
 }
 
-.memora-reader-guide {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 84px;
-  min-height: 96px;
-  align-items: center;
-  gap: 14px;
-  padding: 13px 15px;
-  overflow: hidden;
-  border: 1px solid rgba(134, 226, 176, 0.2);
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(48, 145, 111, 0.15), rgba(20, 31, 77, 0.58));
-  box-shadow: 0 14px 38px rgba(1, 7, 29, 0.22);
-}
-
-.memora-reader-guide > div {
-  min-width: 0;
-}
-
-.memora-reader-guide span,
 .memora-reader-complete > div > span {
   display: block;
   color: #8ee8b8;
   font-size: 9px;
   font-weight: 850;
   letter-spacing: 0.22em;
-}
-
-.memora-reader-guide strong {
-  display: block;
-  margin-top: 2px;
-  color: #fffaff;
-  font-size: 17px;
-}
-
-.memora-reader-guide small {
-  display: block;
-  margin-top: 5px;
-  color: #bdc9d8;
-  font-size: 10px;
-  line-height: 1.55;
-}
-
-.memora-reader-guide img {
-  width: 84px;
-  height: 84px;
-  border-radius: 18px;
-  object-fit: cover;
-  object-position: center;
-  box-shadow: 0 8px 24px rgba(0, 8, 31, 0.35);
 }
 
 .memora-reader-sentence {
@@ -1323,22 +1315,6 @@ body.memora-import-modal-open .memora-world--read {
   .memora-reader-scroll {
     padding-right: 10px !important;
     padding-left: 10px !important;
-  }
-
-  .memora-reader-guide {
-    grid-template-columns: minmax(0, 1fr) 68px;
-    min-height: 82px;
-    padding: 10px 11px;
-  }
-
-  .memora-reader-guide strong {
-    font-size: 15px;
-  }
-
-  .memora-reader-guide img {
-    width: 68px;
-    height: 68px;
-    border-radius: 15px;
   }
 
   .memora-reader-sentence {
