@@ -20,6 +20,15 @@
      overflow layer can remain visually blank after the import modal closes or
      the software keyboard changes the visual viewport, even though its DOM is
      populated. The regular flow scroller repaints reliably in Safari/WebKit. */
+  .memora-reader-screen {
+    height: 100vh !important;
+    height: 100svh !important;
+    min-height: 100vh !important;
+    min-height: 100svh !important;
+    max-height: 100vh !important;
+    max-height: 100svh !important;
+  }
+
   .memora-reader-main {
     display: flex !important;
     flex-direction: column !important;
