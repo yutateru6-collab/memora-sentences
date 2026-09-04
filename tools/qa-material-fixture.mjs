@@ -18,7 +18,7 @@ export const buildValidQaMaterial = ({ cardCount = 30, paragraphCount = 1 } = {}
   const transcript = Array.from({ length: paragraphCount }, (_, index) => [
     sentence,
     translation,
-    `[解説] ひなた（やさしく導く高校教師）: ${index + 1}文目は、主語Studentsと動詞analyzeを中心に、地域ごとの要素がidentityへつながる構造を確認します。`,
+    `[解説] ひなた（やさしく導く高校教師）: ${index + 1}文目は、主語 (S) のStudentsと動詞 (V) のanalyzeを中心に、地域ごとの要素がidentityへつながる構造を確認します。`,
   ].join('\n')).join('\n');
 
   return `【解説担当】

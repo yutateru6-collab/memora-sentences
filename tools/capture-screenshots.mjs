@@ -393,17 +393,17 @@ for (const target of targets) {
     result.screenshots.readerWordHighlightHidden = await saveScreenshots(page, target, 'reader-word-highlight-hidden');
 
     await word.click();
-    const wordDialog = page.getByRole('dialog', { name: /originate の単語情報/ });
+    const wordDialog = page.getByRole('dialog', { name: /students の単語情報/ });
     await wordDialog.waitFor({ state: 'visible', timeout: 10_000 });
     if (!(await wordDialog.getByText('単語メモ', { exact: true }).isVisible())) throw new Error('Word memo heading is missing.');
-    if (!(await wordDialog.getByText(/origin と同じ語源/).isVisible())) throw new Error('Word memo content is missing.');
+    if (!(await wordDialog.getByText(/READONのQAで使う確認用データ/).isVisible())) throw new Error('Word memo content is missing.');
     result.actions.push('open-word-memo');
     result.states.readerWordMemo = { document: await assertNoOverflow(page, 'Reader word memo') };
     result.screenshots.readerWordMemo = await saveScreenshots(page, target, 'reader-word-memo');
     await page.locator('div.fixed.inset-0.z-40').last().click({ position: { x: 2, y: 2 } });
 
     await page.locator('button[title="解説を表示"]:visible').first().click();
-    const personaAvatar = page.locator('img[data-persona-avatar="/personas/01_ギャル.png"]').first();
+    const personaAvatar = page.locator('img[data-persona-avatar="/personas/03_高校教師.png"]').first();
     await personaAvatar.waitFor({ state: 'visible', timeout: 10_000 });
     await personaAvatar.evaluate(image => image.decode().catch(() => {}));
     const personaImageState = await personaAvatar.evaluate(image => ({
@@ -415,10 +415,10 @@ for (const target of targets) {
       throw new Error(`Explanation persona avatar did not load: ${JSON.stringify(personaImageState)}`);
     }
     result.actions.push('verify-explanation-persona-avatar');
-    const grammarTerm = page.getByRole('button', { name: '同格', exact: true }).first();
+    const grammarTerm = page.getByRole('button', { name: '主語 (S)', exact: true }).first();
     await grammarTerm.waitFor({ state: 'visible', timeout: 10_000 });
     await grammarTerm.click();
-    const grammarDialog = page.getByRole('dialog', { name: '同格 の文法メモ' });
+    const grammarDialog = page.getByRole('dialog', { name: '主語 (S) の文法メモ' });
     await grammarDialog.waitFor({ state: 'visible', timeout: 10_000 });
     const grammarBounds = await grammarDialog.boundingBox();
     if (!grammarBounds || grammarBounds.x < 0 || grammarBounds.y < 0 || grammarBounds.x + grammarBounds.width > target.context.viewport.width + 0.5 || grammarBounds.y + grammarBounds.height > target.context.viewport.height + 0.5) {
