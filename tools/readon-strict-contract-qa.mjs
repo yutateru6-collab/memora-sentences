@@ -1,38 +1,54 @@
-import { chromium, webkit } from 'playwright';
-import { buildValidQaMaterial } from './qa-material-fixture.mjs';
+import { chromium } from 'playwright';
+import fs from 'node:fs/promises';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
-const strictTitle = 'QA READON Strict Contract';
-const frontWords = [
-  'students', 'analyze', 'ramen', 'culture', 'region', 'links', 'broth', 'noodles', 'flavor', 'tradition',
-  'recipe', 'shop', 'chef', 'customer', 'community', 'history', 'ingredient', 'texture', 'aroma', 'style',
-  'innovation', 'local', 'pride', 'popular', 'appeal', 'meal', 'customs', 'bowl', 'design', 'identity',
+const screenshotDir = 'qa-artifacts/screenshots';
+const fixtureUrl = new URL('./fixtures/chiikawa-user-material.txt', import.meta.url);
+const exactMaterial = await fs.readFile(fixtureUrl, 'utf8');
+const firstSentenceFragment = "While Nagano's Chiikawa is widely celebrated";
+const lastSentenceFragment = 'Rather than offering sentimental comfort';
+
+await fs.mkdir(screenshotDir, { recursive: true });
+
+const splitExactMaterial = exactMaterial.split(/\n----------\n/);
+if (splitExactMaterial.length !== 3) {
+  throw new Error(`Chiikawa fixture must have two separators; got ${splitExactMaterial.length - 1}.`);
+}
+const tolerantCards = JSON.parse(splitExactMaterial[1]);
+tolerantCards.pop();
+const tolerantMaterial = `\`\`\`markdown
+${splitExactMaterial[0]}
+——————————
+${JSON.stringify(tolerantCards, null, 2).replace(/\n\]$/, ',\n]')}
+----------
+${splitExactMaterial[2]}
+\`\`\``;
+
+const invalidMaterial = `【解説担当】
+名前：みお
+役割：ギャル
+性格：世話好き
+
+日本語だけで英文がありません。
+----------
+[]
+----------
+背景知識だけです。`;
+
+const targets = [
+  { name: 'chromium-desktop', context: { viewport: { width: 1440, height: 900 } } },
+  {
+    name: 'chromium-iphone-16',
+    context: {
+      viewport: { width: 393, height: 852 },
+      screen: { width: 393, height: 852 },
+      deviceScaleFactor: 3,
+      isMobile: true,
+      hasTouch: true,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+    },
+  },
 ];
-
-const sentence = 'Students analyze ramen culture by asking how each region links broth, noodles, flavor, tradition, recipe, shop, chef, customer, community, history, ingredient, texture, aroma, style, innovation, local pride, popular appeal, meal customs, bowl design, and identity.';
-const translation = '学生は、各地域がスープ、麺、風味、伝統などをどのように結びつけ、ラーメン文化のアイデンティティを形作るのかを分析します。';
-const explanation = '[解説] ひなた（やさしく導く高校教師）: 主語SはStudents、動詞Vはanalyzeだよ。by asking how以下が分析の方法を示し、地域ごとの要素がidentityへつながる構造をやさしく押さえよう。';
-const background = 'ラーメンは、麺・スープ・具材の組み合わせによって地域差が生まれやすい料理です。同じ名称でも、地域の食材、気候、流通、店の歴史などによって味や提供方法が変わります。英語で文化を読むときは、単に「有名な料理」として覚えるのではなく、どの要素が地域性を作っているのかを見ると理解が深まります。今回のQA教材では、本文・対訳・解説・単語カードの対応関係と、READONの取り込み契約が正しく機能するかを確認します。';
-
-const cards = frontWords.map((front, index) => ({
-  front,
-  back: `QA確認語${index + 1}`,
-  pronunciation: 'テ[ス]ト',
-  memo: `【語源・雑学】READONのQAで使う確認用データ。\n【覚え方】${front}を本文の語と結びつけて覚える。\n【例文】The word ${front} appears in this QA example.`,
-}));
-
-const buildMaterial = selectedCards => `【解説担当】
-名前: ひなた
-役割: やさしく導く高校教師
-性格: やさしくて、まなびを楽しませてくれる！
-
-${sentence}
-${translation}
-${explanation}
-----------
-${JSON.stringify(selectedCards, null, 2)}
-----------
-${background}`;
 
 const pasteMaterial = async (page, textarea, content) => {
   await textarea.focus();
@@ -48,23 +64,53 @@ const pasteMaterial = async (page, textarea, content) => {
   await page.getByTestId('material-paste-preview').waitFor({ state: 'visible', timeout: 10_000 });
 };
 
-const targets = [
-  { name: 'chromium-desktop', browserType: chromium, context: { viewport: { width: 1440, height: 900 } } },
-  {
-    name: 'webkit-iphone',
-    browserType: webkit,
-    context: {
-      viewport: { width: 393, height: 852 },
-      screen: { width: 393, height: 852 },
-      deviceScaleFactor: 3,
-      isMobile: true,
-      hasTouch: true,
-    },
-  },
-];
+const openImporter = async page => {
+  await page.getByTestId('create-import').click();
+  const dialog = page.getByRole('dialog', { name: '新しい教材を追加' });
+  await dialog.waitFor({ state: 'visible', timeout: 15_000 });
+  return dialog;
+};
+
+const readStoredMaterials = async page => page.evaluate(async () => {
+  const database = await new Promise((resolve, reject) => {
+    const request = indexedDB.open('AudioSyncReaderDB', 2);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const materials = await new Promise((resolve, reject) => {
+    const transaction = database.transaction('materials', 'readonly');
+    const request = transaction.objectStore('materials').getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  return Promise.all(materials.map(async material => ({
+    name: material.name,
+    transcript: material.textFile ? JSON.parse(await material.textFile.text()) : null,
+    cards: material.wordFile ? JSON.parse(await material.wordFile.text()) : null,
+  })));
+});
+
+const assertStoredMaterial = (stored, expectedCards, label) => {
+  if (!stored || stored.name === '無題' || stored.name === '教材') {
+    throw new Error(`${label}: a useful name was not derived: ${JSON.stringify(stored?.name)}`);
+  }
+  if (!Array.isArray(stored.transcript) || stored.transcript.length !== 12) {
+    throw new Error(`${label}: expected 12 persisted sentences: ${JSON.stringify(stored.transcript?.length)}`);
+  }
+  if (!stored.transcript[0]?.english?.includes(firstSentenceFragment)
+      || !stored.transcript.at(-1)?.english?.includes(lastSentenceFragment)) {
+    throw new Error(`${label}: first/last sentence was not persisted.`);
+  }
+  if (!stored.transcript[0]?.explanation?.includes('__BACKGROUND_INFO__')) {
+    throw new Error(`${label}: background metadata was not persisted.`);
+  }
+  if (!Array.isArray(stored.cards) || stored.cards.length !== expectedCards) {
+    throw new Error(`${label}: expected ${expectedCards} persisted cards: ${JSON.stringify(stored.cards?.length)}`);
+  }
+};
 
 for (const target of targets) {
-  const browser = await target.browserType.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext(target.context);
   const page = await context.newPage();
   const consoleErrors = [];
@@ -77,79 +123,108 @@ for (const target of targets) {
   try {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.getByRole('heading', { name: 'リードン READON', exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+    const dialog = await openImporter(page);
+    const textarea = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
 
-    await page.getByTestId('create-import').click();
-    await page.getByRole('heading', { name: '新しい教材を追加', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
-    await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(strictTitle);
-
-    const materialInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
-    const rejectedMaterial = buildValidQaMaterial({ cardCount: 1 });
-    await pasteMaterial(page, materialInput, rejectedMaterial);
-    await page.getByRole('button', { name: '教材として取り込む' }).click();
-    await page.getByText('READON教材データを取り込めません。', { exact: false }).waitFor({ state: 'visible', timeout: 15_000 });
-    await page.getByText('単語カードは厳密に30件必要です（現在 1 件）。', { exact: false }).waitFor({ state: 'visible', timeout: 15_000 });
-    if (await page.getByPlaceholder('例：Japan’s Ramen Culture').inputValue() !== strictTitle) {
-      throw new Error(`${target.name}: material title was cleared after a rejected import.`);
-    }
-    const retainedPreview = page.getByTestId('material-paste-preview').locator('pre');
-    if (await retainedPreview.textContent() !== rejectedMaterial) {
-      throw new Error(`${target.name}: pasted material was cleared after a rejected import.`);
+    const fieldOrder = await dialog.evaluate(node => {
+      const data = node.querySelector('#add-material-data')?.getBoundingClientRect();
+      const name = node.querySelector('#add-material-name')?.getBoundingClientRect();
+      return { dataTop: data?.top ?? null, nameTop: name?.top ?? null };
+    });
+    if (fieldOrder.dataTop === null || fieldOrder.nameTop === null || fieldOrder.dataTop >= fieldOrder.nameTop) {
+      throw new Error(`${target.name}: paste field is not before the optional title: ${JSON.stringify(fieldOrder)}`);
     }
 
-    // The expected rejection is logged by App.tsx. Clear it so any later console error is unexpected.
-    consoleErrors.length = 0;
-
-    if (target.name === 'webkit-iphone') {
-      // This repository intentionally keeps WebKit regression QA independent from IndexedDB because
-      // headless WebKit persistence has been flaky in CI. The strict validator itself is exercised
-      // above in a real WebKit page; the full save/open/avatar E2E continues below in Chromium.
-      const doc = await page.evaluate(() => ({
-        scrollWidth: document.documentElement.scrollWidth,
-        clientWidth: document.documentElement.clientWidth,
-      }));
-      if (doc.scrollWidth > doc.clientWidth) {
-        throw new Error(`${target.name}: horizontal overflow after strict validation rejection: ${JSON.stringify(doc)}`);
+    if (target.name.includes('iphone')) {
+      await textarea.focus();
+      await page.setViewportSize({ width: 393, height: 520 });
+      await page.waitForFunction(() => document.querySelector('.memora-modal')?.classList.contains('memora-modal--keyboard-open'), null, { timeout: 5_000 });
+      const keyboardLayout = await page.evaluate(() => {
+        const dialogNode = document.querySelector('.memora-modal');
+        const body = document.querySelector('.memora-modal__body');
+        const footer = document.querySelector('.memora-modal__footer');
+        const data = document.querySelector('#add-material-data');
+        const bodyRect = body?.getBoundingClientRect();
+        const dataRect = data?.getBoundingClientRect();
+        return {
+          dialogHeight: dialogNode?.getBoundingClientRect().height || 0,
+          viewportHeight: window.visualViewport?.height || window.innerHeight,
+          footerDisplay: footer ? getComputedStyle(footer).display : '',
+          bodyHeight: bodyRect?.height || 0,
+          dataInsideBody: Boolean(bodyRect && dataRect && dataRect.top >= bodyRect.top && dataRect.top < bodyRect.bottom),
+        };
+      });
+      if (keyboardLayout.footerDisplay !== 'none' || !keyboardLayout.dataInsideBody || keyboardLayout.bodyHeight < 250) {
+        throw new Error(`${target.name}: keyboard layout still covers the paste surface: ${JSON.stringify(keyboardLayout)}`);
       }
-      if (consoleErrors.length) throw new Error(`${target.name}: unexpected console errors: ${consoleErrors.join(' | ')}`);
-      if (pageErrors.length) throw new Error(`${target.name}: page errors: ${pageErrors.join(' | ')}`);
-      console.log(`${target.name}: READON strict validation rejection QA passed`);
-      continue;
+      if (keyboardLayout.dialogHeight > keyboardLayout.viewportHeight + 0.5) {
+        throw new Error(`${target.name}: dialog exceeds keyboard-sized viewport: ${JSON.stringify(keyboardLayout)}`);
+      }
+      await page.screenshot({ path: `${screenshotDir}/iphone-16-import-keyboard-field-clear.png`, scale: 'device' });
+      await textarea.evaluate(element => element.blur());
+      await page.setViewportSize({ width: 393, height: 852 });
     }
 
-    // Correct the rejected data in place. The importer must stay open and preserve the user's draft.
-    await page.getByRole('button', { name: '内容を編集' }).click();
-    if (await page.getByRole('alert').isVisible()) {
-      throw new Error(`${target.name}: stale validation error remained after editing resumed.`);
+    await pasteMaterial(page, textarea, exactMaterial);
+    const exactPreview = page.getByTestId('material-paste-preview');
+    await exactPreview.getByText('12文・30枚', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    const submit = page.getByRole('button', { name: '教材として取り込む' });
+    if (await submit.isDisabled()) throw new Error(`${target.name}: exact user material was incorrectly disabled.`);
+    await page.screenshot({ path: `${screenshotDir}/${target.name}-chiikawa-import-ready.png`, scale: 'css' });
+
+    await submit.click();
+    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 20_000 });
+    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), lastSentenceFragment, { timeout: 20_000 });
+    await page.screenshot({ path: `${screenshotDir}/${target.name}-chiikawa-reader.png`, scale: 'css' });
+
+    let stored = await readStoredMaterials(page);
+    if (stored.length !== 1) throw new Error(`${target.name}: exact import created ${stored.length} records instead of one.`);
+    assertStoredMaterial(stored[0], 30, `${target.name}/exact`);
+
+    // Reload and open the saved record again. This proves persistence, not merely a transient render.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: '教材一覧' }).click();
+    await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByRole('button', { name: '読む' }).first().click();
+    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 15_000 });
+
+    // A structurally invalid paste must not enable submit or create an orphan/blank record.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await openImporter(page);
+    const invalidInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
+    await pasteMaterial(page, invalidInput, invalidMaterial);
+    await page.getByText('英文を1文も認識できませんでした。', { exact: false }).waitFor({ state: 'visible', timeout: 10_000 });
+    if (!(await page.getByRole('button', { name: '教材として取り込む' }).isDisabled())) {
+      throw new Error(`${target.name}: invalid material left the submit button enabled.`);
     }
-    const correctedInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
-    await correctedInput.fill(buildValidQaMaterial());
+    stored = await readStoredMaterials(page);
+    if (stored.length !== 1) throw new Error(`${target.name}: invalid material created an orphan record.`);
+
+    // Harmless differences are repaired: code fences, a Unicode separator, a trailing comma,
+    // and 29 instead of 30 cards must still produce a usable material.
+    await page.getByRole('button', { name: '貼り直す' }).click();
+    const tolerantInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
+    await pasteMaterial(page, tolerantInput, tolerantMaterial);
+    const tolerantPreview = page.getByTestId('material-paste-preview');
+    await tolerantPreview.getByText('12文・29枚', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    await tolerantPreview.getByText('自動で補正して取り込みます', { exact: false }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.getByRole('button', { name: '教材として取り込む' }).click();
-    await page.getByRole('heading', { name: strictTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
-    await page.locator('button[title="解説を表示"]:visible').first().click();
+    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 20_000 });
+    stored = await readStoredMaterials(page);
+    if (stored.length !== 2) throw new Error(`${target.name}: tolerant import did not create exactly one additional record.`);
+    assertStoredMaterial(stored.at(-1), 29, `${target.name}/tolerant`);
 
-    const teacherAvatar = page.locator('img[data-persona-avatar="/personas/03_高校教師.png"]').first();
-    await teacherAvatar.waitFor({ state: 'visible', timeout: 15_000 });
-    await teacherAvatar.evaluate(image => image.decode().catch(() => {}));
-    const imageState = await teacherAvatar.evaluate(image => ({
-      complete: image.complete,
-      naturalWidth: image.naturalWidth,
-      naturalHeight: image.naturalHeight,
-    }));
-    if (!imageState.complete || imageState.naturalWidth <= 0 || imageState.naturalHeight <= 0) {
-      throw new Error(`${target.name}: default teacher avatar did not load: ${JSON.stringify(imageState)}`);
-    }
-
-    const doc = await page.evaluate(() => ({
+    const dimensions = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
     }));
-    if (doc.scrollWidth > doc.clientWidth) {
-      throw new Error(`${target.name}: horizontal overflow after strict READON import: ${JSON.stringify(doc)}`);
+    if (dimensions.scrollWidth > dimensions.clientWidth) {
+      throw new Error(`${target.name}: horizontal overflow: ${JSON.stringify(dimensions)}`);
     }
-    if (consoleErrors.length) throw new Error(`${target.name}: unexpected console errors: ${consoleErrors.join(' | ')}`);
+    if (consoleErrors.length) throw new Error(`${target.name}: console errors: ${consoleErrors.join(' | ')}`);
     if (pageErrors.length) throw new Error(`${target.name}: page errors: ${pageErrors.join(' | ')}`);
 
-    console.log(`${target.name}: READON strict contract QA passed`);
+    console.log(`${target.name}: exact, atomic, reload, and tolerant READON import QA passed`);
   } finally {
     await context.close();
     await browser.close();

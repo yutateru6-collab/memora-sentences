@@ -32,6 +32,11 @@ jobs:
       - name: Verify production build
         run: npm run build
 
+      - name: Verify exact user material parser and safe repairs
+        run: |
+          npx esbuild lib/readingMaterialImport.ts --bundle --platform=node --format=esm --outfile=/tmp/memora-reading-import.mjs
+          node tools/import-parser-smoke.mjs
+
       - name: Install Playwright
         run: |
           npm install --no-save playwright@1.62.1
@@ -69,7 +74,7 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:3000
 
-      - name: Run READON strict contract QA
+      - name: Run exact, atomic, and tolerant READON import QA
         run: node tools/readon-strict-contract-qa.mjs
         env:
           APP_URL: http://127.0.0.1:3000

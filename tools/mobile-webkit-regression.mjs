@@ -206,6 +206,8 @@ const importerSnapshot = async page => page.evaluate(() => {
       touchAction: getComputedStyle(body).touchAction,
     },
     textarea: textarea && textareaStyle ? {
+      top: textarea.getBoundingClientRect().top,
+      bottom: textarea.getBoundingClientRect().bottom,
       clientHeight: textarea.clientHeight,
       scrollHeight: textarea.scrollHeight,
       overflowY: textareaStyle.overflowY,
@@ -220,8 +222,10 @@ const importerSnapshot = async page => page.evaluate(() => {
     submit: {
       top: submitRect.top,
       bottom: submitRect.bottom,
+      visible: getComputedStyle(submit).display !== 'none' && submitRect.width > 0 && submitRect.height > 0,
       fullyVisible: submitRect.top >= -0.5 && submitRect.bottom <= viewportHeight + 0.5,
     },
+    keyboardMode: dialog.classList.contains('memora-modal--keyboard-open'),
     cover: coverRect ? {
       top: coverRect.top,
       bottom: coverRect.bottom,
@@ -325,6 +329,19 @@ try {
   await importerTextarea.focus();
   await page.setViewportSize({ width: 393, height: 520 });
   await page.waitForTimeout(180);
+  const importerKeyboardFocused = await importerSnapshot(page);
+  if (!importerKeyboardFocused?.keyboardMode
+      || importerKeyboardFocused.submit.visible
+      || !importerKeyboardFocused.textarea
+      || importerKeyboardFocused.body.clientHeight < 250
+      || importerKeyboardFocused.textarea.top < importerKeyboardFocused.body.top
+      || importerKeyboardFocused.textarea.top >= importerKeyboardFocused.body.bottom) {
+    throw new Error(`importer-keyboard-focused: paste field is still covered: ${JSON.stringify(importerKeyboardFocused)}`);
+  }
+  result.actions.push('focus-importer-with-keyboard-and-retire-footer-webkit');
+  result.screenshots.importerKeyboard = `${screenshotDir}/iphone-16-webkit-importer-keyboard-field-clear.png`;
+  await page.screenshot({ path: result.screenshots.importerKeyboard, fullPage: false, scale: 'device' });
+
   await importerTextarea.evaluate((element, pastedText) => {
     const clipboardData = new DataTransfer();
     clipboardData.setData('text/plain', pastedText);
@@ -336,7 +353,7 @@ try {
   if (!importerKeyboardSized || importerKeyboardSized.dialog.height > importerKeyboardSized.viewportHeight + 0.5) {
     throw new Error(`importer-keyboard-sized: dialog ignored the visual viewport: ${JSON.stringify(importerKeyboardSized)}`);
   }
-  if (!importerKeyboardSized?.submit.fullyVisible) {
+  if (!importerKeyboardSized?.submit.visible || !importerKeyboardSized.submit.fullyVisible) {
     throw new Error(`importer-keyboard-sized: submit is clipped: ${JSON.stringify(importerKeyboardSized)}`);
   }
   if (!importerKeyboardSized.preview || importerKeyboardSized.preview.characterCount !== longMaterial.length || importerKeyboardSized.textarea) {
@@ -380,7 +397,7 @@ try {
     throw new Error(`importer-bottom: bottom controls are unreachable: ${JSON.stringify(importerAtBottom)}`);
   }
 
-  result.states.importer = { importerKeyboardSized, importerBeforeScroll, importerAfterGesture, importerAtBottom };
+  result.states.importer = { importerKeyboardFocused, importerKeyboardSized, importerBeforeScroll, importerAfterGesture, importerAtBottom };
   result.actions.push('scroll-importer-to-bottom-webkit');
   result.screenshots.importer = `${screenshotDir}/iphone-16-webkit-importer-bottom-reachable.png`;
   await page.screenshot({ path: result.screenshots.importer, fullPage: false, scale: 'device' });

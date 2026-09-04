@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { StoredMaterial, StoredFolder, TranscriptEntry, Word } from '../types';
 import { Theme, Themes } from '../App';
 import TrashIcon from './icons/TrashIcon';
@@ -9,6 +9,7 @@ import PlusIcon from './icons/PlusIcon';
 import XMarkIcon from './icons/XMarkIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import { getMaterialById } from '../lib/db';
+import { prepareReadingMaterialImport } from '../lib/readingMaterialImport';
 
 interface UploadScreenProps {
   onBack: () => void;
@@ -564,6 +565,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
   const addModalRef = useRef<HTMLDivElement>(null);
   const addModalCloseButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+  const modalViewportBaselineRef = useRef(0);
 
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -621,6 +623,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
 
     previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.classList.add('memora-import-modal-open');
+    modalViewportBaselineRef.current = Math.max(window.innerHeight, window.visualViewport?.height || 0);
 
     const syncVisualViewport = () => {
         const viewport = window.visualViewport;
@@ -631,6 +634,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
         const left = Math.round(viewport?.offsetLeft || 0);
         const width = Math.round(viewport?.width || window.innerWidth);
         const height = Math.round(viewport?.height || window.innerHeight);
+        modalViewportBaselineRef.current = Math.max(modalViewportBaselineRef.current, window.innerHeight, height);
         backdrop.style.setProperty('--memora-modal-viewport-top', `${top}px`);
         backdrop.style.setProperty('--memora-modal-viewport-left', `${left}px`);
         backdrop.style.setProperty('--memora-modal-viewport-width', `${width}px`);
@@ -640,9 +644,15 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
         backdrop.style.setProperty('width', `${width}px`, 'important');
         backdrop.style.setProperty('height', `${height}px`, 'important');
         if (modal && width <= 640) {
-            const mobileHeight = `calc(${height}px - max(8px, env(safe-area-inset-top)))`;
+            const mobileHeight = `${height}px`;
             modal.style.setProperty('height', mobileHeight, 'important');
             modal.style.setProperty('max-height', mobileHeight, 'important');
+            const activeElement = document.activeElement;
+            const hasTextFocus = activeElement instanceof HTMLInputElement
+                || activeElement instanceof HTMLTextAreaElement
+                || activeElement instanceof HTMLSelectElement;
+            const keyboardOpen = hasTextFocus && height < modalViewportBaselineRef.current - 120;
+            modal.classList.toggle('memora-modal--keyboard-open', keyboardOpen);
         }
     };
 
@@ -813,7 +823,30 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
   const handleCreateFolder = () => { if(newFolderName.trim()){ onAddFolder(newFolderName.trim()); setNewFolderName(""); setIsCreatingFolder(false); } };
 
   const rootMaterials = storedMaterials.filter(m => !m.folderId);
-  const isLoadable = mediaFile || textFile || wordFile || wordContent || plainTextContent || timestampPasteContent;
+  const plainTextAnalysis = useMemo(() => {
+      if (!plainTextContent.trim()) return null;
+      try {
+          const prepared = prepareReadingMaterialImport(plainTextContent);
+          return {
+              valid: true as const,
+              sentenceCount: prepared.transcript.length,
+              cardCount: prepared.cards.length,
+              adjustments: prepared.repairs.length + prepared.warnings.length,
+              message: '',
+          };
+      } catch (analysisError) {
+          return {
+              valid: false as const,
+              sentenceCount: 0,
+              cardCount: 0,
+              adjustments: 0,
+              message: analysisError instanceof Error ? analysisError.message : '教材データを確認できませんでした。',
+          };
+      }
+  }, [plainTextContent]);
+  const isLoadable = plainTextContent
+      ? plainTextAnalysis?.valid === true
+      : Boolean(mediaFile || textFile || wordFile || wordContent || timestampPasteContent);
   const latestMaterial = storedMaterials.length > 0 ? storedMaterials[0] : null;
   const isFirstRun = storedMaterials.length === 0 && storedFolders.length === 0;
 
@@ -952,20 +985,21 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
                 </div>
                 <div className="memora-modal__body flex-1 min-h-0 p-6 overflow-y-auto space-y-8">
                      {error && <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl text-sm">{error}</div>}
-                     <div>
-                        <label htmlFor="add-material-name" className={`memora-field-label ${T.textMuted}`}>教材名 <small>（任意）</small></label>
-                        <input id="add-material-name" type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="例：Japan’s Ramen Culture" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
-                    </div>
-                    
                     <div>
                         <label htmlFor={plainTextContent && !isPlainTextEditing ? 'add-material-data-preview' : 'add-material-data'} className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
                         <p className="memora-field-help">AI Studioで作った結果を貼り付けます。</p>
                         {plainTextContent && !isPlainTextEditing ? (
                             <div id="add-material-data-preview" data-testid="material-paste-preview" data-character-count={plainTextContent.length} tabIndex={0} aria-live="polite" className={`memora-import-preview ${T.button} ${T.textSecondary} border ${T.border}`}>
-                                <div className="memora-import-preview__status">
-                                    <strong>教材データを貼り付けました</strong>
-                                    <span>{plainTextContent.length.toLocaleString('ja-JP')}文字</span>
+                                <div className={`memora-import-preview__status ${plainTextAnalysis?.valid === false ? 'memora-import-preview__status--invalid' : ''}`}>
+                                    <strong>{plainTextAnalysis?.valid === false ? '教材データを確認してください' : '教材データを認識しました'}</strong>
+                                    <span>
+                                      {plainTextAnalysis?.valid
+                                        ? `${plainTextAnalysis.sentenceCount}文・${plainTextAnalysis.cardCount}枚`
+                                        : `${plainTextContent.length.toLocaleString('ja-JP')}文字`}
+                                    </span>
                                 </div>
+                                {plainTextAnalysis?.valid === false && <p role="alert" className="memora-import-preview__error">{plainTextAnalysis.message}</p>}
+                                {plainTextAnalysis?.valid && plainTextAnalysis.adjustments > 0 && <p className="memora-import-preview__notice">小さな表記ゆれを {plainTextAnalysis.adjustments} 件、自動で補正して取り込みます。</p>}
                                 <pre>{plainTextContent}</pre>
                                 <div className="memora-import-preview__actions">
                                     <button type="button" onClick={() => beginPlainTextEditing(false)}>内容を編集</button>
@@ -978,6 +1012,11 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
                                 {plainTextContent && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setIsPlainTextEditing(false)} className="memora-import-edit-done">編集を完了</button>}
                             </div>
                         )}
+                    </div>
+
+                    <div>
+                        <label htmlFor="add-material-name" className={`memora-field-label ${T.textMuted}`}>教材名 <small>（任意・空欄なら英文から自動作成）</small></label>
+                        <input id="add-material-name" type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="例：Japan’s Ramen Culture" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
                     </div>
 
                     <div>
@@ -1043,7 +1082,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
 
                 </div>
                 <div className={`memora-modal__footer p-6 border-t ${T.border} bg-black/10`}>
-                    <button type="button" onClick={handleLoadClick} disabled={isImporting || (!isLoadable && !thumbnailFile)} className="memora-button memora-button--primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all active:scale-[0.99] shadow-lg">{isImporting ? '取り込み中…' : '教材として取り込む'}</button>
+                    <button type="button" onClick={handleLoadClick} disabled={isImporting || !isLoadable} className="memora-button memora-button--primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all active:scale-[0.99] shadow-lg">{isImporting ? '取り込み中…' : '教材として取り込む'}</button>
                 </div>
             </div>
         </div>

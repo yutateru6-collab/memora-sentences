@@ -1051,6 +1051,32 @@
   font-weight: 750;
 }
 
+.memora-import-preview__status--invalid strong,
+.memora-import-preview__status--invalid span {
+  color: #ffc2cc;
+}
+
+.memora-import-preview__error,
+.memora-import-preview__notice {
+  margin: 9px 0 0;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.memora-import-preview__error {
+  border: 1px solid rgba(255, 117, 141, 0.24);
+  background: rgba(255, 82, 112, 0.09);
+  color: #ffc2cc;
+}
+
+.memora-import-preview__notice {
+  border: 1px solid rgba(142, 232, 184, 0.2);
+  background: rgba(142, 232, 184, 0.07);
+  color: #bdf2d4;
+}
+
 .memora-import-preview pre {
   display: -webkit-box;
   margin: 10px 0 0;
@@ -1432,8 +1458,8 @@ body.memora-import-modal-open .memora-world--read {
     display: grid !important;
     grid-template-rows: auto minmax(0, 1fr) auto;
     width: 100%;
-    height: calc(var(--memora-modal-viewport-height, 100dvh) - max(8px, env(safe-area-inset-top)));
-    max-height: calc(var(--memora-modal-viewport-height, 100dvh) - max(8px, env(safe-area-inset-top))) !important;
+    height: var(--memora-modal-viewport-height, 100dvh);
+    max-height: var(--memora-modal-viewport-height, 100dvh) !important;
     border-radius: 24px 24px 0 0 !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
@@ -1444,12 +1470,51 @@ body.memora-import-modal-open .memora-world--read {
     padding: 16px !important;
   }
 
+  .memora-modal__header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    align-items: center !important;
+    gap: 10px;
+    padding-top: max(10px, env(safe-area-inset-top)) !important;
+    padding-bottom: 10px !important;
+  }
+
+  .memora-modal__header h2 {
+    overflow: hidden;
+    font-size: 20px !important;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .memora-modal__header > button {
+    grid-column: 2;
+    grid-row: 1;
+    width: 44px;
+    height: 44px;
+    justify-self: end;
+  }
+
+  .memora-modal__eyebrow {
+    margin-bottom: 2px;
+    font-size: 9px;
+  }
+
   .memora-modal__footer {
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 
   .memora-modal__body {
     padding: 16px !important;
+    scroll-padding-bottom: 16px;
+  }
+
+  .memora-modal--keyboard-open {
+    grid-template-rows: auto minmax(0, 1fr) !important;
+  }
+
+  .memora-modal--keyboard-open .memora-modal__footer {
+    display: none;
   }
 
   .memora-modal input,

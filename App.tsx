@@ -17,7 +17,7 @@ import CreateHomeScreen from './components/CreateHomeScreen';
 import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
-import { formatReadingMaterialValidationError, validateGeneratedReadingMaterial } from './lib/readingMaterialValidation';
+import { parseImportCards, prepareReadingMaterialImport } from './lib/readingMaterialImport';
 
 type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
@@ -382,65 +382,71 @@ const App: React.FC = () => {
              }
         }
 
-        if (data.plainTextContent && selectedPromptPersonas && pendingReadonStrictValidation) {
-             const validation = validateGeneratedReadingMaterial(data.plainTextContent);
-             if (!validation.valid) {
-                 throw new Error(formatReadingMaterialValidationError(validation));
+        // Build every derived file before the first IndexedDB write. A parser error can
+        // no longer leave an empty material behind.
+        let materialName = data.name.trim();
+        let preparedTextFile = data.textFile;
+        let preparedWordFile = data.wordFile;
+
+        if (data.plainTextContent) {
+             const prepared = prepareReadingMaterialImport(data.plainTextContent);
+             const textContent = applySelectedPersonaMetadata(prepared.transcript, selectedPromptPersonas);
+             preparedTextFile = new File(
+                 [JSON.stringify(textContent)],
+                 'transcript.json',
+                 { type: 'application/json' }
+             );
+             if (prepared.cards.length > 0) {
+                 preparedWordFile = new File(
+                     [JSON.stringify(prepared.cards)],
+                     'words.json',
+                     { type: 'application/json' }
+                 );
              }
+             if (!materialName) materialName = prepared.suggestedName;
+             if (prepared.repairs.length > 0 || prepared.warnings.length > 0) {
+                 console.info('[reading-import] completed with recoverable adjustments', {
+                     repairs: prepared.repairs,
+                     warnings: prepared.warnings,
+                     sentenceCount: textContent.length,
+                     cardCount: prepared.cards.length,
+                 });
+             }
+        }
+
+        if (data.wordContent && !data.plainTextContent) {
+            const warnings: string[] = [];
+            const repairs: string[] = [];
+            const parsedCards = parseImportCards(data.wordContent, warnings, repairs);
+            preparedWordFile = new File(
+                [JSON.stringify(parsedCards)],
+                'words.json',
+                { type: 'application/json' }
+            );
+            if (warnings.length > 0 || repairs.length > 0) {
+                console.info('[word-import] completed with recoverable adjustments', { warnings, repairs });
+            }
+        }
+
+        if (!data.mediaFile && !preparedTextFile && !preparedWordFile) {
+            throw new Error('取り込める本文・音声・単語カードがありません。表紙画像だけでは教材を作成できません。');
         }
 
         const duration = data.mediaFile ? await getDuration(data.mediaFile) : undefined;
         const id = await saveMaterial({
-            name: data.name || '無題',
+            name: materialName || data.mediaFile?.name.replace(/\.[^/.]+$/, '') || '教材',
             mediaFile: data.mediaFile,
-            textFile: data.textFile,
+            textFile: preparedTextFile,
             duration,
-            wordFile: data.wordFile,
+            wordFile: preparedWordFile,
             thumbnail: data.thumbnail
         });
         
-        if (data.wordContent) {
-            const file = new File([data.wordContent], "words.json", { type: "application/json" });
-            await updateMaterial(id, { wordFile: file });
-        }
-
-        if (data.plainTextContent) {
-             let textContent: TranscriptEntry[] = [];
-             let wordsText = '';
-             let backgroundText = '';
-
-             if (data.plainTextContent.includes('----------')) {
-                 const parts = data.plainTextContent.split('----------');
-                 const transcriptText = stripStandaloneCodeFences(parts[0]);
-                 wordsText = stripStandaloneCodeFences(parts[1] || '');
-                 backgroundText = stripStandaloneCodeFences(parts[2] || '');
-                 textContent = parsePlainTextToTranscript(transcriptText);
-             } else {
-                 textContent = parsePlainTextToTranscript(stripStandaloneCodeFences(data.plainTextContent));
-             }
-
-             textContent = applySelectedPersonaMetadata(textContent, selectedPromptPersonas);
-
-             if (backgroundText && textContent.length > 0) {
-                 const existingExpl = textContent[0].explanation || '';
-                 textContent[0].explanation = existingExpl + `__BACKGROUND_INFO__${backgroundText.trim()}__END_BACKGROUND__`;
-             }
-
-             const blob = new Blob([JSON.stringify(textContent)], { type: 'application/json' });
-             const file = new File([blob], "transcript.json", { type: "application/json" });
-             await updateMaterial(id, { textFile: file });
-             
-             if (wordsText && wordsText.trim()) {
-                 const wordBlob = new Blob([wordsText], { type: 'text/plain' });
-                 const wordFile = new File([wordBlob], "words.txt", { type: 'text/plain' });
-                 await updateMaterial(id, { wordFile });
-             }
-        }
         
         clearPendingImportContext();
         await loadStoredData();
         
-        if (data.mediaFile || data.textFile || data.plainTextContent) {
+        if (data.mediaFile || preparedTextFile || data.plainTextContent) {
              await handleLoadFromDB(id);
         }
 
@@ -637,7 +643,10 @@ const App: React.FC = () => {
                   let bgInfo: string | null = null;
                   
                   if (Array.isArray(parsed)) {
-                      entries = parsed;
+                      entries = parsed.filter((entry: TranscriptEntry) => typeof entry?.english === 'string' && entry.english.trim());
+                      if (entries.length === 0) {
+                          throw new Error('本文が空の教材は開けません。元の貼り付けデータから再取り込みしてください。');
+                      }
                       if (entries.length > 0 && entries[0].explanation) {
                           let expl = entries[0].explanation;
                           const personaMatch = expl.match(/__PERSONA_PROFILE__([\s\S]*?)__END_PERSONA__/);
@@ -652,6 +661,8 @@ const App: React.FC = () => {
                           }
                           entries[0].explanation = expl;
                       }
+                  } else {
+                      throw new Error('本文データの形式を認識できません。');
                   }
                   setTranscript(entries);
                   setPersonaProfile(profile);
@@ -660,7 +671,7 @@ const App: React.FC = () => {
               } catch (e) {
                   console.error("Failed to parse transcript JSON", e);
                   setTranscript([]);
-                  setError("トランスクリプトデータの解析に失敗しました。");
+                  setError(e instanceof Error ? e.message : "トランスクリプトデータの解析に失敗しました。");
               }
           } else {
               setTranscript([]);
