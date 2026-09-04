@@ -505,20 +505,15 @@ for (const target of targets) {
       await page.getByRole('button', { name: new RegExp(`^${gradeName}`) }).waitFor({ state: 'visible', timeout: 10_000 });
     }
     await page.getByRole('button', { name: /^できた/ }).click();
-    const completion = page.getByRole('dialog', { name: '今日の復習、おわり！' });
-    await completion.waitFor({ state: 'visible', timeout: 15_000 });
-    await completion.getByText('1枚クリアしました', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
+    await page.getByRole('button', { name: '答えを表示', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByText('analyze', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
     if (result.dialogs.length > 0) throw new Error(`Unexpected browser dialog: ${JSON.stringify(result.dialogs)}`);
-    result.actions.push('complete-flashcard-session');
-    result.states.flashcardComplete = {
-      document: await assertNoOverflow(page, 'Flashcard complete'),
-      mascot: await assertMascot(page, '/memora-world/memorize-v1.webp', 'Flashcard complete'),
+    result.actions.push('grade-card-and-advance-session');
+    result.states.flashcardNext = {
+      document: await assertNoOverflow(page, 'Flashcard next card'),
+      mascot: await assertMascot(page, '/memora-world/memorize-v1.webp', 'Flashcard next card'),
     };
-    result.screenshots.flashcardComplete = await saveScreenshots(page, target, 'flashcard-complete');
-
-    await completion.getByRole('button', { name: 'もう一度', exact: true }).click();
-    await page.getByRole('button', { name: '答えを表示', exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
-    result.actions.push('restart-flashcard-session');
+    result.screenshots.flashcardNext = await saveScreenshots(page, target, 'flashcard-next');
 
     if (result.consoleErrors.length) throw new Error(`Console errors: ${result.consoleErrors.join(' | ')}`);
     if (result.pageErrors.length) throw new Error(`Page errors: ${result.pageErrors.join(' | ')}`);
