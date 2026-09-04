@@ -478,7 +478,7 @@ for (const target of targets) {
     };
     result.screenshots.cardListFront = await saveScreenshots(page, target, 'card-list-front');
 
-    await page.getByRole('button', { name: /originate：タップして次の面へ/ }).click();
+    await page.getByRole('button', { name: /students：タップして次の面へ/ }).click();
     await page.locator('img[src="/memora-world/organize-v2.webp"]').waitFor({ state: 'visible', timeout: 10_000 });
     result.actions.push('flip-card-list-item');
     result.states.cardListBack = {
