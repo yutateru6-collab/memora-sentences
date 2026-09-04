@@ -94,6 +94,17 @@ for (const target of targets) {
     await depth.waitFor({ state: 'visible', timeout: 10_000 });
     await length.waitFor({ state: 'visible', timeout: 10_000 });
 
+    // WebKit can expose the DOM before the external stylesheet has finished
+    // applying. Wait for the responsive grid itself instead of measuring the
+    // desktop fallback and reporting a false layout regression.
+    if (target.name === 'webkit-iphone') {
+      await page.waitForFunction(() => {
+        const grid = document.querySelector('.create-home__choice-grid');
+        if (!(grid instanceof HTMLElement) || !matchMedia('(max-width: 699px)').matches) return false;
+        return getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length === 3;
+      }, null, { timeout: 15_000 });
+    }
+
     const depthOptions = await depth.locator('option').evaluateAll(options =>
       options.map(option => ({ value: option.value, label: option.textContent?.trim() || '' })),
     );
