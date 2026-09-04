@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { TranscriptEntry, QuizQuestion, Card, InlineNote } from '../types';
 import PlayIcon from './icons/PlayIcon';
 import PauseIcon from './icons/PauseIcon';
@@ -229,6 +229,39 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentWrapperRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const visualViewport = window.visualViewport;
+    let stableHeight = Math.max(
+      window.innerHeight,
+      root.clientHeight,
+      visualViewport?.height || 0,
+    );
+
+    const applyStableViewportHeight = () => {
+      const measuredHeight = Math.max(
+        window.innerHeight,
+        root.clientHeight,
+        visualViewport?.height || 0,
+      );
+      // iOS WebKit can keep the small keyboard viewport for CSS viewport units
+      // after the import modal closes. Never shrink the Reader during that
+      // lifecycle; use the largest real viewport measurement instead.
+      stableHeight = Math.max(stableHeight, measuredHeight);
+      root.style.setProperty('--memora-reader-viewport-height', `${Math.round(stableHeight)}px`);
+    };
+
+    applyStableViewportHeight();
+    window.addEventListener('resize', applyStableViewportHeight);
+    visualViewport?.addEventListener('resize', applyStableViewportHeight);
+
+    return () => {
+      window.removeEventListener('resize', applyStableViewportHeight);
+      visualViewport?.removeEventListener('resize', applyStableViewportHeight);
+      root.style.removeProperty('--memora-reader-viewport-height');
+    };
+  }, []);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
