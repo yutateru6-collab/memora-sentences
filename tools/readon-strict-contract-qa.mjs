@@ -179,7 +179,8 @@ for (const target of targets) {
     await page.screenshot({ path: `${screenshotDir}/${target.name}-chiikawa-import-ready.png`, scale: 'css' });
 
     await submit.click();
-    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 20_000 });
+    await dialog.waitFor({ state: 'hidden', timeout: 20_000 });
+    await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 12, null, { timeout: 20_000 });
     await page.waitForFunction(fragment => document.body.innerText.includes(fragment), lastSentenceFragment, { timeout: 20_000 });
     await page.screenshot({ path: `${screenshotDir}/${target.name}-chiikawa-reader.png`, scale: 'css' });
 
@@ -215,7 +216,8 @@ for (const target of targets) {
     await tolerantPreview.getByText('12文・29枚', { exact: true }).waitFor({ state: 'visible', timeout: 10_000 });
     await tolerantPreview.getByText('自動で補正して取り込みます', { exact: false }).waitFor({ state: 'visible', timeout: 10_000 });
     await page.getByRole('button', { name: '教材として取り込む' }).click();
-    await page.waitForFunction(fragment => document.body.innerText.includes(fragment), firstSentenceFragment, { timeout: 20_000 });
+    await page.getByRole('dialog', { name: '新しい教材を追加' }).waitFor({ state: 'hidden', timeout: 20_000 });
+    await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 12, null, { timeout: 20_000 });
     stored = await readStoredMaterials(page);
     if (stored.length !== 2) throw new Error(`${target.name}: tolerant import did not create exactly one additional record.`);
     assertStoredMaterial(stored.at(-1), 29, `${target.name}/tolerant`);
