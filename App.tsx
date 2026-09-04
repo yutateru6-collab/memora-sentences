@@ -1029,6 +1029,7 @@ const App: React.FC = () => {
           onBack={() => setView('create')}
           onLoad={handleLoad} 
           error={error} 
+          onClearError={() => setError(null)}
           storedMaterials={storedMaterials} 
           storedFolders={storedFolders}
           onLoadFromDB={handleLoadFromDB} 

@@ -118,6 +118,9 @@ for (const target of targets) {
 
     // Correct the rejected data in place. The importer must stay open and preserve the user's draft.
     await page.getByRole('button', { name: '内容を編集' }).click();
+    if (await page.getByRole('alert').isVisible()) {
+      throw new Error(`${target.name}: stale validation error remained after editing resumed.`);
+    }
     const correctedInput = page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください');
     await correctedInput.fill(buildValidQaMaterial());
     await page.getByRole('button', { name: '教材として取り込む' }).click();

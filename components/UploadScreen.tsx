@@ -22,6 +22,7 @@ interface UploadScreenProps {
     thumbnail?: string;
   }) => Promise<boolean>;
   error: string | null;
+  onClearError?: () => void;
   storedMaterials: StoredMaterial[];
   storedFolders: StoredFolder[];
   onLoadFromDB: (id: number) => void;
@@ -543,7 +544,7 @@ const ConfirmDeleteButton: React.FC<{ onDelete: () => void; itemType: 'file' | '
     return <button type="button" onClick={handleClick} className={`relative z-50 p-2 rounded-full transition-all duration-200 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-md ${confirming ? 'bg-red-600 text-white w-auto px-3' : 'bg-red-500 text-white w-8 h-8 hover:bg-red-600'}`} title={confirming ? "クリックして削除" : "削除"}>{confirming ? <span className="text-xs font-bold whitespace-nowrap">削除?</span> : <TrashIcon className="w-4 h-4 pointer-events-none" />}</button>;
 };
 
-const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview, initialOpenPasteJson, onClearPasteJson }) => {
+const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onClearError, storedMaterials, storedFolders, onLoadFromDB, onDeleteFromDB, onUpdateMaterial, onAddFolder, onUpdateFolder, onDeleteFolder, onGoToDeckList, onStudy, onGame, onStartQuiz, onLoadBoard, T, setTheme, themes, dueCardCount = 0, onStartDailyReview, initialOpenPasteJson, onClearPasteJson }) => {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [textFile, setTextFile] = useState<File | null>(null);
   const [wordFile, setWordFile] = useState<File | null>(null);
@@ -738,12 +739,14 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
       const selectionEnd = textarea.selectionEnd ?? selectionStart;
       const nextValue = `${plainTextContent.slice(0, selectionStart)}${pastedText}${plainTextContent.slice(selectionEnd)}`;
       setPlainTextContent(nextValue);
+      onClearError?.();
       clearPlainTextAlternatives();
       setIsPlainTextEditing(false);
       window.setTimeout(() => textarea.blur(), 0);
   };
 
   const beginPlainTextEditing = (clearFirst = false) => {
+      onClearError?.();
       if (clearFirst) setPlainTextContent('');
       setIsPlainTextEditing(true);
       window.requestAnimationFrame(() => {
@@ -971,7 +974,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                             </div>
                         ) : (
                             <div>
-                                <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onPaste={handlePlainTextPaste} onBlur={() => { if (plainTextContent.trim()) setIsPlainTextEditing(false); }} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) clearPlainTextAlternatives(); }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={6} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none`}/>
+                                <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onPaste={handlePlainTextPaste} onBlur={() => { if (plainTextContent.trim()) setIsPlainTextEditing(false); }} onChange={(e) => { setPlainTextContent(e.target.value); onClearError?.(); if (e.target.value) clearPlainTextAlternatives(); }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={6} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none`}/>
                                 {plainTextContent && <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => setIsPlainTextEditing(false)} className="memora-import-edit-done">編集を完了</button>}
                             </div>
                         )}
