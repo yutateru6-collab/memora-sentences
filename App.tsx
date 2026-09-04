@@ -290,7 +290,7 @@ const App: React.FC = () => {
     wordContent?: string;
     plainTextContent?: string;
     thumbnail?: string;
-  }) => {
+  }): Promise<boolean> => {
     setError(null);
     const selectedPromptPersonas = data.plainTextContent ? pendingPromptPersonas : null;
     const clearPendingImportContext = () => {
@@ -317,8 +317,8 @@ const App: React.FC = () => {
                      });
                      clearPendingImportContext();
                      await loadStoredData();
-                     handleLoadFromDB(id);
-                     return;
+                     await handleLoadFromDB(id);
+                     return true;
                  }
 
                  // Case 2: Amazon Data
@@ -334,8 +334,8 @@ const App: React.FC = () => {
                      });
                      clearPendingImportContext();
                      await loadStoredData();
-                     handleLoadFromDB(id);
-                     return;
+                     await handleLoadFromDB(id);
+                     return true;
                  }
 
                  // Case 3: Legend Data
@@ -351,8 +351,8 @@ const App: React.FC = () => {
                      });
                      clearPendingImportContext();
                      await loadStoredData();
-                     handleLoadFromDB(id);
-                     return;
+                     await handleLoadFromDB(id);
+                     return true;
                  }
 
                  // Case 4: SNS / X Data
@@ -373,8 +373,8 @@ const App: React.FC = () => {
                      });
                      clearPendingImportContext();
                      await loadStoredData();
-                     handleLoadFromDB(id);
-                     return;
+                     await handleLoadFromDB(id);
+                     return true;
                  }
 
              } catch (e) {
@@ -441,12 +441,15 @@ const App: React.FC = () => {
         await loadStoredData();
         
         if (data.mediaFile || data.textFile || data.plainTextContent) {
-             handleLoadFromDB(id);
+             await handleLoadFromDB(id);
         }
+
+        return true;
 
     } catch (err) {
       console.error(err);
       setError(err instanceof Error && err.message ? err.message : "データの読み込みに失敗しました。");
+      return false;
     }
   };
   

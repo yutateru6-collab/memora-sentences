@@ -20,7 +20,7 @@ interface UploadScreenProps {
     wordContent?: string;
     plainTextContent?: string;
     thumbnail?: string;
-  }) => void;
+  }) => Promise<boolean>;
   error: string | null;
   storedMaterials: StoredMaterial[];
   storedFolders: StoredFolder[];
@@ -558,6 +558,10 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null); 
   const plainTextInputRef = useRef<HTMLTextAreaElement>(null);
+  const addModalBackdropRef = useRef<HTMLDivElement>(null);
+  const addModalRef = useRef<HTMLDivElement>(null);
+  const addModalCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -585,6 +589,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
   const settingsContainerRef = useRef<HTMLDivElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [isTimestampPasteMode, setIsTimestampPasteMode] = useState(false);
   const [timestampPasteContent, setTimestampPasteContent] = useState('');
 
@@ -601,12 +606,84 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
   useEffect(() => {
     if (initialOpenPasteJson) {
         setIsAddModalOpen(true);
-        setTimeout(() => {
-            plainTextInputRef.current?.focus();
-        }, 100);
+        const isTouchDevice = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+        if (!isTouchDevice) {
+            window.setTimeout(() => plainTextInputRef.current?.focus({ preventScroll: true }), 100);
+        }
         onClearPasteJson?.();
     }
   }, [initialOpenPasteJson, onClearPasteJson]);
+
+  useEffect(() => {
+    if (!isAddModalOpen) return;
+
+    previouslyFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.classList.add('memora-import-modal-open');
+
+    const syncVisualViewport = () => {
+        const viewport = window.visualViewport;
+        const backdrop = addModalBackdropRef.current;
+        if (!backdrop) return;
+        backdrop.style.setProperty('--memora-modal-viewport-top', `${Math.round(viewport?.offsetTop || 0)}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-left', `${Math.round(viewport?.offsetLeft || 0)}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-width', `${Math.round(viewport?.width || window.innerWidth)}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-height', `${Math.round(viewport?.height || window.innerHeight)}px`);
+    };
+
+    const handleModalKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            setIsAddModalOpen(false);
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        const focusable: HTMLElement[] = addModalRef.current
+            ? (Array.from(addModalRef.current.querySelectorAll(
+                'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )) as HTMLElement[]).filter(element => element.offsetParent !== null)
+            : [];
+        if (!focusable.length) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
+
+    syncVisualViewport();
+    const focusTimer = window.setTimeout(() => addModalCloseButtonRef.current?.focus({ preventScroll: true }), 0);
+    window.visualViewport?.addEventListener('resize', syncVisualViewport);
+    window.visualViewport?.addEventListener('scroll', syncVisualViewport);
+    window.addEventListener('resize', syncVisualViewport);
+    document.addEventListener('keydown', handleModalKeyDown);
+
+    return () => {
+        window.clearTimeout(focusTimer);
+        window.visualViewport?.removeEventListener('resize', syncVisualViewport);
+        window.visualViewport?.removeEventListener('scroll', syncVisualViewport);
+        window.removeEventListener('resize', syncVisualViewport);
+        document.removeEventListener('keydown', handleModalKeyDown);
+        document.body.classList.remove('memora-import-modal-open');
+        previouslyFocusedElementRef.current?.focus({ preventScroll: true });
+    };
+  }, [isAddModalOpen]);
+
+  useEffect(() => {
+    if (!isAddModalOpen || !plainTextInputRef.current) return;
+    const frame = window.requestAnimationFrame(() => {
+        const textarea = plainTextInputRef.current;
+        if (!textarea) return;
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.max(132, textarea.scrollHeight)}px`;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isAddModalOpen, plainTextContent]);
 
   useEffect(() => { if (isCreatingFolder) newFolderInputRef.current?.focus(); }, [isCreatingFolder]);
 
@@ -640,7 +717,8 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
   };
 
 
-  const handleLoadClick = () => {
+  const handleLoadClick = async () => {
+    if (isImporting) return;
     if (isTimestampPasteMode && timestampPasteContent && onLoadBoard) {
     }
 
@@ -653,16 +731,32 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
         finalTextFile = new File([blob], 'timestamp.json', { type: 'application/json' });
     }
 
-    onLoad({ 
-        name: materialName, 
-        mediaFile: mediaFile || undefined, 
-        textFile: finalTextFile || undefined,
-        wordFile: wordFile || undefined,
-        wordContent: wordContent || undefined,
-        plainTextContent: finalPlainText || undefined,
-        thumbnail: thumbnailFile
-    });
-    setIsAddModalOpen(false); setMediaFile(null); setTextFile(null); setWordFile(null); setMaterialName(''); setWordContent(''); setPlainTextContent(''); setIsTimestampPasteMode(false); setTimestampPasteContent(''); setThumbnailFile(undefined);
+    setIsImporting(true);
+    try {
+        const succeeded = await onLoad({
+            name: materialName,
+            mediaFile: mediaFile || undefined,
+            textFile: finalTextFile || undefined,
+            wordFile: wordFile || undefined,
+            wordContent: wordContent || undefined,
+            plainTextContent: finalPlainText || undefined,
+            thumbnail: thumbnailFile
+        });
+        if (!succeeded) return;
+
+        setIsAddModalOpen(false);
+        setMediaFile(null);
+        setTextFile(null);
+        setWordFile(null);
+        setMaterialName('');
+        setWordContent('');
+        setPlainTextContent('');
+        setIsTimestampPasteMode(false);
+        setTimestampPasteContent('');
+        setThumbnailFile(undefined);
+    } finally {
+        setIsImporting(false);
+    }
   };
 
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>, materialId: number) => {
@@ -804,25 +898,26 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
       )}
       
       {isAddModalOpen && (
-        <div className="memora-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setIsAddModalOpen(false)}>
-            <div className={`memora-modal ${T.containerBg} w-full max-w-2xl rounded-2xl shadow-2xl border ${T.border} overflow-hidden animate-fade-in flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
-                <div className={`flex items-center justify-between p-6 border-b ${T.border}`}>
+        <div ref={addModalBackdropRef} className="memora-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => !isImporting && setIsAddModalOpen(false)}>
+            <div ref={addModalRef} role="dialog" aria-modal="true" aria-labelledby="add-material-title" tabIndex={-1} className={`memora-modal ${T.containerBg} w-full max-w-2xl rounded-2xl shadow-2xl border ${T.border} overflow-hidden animate-fade-in flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
+                <div className={`memora-modal__header flex items-center justify-between p-6 border-b ${T.border}`}>
                     <div>
                       <p className="memora-modal__eyebrow">ORGANIZE</p>
-                      <h2 className={`text-2xl font-bold ${T.textPrimary}`}>新しい教材を追加</h2>
+                      <h2 id="add-material-title" className={`text-2xl font-bold ${T.textPrimary}`}>新しい教材を追加</h2>
                     </div>
-                    <button onClick={() => setIsAddModalOpen(false)} className={`p-2 rounded-full ${T.button} hover:bg-red-500 hover:text-white transition-colors`}><XMarkIcon /></button>
+                    <button ref={addModalCloseButtonRef} type="button" aria-label="教材の追加を閉じる" disabled={isImporting} onClick={() => setIsAddModalOpen(false)} className={`p-2 rounded-full ${T.button} hover:bg-red-500 hover:text-white transition-colors disabled:opacity-50`}><XMarkIcon /></button>
                 </div>
-                <div className="memora-modal__body p-6 overflow-y-auto space-y-8">
+                <div className="memora-modal__body flex-1 min-h-0 p-6 overflow-y-auto space-y-8">
+                     {error && <div role="alert" className="bg-red-500/10 border border-red-500/30 text-red-300 p-4 rounded-xl text-sm">{error}</div>}
                      <div>
-                        <label className={`memora-field-label ${T.textMuted}`}>教材名 <small>（任意）</small></label>
-                        <input type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="例：Japan’s Ramen Culture" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
+                        <label htmlFor="add-material-name" className={`memora-field-label ${T.textMuted}`}>教材名 <small>（任意）</small></label>
+                        <input id="add-material-name" type="text" value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="例：Japan’s Ramen Culture" className={`w-full p-3 ${T.button} ${T.textPrimary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} text-lg`}/>
                     </div>
                     
                     <div>
-                        <label className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
+                        <label htmlFor="add-material-data" className={`memora-field-label ${T.textMuted}`}>1. 教材データ</label>
                         <p className="memora-field-help">AI Studioで作った結果を貼り付けます。</p>
-                        <textarea ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                        <textarea id="add-material-data" ref={plainTextInputRef} value={plainTextContent} onChange={(e) => { setPlainTextContent(e.target.value); if (e.target.value) { setWordFile(null); setTextFile(null); setWordContent(''); } }} placeholder="AI Studioで作った教材データをここに貼り付けてください" rows={5} className={`memora-import-textarea w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono resize-none overflow-hidden`}/>
                     </div>
 
                     <div>
@@ -840,16 +935,18 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                               <label className={`memora-field-label ${T.textMuted}`}>3. タイムスタンプ <small>（任意）</small></label>
                               {isTimestampPasteMode ? (
                                   <div className={`memora-file-picker relative flex flex-col p-0 rounded-xl border-2 ${T.border} overflow-hidden`}>
-                                      <textarea autoFocus value={timestampPasteContent} onChange={(e) => setTimestampPasteContent(e.target.value)} placeholder="タイムスタンプのデータを貼り付け" className={`w-full h-full p-3 text-xs ${T.button} ${T.textSecondary} resize-none focus:outline-none`} style={{ minHeight: '120px' }}/>
-                                      <button onClick={() => { setIsTimestampPasteMode(false); setTimestampPasteContent(''); }} className={`absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500`}><XMarkIcon className="w-4 h-4"/></button>
+                                      <textarea aria-label="タイムスタンプのデータ" autoFocus value={timestampPasteContent} onChange={(e) => setTimestampPasteContent(e.target.value)} placeholder="タイムスタンプのデータを貼り付け" className={`w-full h-full p-3 text-xs ${T.button} ${T.textSecondary} resize-none focus:outline-none`} style={{ minHeight: '120px' }}/>
+                                      <button type="button" aria-label="タイムスタンプの貼り付けをやめる" onClick={() => { setIsTimestampPasteMode(false); setTimestampPasteContent(''); }} className={`absolute top-2 right-2 p-1 rounded-full bg-black/50 text-white hover:bg-red-500`}><XMarkIcon className="w-4 h-4"/></button>
                                   </div>
                               ) : (
-                                  <button type="button" onClick={() => textInputRef.current?.click()} className={`memora-file-picker group relative flex w-full flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
+                                  <div className={`memora-file-picker group relative flex w-full flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed ${T.border} hover:border-sky-500 hover:bg-sky-500/10 transition-all`}>
+                                      <button type="button" onClick={() => textInputRef.current?.click()} className="flex w-full flex-col items-center justify-center">
                                       <span className={`font-semibold ${T.textPrimary}`}>タイムスタンプを選ぶ</span>
                                       <span className={`text-xs ${T.textMuted} mt-1 text-center max-w-full truncate px-2`}>{textFile?.name || 'ファイル未選択'}</span>
+                                      </button>
                                       <input type="file" ref={textInputRef} accept=".txt,.json,text/plain,application/json" onChange={handleTextFileChange} className="hidden"/>
-                                      <span onClick={(e) => { e.stopPropagation(); setIsTimestampPasteMode(true); setTextFile(null); }} className="mt-2 text-xs text-sky-400 hover:underline z-10">データを直接貼り付ける</span>
-                                  </button>
+                                      <button type="button" onClick={() => { setIsTimestampPasteMode(true); setTextFile(null); }} className="mt-2 text-xs text-sky-400 hover:underline z-10">データを直接貼り付ける</button>
+                                  </div>
                               )}
                             </div>
                          </div>
@@ -862,7 +959,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                             <span className={`flex items-center text-xs ${T.textMuted}`}>{wordFile?.name}</span>
                             <input type="file" ref={wordInputRef} accept=".json,.txt,text/plain,application/json" onChange={handleWordFileChange} className="hidden"/>
                         </div>
-                        <textarea value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                            <textarea aria-label="単語カードのデータ" value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div onPaste={handleImagePaste}>
@@ -871,22 +968,22 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
                             {thumbnailFile ? (
                                 <div className="relative w-full aspect-video flex items-center justify-center overflow-hidden rounded-lg">
                                     <img src={thumbnailFile} alt="Preview" className="max-w-full max-h-48 object-contain" />
-                                    <button onClick={() => setThumbnailFile(undefined)} className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-md"><XMarkIcon className="w-4 h-4"/></button>
+                                    <button type="button" aria-label="表紙画像を削除" onClick={() => setThumbnailFile(undefined)} className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full shadow-md"><XMarkIcon className="w-4 h-4"/></button>
                                 </div>
                             ) : (
-                                <div className="text-center" onClick={() => imageInputRef.current?.click()}>
+                                <button type="button" className="w-full text-center" onClick={() => imageInputRef.current?.click()}>
                                     <PlusIcon className="mx-auto mb-2 h-7 w-7 opacity-60" />
                                     <p className={`text-sm font-bold ${T.textPrimary} mb-1`}>クリックして画像を選択</p>
                                     <p className={`text-xs ${T.textMuted}`}>または Ctrl+V で画像を貼り付け</p>
-                                </div>
+                                </button>
                             )}
                             <input type="file" ref={imageInputRef} accept="image/*" onChange={handleImageFileChange} className="hidden" />
                         </div>
                     </div>
 
                 </div>
-                <div className={`p-6 border-t ${T.border} bg-black/10`}>
-                    <button onClick={handleLoadClick} disabled={!isLoadable && !thumbnailFile} className="memora-button memora-button--primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all active:scale-[0.99] shadow-lg">教材として取り込む</button>
+                <div className={`memora-modal__footer p-6 border-t ${T.border} bg-black/10`}>
+                    <button type="button" onClick={handleLoadClick} disabled={isImporting || (!isLoadable && !thumbnailFile)} className="memora-button memora-button--primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold text-lg transition-all active:scale-[0.99] shadow-lg">{isImporting ? '取り込み中…' : '教材として取り込む'}</button>
                 </div>
             </div>
         </div>

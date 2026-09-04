@@ -97,6 +97,100 @@ async function assertMascot(page, expectedPath, label) {
   return state;
 }
 
+async function importerState(page) {
+  return page.evaluate(() => {
+    const body = document.querySelector('.memora-modal__body');
+    const textarea = document.querySelector('.memora-import-textarea');
+    const submit = [...document.querySelectorAll('button')].find(button => button.textContent?.includes('教材として取り込む'));
+    const coverLabel = [...document.querySelectorAll('.memora-field-label')].find(label => label.textContent?.includes('5. 表紙画像'));
+    if (!(body instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement) || !(submit instanceof HTMLElement)) return null;
+    const bodyRect = body.getBoundingClientRect();
+    const submitRect = submit.getBoundingClientRect();
+    const coverRect = coverLabel?.getBoundingClientRect();
+    const viewportHeight = window.visualViewport?.height || window.innerHeight;
+    const textareaStyle = getComputedStyle(textarea);
+    return {
+      body: {
+        clientHeight: body.clientHeight,
+        scrollHeight: body.scrollHeight,
+        scrollTop: body.scrollTop,
+        top: bodyRect.top,
+        bottom: bodyRect.bottom,
+      },
+      textarea: {
+        clientHeight: textarea.clientHeight,
+        scrollHeight: textarea.scrollHeight,
+        overflowY: textareaStyle.overflowY,
+        fontSize: Number.parseFloat(textareaStyle.fontSize),
+      },
+      submit: {
+        top: submitRect.top,
+        bottom: submitRect.bottom,
+        fullyVisible: submitRect.top >= -0.5 && submitRect.bottom <= viewportHeight + 0.5,
+      },
+      cover: coverRect ? {
+        top: coverRect.top,
+        bottom: coverRect.bottom,
+        insideBody: coverRect.top >= bodyRect.top - 0.5 && coverRect.bottom <= bodyRect.bottom + 0.5,
+      } : null,
+      viewportHeight,
+    };
+  });
+}
+
+async function assertImporterScrollable(page, target, result) {
+  const body = page.locator('.memora-modal__body');
+  const textarea = page.locator('.memora-import-textarea');
+  await textarea.focus();
+  await page.waitForTimeout(80);
+
+  if (target.name === 'iphone-16') {
+    await page.setViewportSize({ width: 393, height: 520 });
+    await page.waitForTimeout(180);
+    const keyboardSized = await importerState(page);
+    if (!keyboardSized?.submit.fullyVisible) {
+      throw new Error(`Importer submit is clipped while the iPhone keyboard is open: ${JSON.stringify(keyboardSized)}`);
+    }
+    await textarea.blur();
+    await page.setViewportSize({ width: 393, height: 852 });
+    await page.waitForTimeout(240);
+    result.states.importerKeyboardSized = keyboardSized;
+  }
+
+  const beforeScroll = await importerState(page);
+  if (!beforeScroll) throw new Error('Importer layout state is unavailable.');
+  if (!beforeScroll.submit.fullyVisible) {
+    throw new Error(`Importer submit is outside the visible viewport: ${JSON.stringify(beforeScroll)}`);
+  }
+  if (target.name === 'iphone-16' && beforeScroll.textarea.fontSize < 16) {
+    throw new Error(`Importer textarea must use at least 16px on iPhone: ${JSON.stringify(beforeScroll)}`);
+  }
+  if (beforeScroll.textarea.scrollHeight > beforeScroll.textarea.clientHeight + 2) {
+    throw new Error(`Main importer textarea is still stealing vertical scroll: ${JSON.stringify(beforeScroll)}`);
+  }
+  if (beforeScroll.body.scrollHeight <= beforeScroll.body.clientHeight) {
+    throw new Error(`Importer body is not scrollable with long pasted data: ${JSON.stringify(beforeScroll)}`);
+  }
+
+  await body.hover();
+  await page.mouse.wheel(0, 1400);
+  await page.waitForTimeout(220);
+  const afterGesture = await importerState(page);
+  if (!afterGesture || afterGesture.body.scrollTop <= beforeScroll.body.scrollTop) {
+    throw new Error(`Importer body did not respond to a vertical user gesture: ${JSON.stringify({ beforeScroll, afterGesture })}`);
+  }
+
+  await body.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await page.waitForTimeout(100);
+  const atBottom = await importerState(page);
+  if (!atBottom?.cover?.insideBody || !atBottom.submit.fullyVisible) {
+    throw new Error(`Importer bottom fields or submit are unreachable: ${JSON.stringify(atBottom)}`);
+  }
+  result.states.importerReachability = { beforeScroll, afterGesture, atBottom };
+  result.actions.push('scroll-importer-to-cover-and-submit');
+  result.screenshots.importerScrolled = await saveScreenshots(page, target, 'importer-scrolled');
+}
+
 const results = [];
 const browser = await chromium.launch({ headless: true });
 
@@ -220,6 +314,7 @@ for (const target of targets) {
 
     await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(sampleTitle);
     await page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください').fill(sampleMaterial);
+    await assertImporterScrollable(page, target, result);
     await page.getByRole('button', { name: '教材として取り込む' }).click();
     await page.getByRole('heading', { name: sampleTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
     result.actions.push('import-material-and-open-reader');

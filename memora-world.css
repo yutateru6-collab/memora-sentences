@@ -979,19 +979,52 @@
 }
 
 .memora-modal-backdrop {
+  inset: auto !important;
+  top: var(--memora-modal-viewport-top, 0px) !important;
+  left: var(--memora-modal-viewport-left, 0px) !important;
+  width: var(--memora-modal-viewport-width, 100vw);
+  height: var(--memora-modal-viewport-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
   padding-top: max(16px, env(safe-area-inset-top));
   padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .memora-modal {
+  min-height: 0;
   background:
     linear-gradient(145deg, rgba(34, 121, 105, 0.15), transparent 46%),
     var(--memora-surface-strong) !important;
 }
 
+.memora-modal__header,
+.memora-modal__footer {
+  flex: 0 0 auto;
+}
+
 .memora-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--memora-accent-strong) transparent;
+}
+
+.memora-import-textarea {
+  overflow-y: hidden !important;
+  touch-action: manipulation;
+}
+
+body.memora-import-modal-open {
+  overflow: hidden !important;
+}
+
+body.memora-import-modal-open .memora-world--read {
+  overflow: hidden !important;
 }
 
 .memora-field-label {
@@ -1319,16 +1352,28 @@
   }
 
   .memora-modal {
-    max-height: calc(100dvh - max(8px, env(safe-area-inset-top))) !important;
+    width: 100%;
+    height: calc(100% - max(8px, env(safe-area-inset-top)));
+    max-height: calc(100% - max(8px, env(safe-area-inset-top))) !important;
     border-radius: 24px 24px 0 0 !important;
   }
 
-  .memora-modal > div:first-child,
-  .memora-modal > div:last-child {
+  .memora-modal__header,
+  .memora-modal__footer {
     padding: 16px !important;
+  }
+
+  .memora-modal__footer {
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 
   .memora-modal__body {
     padding: 16px !important;
+  }
+
+  .memora-modal input,
+  .memora-modal textarea,
+  .memora-modal select {
+    font-size: 16px !important;
   }
 }

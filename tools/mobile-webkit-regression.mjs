@@ -177,6 +177,50 @@ const assertCreateLayout = (snapshot, label) => {
   }
 };
 
+const importerSnapshot = async page => page.evaluate(() => {
+  const dialog = document.querySelector('[role="dialog"][aria-labelledby="add-material-title"]');
+  const body = document.querySelector('.memora-modal__body');
+  const textarea = document.querySelector('.memora-import-textarea');
+  const submit = [...document.querySelectorAll('button')].find(button => button.textContent?.includes('教材として取り込む'));
+  const coverLabel = [...document.querySelectorAll('.memora-field-label')].find(label => label.textContent?.includes('5. 表紙画像'));
+  if (!(dialog instanceof HTMLElement) || !(body instanceof HTMLElement) || !(textarea instanceof HTMLTextAreaElement) || !(submit instanceof HTMLElement)) return null;
+  const dialogRect = dialog.getBoundingClientRect();
+  const bodyRect = body.getBoundingClientRect();
+  const submitRect = submit.getBoundingClientRect();
+  const coverRect = coverLabel?.getBoundingClientRect();
+  const textareaStyle = getComputedStyle(textarea);
+  const viewportHeight = window.visualViewport?.height || window.innerHeight;
+  return {
+    viewportHeight,
+    dialog: { top: dialogRect.top, bottom: dialogRect.bottom, height: dialogRect.height },
+    body: {
+      top: bodyRect.top,
+      bottom: bodyRect.bottom,
+      clientHeight: body.clientHeight,
+      scrollHeight: body.scrollHeight,
+      scrollTop: body.scrollTop,
+      overflowY: getComputedStyle(body).overflowY,
+      touchAction: getComputedStyle(body).touchAction,
+    },
+    textarea: {
+      clientHeight: textarea.clientHeight,
+      scrollHeight: textarea.scrollHeight,
+      overflowY: textareaStyle.overflowY,
+      fontSize: Number.parseFloat(textareaStyle.fontSize),
+    },
+    submit: {
+      top: submitRect.top,
+      bottom: submitRect.bottom,
+      fullyVisible: submitRect.top >= -0.5 && submitRect.bottom <= viewportHeight + 0.5,
+    },
+    cover: coverRect ? {
+      top: coverRect.top,
+      bottom: coverRect.bottom,
+      insideBody: coverRect.top >= bodyRect.top - 0.5 && coverRect.bottom <= bodyRect.bottom + 0.5,
+    } : null,
+  };
+});
+
 let browser;
 let context;
 let page;
@@ -257,6 +301,67 @@ try {
   await page.waitForTimeout(120);
   result.screenshots.create = `${screenshotDir}/iphone-16-webkit-create-lower-form-after-keyboard-cycle.png`;
   await page.screenshot({ path: result.screenshots.create, fullPage: false, scale: 'device' });
+
+  await page.getByRole('button', { name: '教材一覧' }).click();
+  await page.getByRole('heading', { name: '教材ライブラリ', exact: true }).waitFor({ state: 'visible', timeout: 15_000 });
+  await page.getByRole('button', { name: '教材を追加' }).click();
+  const importerDialog = page.getByRole('dialog', { name: '新しい教材を追加' });
+  await importerDialog.waitFor({ state: 'visible', timeout: 10_000 });
+  result.actions.push('open-importer-webkit');
+
+  const importerTextarea = page.locator('.memora-import-textarea');
+  const longMaterial = Array.from({ length: 10 }, (_, index) => `Section ${index + 1}: A deliberately long reading passage keeps the import form taller than the phone viewport.\nセクション${index + 1}：長い教材を貼り付けても、一番下まで移動できることを確認します。`).join('\n');
+  await page.getByLabel('教材名').fill('WebKit importer regression');
+  await importerTextarea.fill(longMaterial);
+  await importerTextarea.focus();
+  await page.setViewportSize({ width: 393, height: 520 });
+  await page.waitForTimeout(220);
+  const importerKeyboardSized = await importerSnapshot(page);
+  if (!importerKeyboardSized?.submit.fullyVisible) {
+    throw new Error(`importer-keyboard-sized: submit is clipped: ${JSON.stringify(importerKeyboardSized)}`);
+  }
+
+  await importerTextarea.blur();
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.waitForTimeout(260);
+  const importerBeforeScroll = await importerSnapshot(page);
+  if (!importerBeforeScroll) throw new Error('importer-restored: layout snapshot is unavailable.');
+  if (importerBeforeScroll.textarea.fontSize < 16) {
+    throw new Error(`importer-restored: textarea font size can trigger iOS zoom: ${JSON.stringify(importerBeforeScroll)}`);
+  }
+  if (importerBeforeScroll.textarea.scrollHeight > importerBeforeScroll.textarea.clientHeight + 2) {
+    throw new Error(`importer-restored: textarea is still an inner scroll trap: ${JSON.stringify(importerBeforeScroll)}`);
+  }
+  if (importerBeforeScroll.body.scrollHeight <= importerBeforeScroll.body.clientHeight || importerBeforeScroll.body.overflowY !== 'auto') {
+    throw new Error(`importer-restored: modal body is not the scroll owner: ${JSON.stringify(importerBeforeScroll)}`);
+  }
+  if (!importerBeforeScroll.submit.fullyVisible) {
+    throw new Error(`importer-restored: submit is outside the visual viewport: ${JSON.stringify(importerBeforeScroll)}`);
+  }
+
+  const importerBody = page.locator('.memora-modal__body');
+  await importerBody.hover();
+  await page.mouse.wheel(0, 1800);
+  await page.waitForTimeout(240);
+  const importerAfterGesture = await importerSnapshot(page);
+  if (!importerAfterGesture || importerAfterGesture.body.scrollTop <= importerBeforeScroll.body.scrollTop) {
+    throw new Error(`importer-gesture: modal body did not scroll: ${JSON.stringify({ importerBeforeScroll, importerAfterGesture })}`);
+  }
+
+  await importerBody.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  await page.waitForTimeout(120);
+  const importerAtBottom = await importerSnapshot(page);
+  if (!importerAtBottom?.cover?.insideBody || !importerAtBottom.submit.fullyVisible) {
+    throw new Error(`importer-bottom: bottom controls are unreachable: ${JSON.stringify(importerAtBottom)}`);
+  }
+
+  result.states.importer = { importerKeyboardSized, importerBeforeScroll, importerAfterGesture, importerAtBottom };
+  result.actions.push('scroll-importer-to-bottom-webkit');
+  result.screenshots.importer = `${screenshotDir}/iphone-16-webkit-importer-bottom-reachable.png`;
+  await page.screenshot({ path: result.screenshots.importer, fullPage: false, scale: 'device' });
+  await page.keyboard.press('Escape');
+  await importerDialog.waitFor({ state: 'hidden', timeout: 5_000 });
+  result.actions.push('close-importer-with-escape-webkit');
 
   await page.evaluate(() => {
     const probe = document.createElement('div');
