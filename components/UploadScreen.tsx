@@ -623,11 +623,25 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
     const syncVisualViewport = () => {
         const viewport = window.visualViewport;
         const backdrop = addModalBackdropRef.current;
+        const modal = addModalRef.current;
         if (!backdrop) return;
-        backdrop.style.setProperty('--memora-modal-viewport-top', `${Math.round(viewport?.offsetTop || 0)}px`);
-        backdrop.style.setProperty('--memora-modal-viewport-left', `${Math.round(viewport?.offsetLeft || 0)}px`);
-        backdrop.style.setProperty('--memora-modal-viewport-width', `${Math.round(viewport?.width || window.innerWidth)}px`);
-        backdrop.style.setProperty('--memora-modal-viewport-height', `${Math.round(viewport?.height || window.innerHeight)}px`);
+        const top = Math.round(viewport?.offsetTop || 0);
+        const left = Math.round(viewport?.offsetLeft || 0);
+        const width = Math.round(viewport?.width || window.innerWidth);
+        const height = Math.round(viewport?.height || window.innerHeight);
+        backdrop.style.setProperty('--memora-modal-viewport-top', `${top}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-left', `${left}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-width', `${width}px`);
+        backdrop.style.setProperty('--memora-modal-viewport-height', `${height}px`);
+        backdrop.style.setProperty('top', `${top}px`, 'important');
+        backdrop.style.setProperty('left', `${left}px`, 'important');
+        backdrop.style.setProperty('width', `${width}px`, 'important');
+        backdrop.style.setProperty('height', `${height}px`, 'important');
+        if (modal && width <= 640) {
+            const mobileHeight = `calc(${height}px - max(8px, env(safe-area-inset-top)))`;
+            modal.style.setProperty('height', mobileHeight, 'important');
+            modal.style.setProperty('max-height', mobileHeight, 'important');
+        }
     };
 
     const handleModalKeyDown = (event: KeyboardEvent) => {
@@ -657,6 +671,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
     };
 
     syncVisualViewport();
+    const viewportSyncTimer = window.setInterval(syncVisualViewport, 100);
     const focusTimer = window.setTimeout(() => addModalCloseButtonRef.current?.focus({ preventScroll: true }), 0);
     window.visualViewport?.addEventListener('resize', syncVisualViewport);
     window.visualViewport?.addEventListener('scroll', syncVisualViewport);
@@ -665,6 +680,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
 
     return () => {
         window.clearTimeout(focusTimer);
+        window.clearInterval(viewportSyncTimer);
         window.visualViewport?.removeEventListener('resize', syncVisualViewport);
         window.visualViewport?.removeEventListener('scroll', syncVisualViewport);
         window.removeEventListener('resize', syncVisualViewport);
@@ -814,7 +830,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, stor
           </div>
         </header>
         
-        {error && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-sm mb-6 animate-fade-in">{error}</div>}
+        {error && !isAddModalOpen && <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl text-sm mb-6 animate-fade-in">{error}</div>}
         
         {!isDeleteMode && dueCardCount > 0 && onStartDailyReview && (
             <DailyQuestBanner count={dueCardCount} onStart={onStartDailyReview} T={T} />
