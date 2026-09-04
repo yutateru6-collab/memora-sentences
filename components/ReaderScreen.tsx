@@ -228,11 +228,14 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   const bgmAudioRef = useRef<HTMLAudioElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentWrapperRef = useRef<HTMLDivElement>(null);
+  const readerScreenRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   useLayoutEffect(() => {
     const root = document.documentElement;
     const visualViewport = window.visualViewport;
+    const readerScreen = readerScreenRef.current;
+    const readerShell = readerScreen?.parentElement;
     let stableHeight = Math.max(
       window.innerHeight,
       root.clientHeight,
@@ -249,7 +252,17 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       // after the import modal closes. Never shrink the Reader during that
       // lifecycle; use the largest real viewport measurement instead.
       stableHeight = Math.max(stableHeight, measuredHeight);
-      root.style.setProperty('--memora-reader-viewport-height', `${Math.round(stableHeight)}px`);
+      const stablePixels = `${Math.round(stableHeight)}px`;
+      root.style.setProperty('--memora-reader-viewport-height', stablePixels);
+      // Use inline important sizing as well. WebKit can retain the keyboard-era
+      // result of a viewport-unit declaration even after the custom property is
+      // updated, while a measured pixel value invalidates that stale layout.
+      for (const property of ['height', 'min-height', 'max-height']) {
+        readerScreen?.style.setProperty(property, stablePixels, 'important');
+        if (readerShell?.classList.contains('memora-world--read')) {
+          readerShell.style.setProperty(property, stablePixels, 'important');
+        }
+      }
     };
 
     applyStableViewportHeight();
@@ -260,6 +273,12 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       window.removeEventListener('resize', applyStableViewportHeight);
       visualViewport?.removeEventListener('resize', applyStableViewportHeight);
       root.style.removeProperty('--memora-reader-viewport-height');
+      for (const property of ['height', 'min-height', 'max-height']) {
+        readerScreen?.style.removeProperty(property);
+        if (readerShell?.classList.contains('memora-world--read')) {
+          readerShell.style.removeProperty(property);
+        }
+      }
     };
   }, []);
 
@@ -1319,7 +1338,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   };
 
   return (
-    <div className={`memora-reader-screen flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
+    <div ref={readerScreenRef} className={`memora-reader-screen flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
       {/* RSVP Screen Overlay */}
       {isRsvpModeOpen && (
           <RsvpScreen 

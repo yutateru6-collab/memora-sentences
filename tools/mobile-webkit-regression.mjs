@@ -419,14 +419,24 @@ try {
   await page.getByRole('heading', { name: materialTitle, exact: true }).waitFor({ state: 'visible', timeout: 20_000 });
   await page.waitForFunction(() => document.querySelectorAll('.memora-reader-sentence').length === 8, null, { timeout: 20_000 });
   const importedReader = await page.evaluate(() => {
+    const screen = document.querySelector('.memora-reader-screen');
+    const shell = document.querySelector('.memora-world--read');
+    const main = document.querySelector('.memora-reader-main');
     const scroll = document.querySelector('.memora-reader-scroll');
     const first = document.querySelector('.memora-reader-sentence');
+    const screenRect = screen?.getBoundingClientRect();
+    const shellRect = shell?.getBoundingClientRect();
+    const mainRect = main?.getBoundingClientRect();
     const scrollRect = scroll?.getBoundingClientRect();
     const firstRect = first?.getBoundingClientRect();
     return {
       viewportHeight: window.innerHeight,
+      viewportVariable: getComputedStyle(document.documentElement).getPropertyValue('--memora-reader-viewport-height').trim(),
       sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
       firstText: first?.textContent?.replace(/\s+/g, '') || '',
+      screen: screenRect ? { top: screenRect.top, bottom: screenRect.bottom, height: screenRect.height } : null,
+      shell: shellRect ? { top: shellRect.top, bottom: shellRect.bottom, height: shellRect.height } : null,
+      main: mainRect ? { top: mainRect.top, bottom: mainRect.bottom, height: mainRect.height } : null,
       scroll: scrollRect ? {
         top: scrollRect.top,
         bottom: scrollRect.bottom,
