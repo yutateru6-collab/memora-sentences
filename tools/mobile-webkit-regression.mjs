@@ -416,9 +416,16 @@ try {
     const scrollRect = scroll?.getBoundingClientRect();
     const firstRect = first?.getBoundingClientRect();
     return {
+      viewportHeight: window.innerHeight,
       sentenceCount: document.querySelectorAll('.memora-reader-sentence').length,
       firstText: first?.textContent?.replace(/\s+/g, '') || '',
-      scroll: scrollRect ? { top: scrollRect.top, bottom: scrollRect.bottom, height: scrollRect.height } : null,
+      scroll: scrollRect ? {
+        top: scrollRect.top,
+        bottom: scrollRect.bottom,
+        height: scrollRect.height,
+        clientHeight: scroll.clientHeight,
+        scrollHeight: scroll.scrollHeight,
+      } : null,
       first: firstRect ? { top: firstRect.top, bottom: firstRect.bottom, height: firstRect.height } : null,
     };
   });
@@ -426,10 +433,21 @@ try {
       || !importedReader.firstText.includes('Studentsanalyzeramenculture')
       || !importedReader.scroll
       || importedReader.scroll.height < 200
+      || importedReader.scroll.bottom > importedReader.viewportHeight + 1
+      || importedReader.scroll.scrollHeight <= importedReader.scroll.clientHeight
       || !importedReader.first
       || importedReader.first.height <= 0) {
     throw new Error(`import-reader: valid content is blank or unreachable: ${JSON.stringify(importedReader)}`);
   }
+  await page.locator('.memora-reader-scroll').evaluate(element => {
+    element.scrollTop = Math.min(240, element.scrollHeight - element.clientHeight);
+  });
+  await page.waitForTimeout(120);
+  const readerScrollTop = await page.locator('.memora-reader-scroll').evaluate(element => element.scrollTop);
+  if (readerScrollTop <= 0) {
+    throw new Error(`import-reader: valid content cannot scroll: ${JSON.stringify({ importedReader, readerScrollTop })}`);
+  }
+  await page.locator('.memora-reader-scroll').evaluate(element => { element.scrollTop = 0; });
   result.states.importedReader = importedReader;
   result.actions.push('import-material-and-open-reader-webkit');
   result.screenshots.importSuccess = `${screenshotDir}/iphone-16-webkit-import-success.png`;
