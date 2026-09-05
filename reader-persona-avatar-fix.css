@@ -1,0 +1,56 @@
+/*
+ * Reader explanation persona avatar safety guard.
+ *
+ * The explanation avatar must always stay inside its small circular button.
+ * Keep the hard size limits here as a final CSS layer so an image can never
+ * expand over the reading text, including on iOS/WebKit.
+ */
+button:has(> img[data-persona-avatar]) {
+  position: relative !important;
+  overflow: hidden !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  flex: 0 0 2.5rem !important;
+  border-radius: 9999px !important;
+  contain: paint;
+}
+
+img[data-persona-avatar] {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  aspect-ratio: 1 / 1;
+  object-fit: cover !important;
+  border-radius: 9999px !important;
+}
+
+@media (min-width: 640px) {
+  button:has(> img[data-persona-avatar]) {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    max-width: 2.75rem !important;
+    max-height: 2.75rem !important;
+    flex-basis: 2.75rem !important;
+  }
+
+  img[data-persona-avatar] {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+    max-width: 2.75rem !important;
+    max-height: 2.75rem !important;
+  }
+}
