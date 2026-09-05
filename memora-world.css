@@ -911,6 +911,16 @@
   box-shadow: 0 20px 52px rgba(1, 5, 24, 0.28), 0 0 32px var(--memora-accent-soft) !important;
 }
 
+.memora-recent-card__content,
+.memora-recent-card__title,
+.memora-recent-card__actions {
+  min-width: 0;
+}
+
+.memora-recent-card__title {
+  overflow-wrap: anywhere;
+}
+
 .memora-material-card__meta {
   display: flex;
   flex-wrap: wrap;
@@ -1435,6 +1445,7 @@ body.memora-import-modal-open .memora-world--read {
   .memora-modal-backdrop {
     align-items: flex-end !important;
     padding: 0 !important;
+    background: rgba(2, 8, 27, 0.98) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -1448,6 +1459,10 @@ body.memora-import-modal-open .memora-world--read {
     border-radius: 24px 24px 0 0 !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
+  }
+
+  .memora-modal--viewport-syncing {
+    transform: translateY(0.01px);
   }
 
   .memora-modal__header,

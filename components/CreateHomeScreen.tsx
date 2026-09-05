@@ -18,18 +18,18 @@ interface CreateHomeScreenProps {
 const AI_STUDIO_URL = 'https://aistudio.google.com/app/u/0/prompts/new_chat?model=gemini-3-pro-preview';
 
 const levelOptions = {
-  '日本の「英検1級」レベル': '英検1級',
-  '日本の「英検準1級」レベル': '英検準1級',
-  '日本の「英検2級」レベル': '英検2級',
-  '日本の「英検準2級」レベル': '英検準2級',
-  '日本の「英検3級」レベル': '英検3級',
-  '日本の「大学入学共通テスト英語」で高得点を狙えるレベル': '共通テスト',
+  '日本の「英検1級」レベル': '1級',
+  '日本の「英検準1級」レベル': '準1級',
+  '日本の「英検2級」レベル': '2級',
+  '日本の「英検準2級」レベル': '準2級',
+  '日本の「英検3級」レベル': '3級',
+  '日本の「大学入学共通テスト英語」で高得点を狙えるレベル': '共テ',
 };
 
 const lengthOptions = {
-  '200': '約200語',
-  '400': '約400語',
-  '600': '約600語',
+  '200': '200語',
+  '400': '400語',
+  '600': '600語',
 };
 
 const roleOptions = [
@@ -60,6 +60,31 @@ const traitOptions = [
   '無理やりすぎる例え話が好き',
   '空気も凍るダジャレを挟む',
 ];
+
+const knowledgeDepthShortLabels: Record<KnowledgeDepth, string> = {
+  beginner: '初心者',
+  familiar: 'ある程度',
+  advanced: 'かなり詳しい',
+  expert: '専門家級',
+};
+
+const roleShortLabels: Record<string, string> = {
+  'やさしく導く先生': 'やさしい先生',
+  'ミステリー小説の探偵': 'ミステリー探偵',
+  '異世界から来た騎士': '異世界の騎士',
+};
+
+const traitShortLabels: Record<string, string> = {
+  'やさしくて、まなびを楽しませてくれる！': 'やさしく楽しい',
+  'とにかく褒めてくれる': 'とにかく褒める',
+  '完全なるポジティブ': '完全ポジティブ',
+  '異常なまでに好奇心旺盛': '好奇心旺盛',
+  'お節介すぎるほど世話好き': 'とても世話好き',
+  'ひねくれすぎな皮肉屋': 'ひねくれた皮肉屋',
+  '口がものすごく悪い': 'かなり口が悪い',
+  '無理やりすぎる例え話が好き': '強引な例え好き',
+  '空気も凍るダジャレを挟む': '寒いダジャレ好き',
+};
 
 const BookIcon = () => (
   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -223,7 +248,7 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
             <span className="create-home__choice-title"><span aria-hidden="true">✦</span> 英語レベル</span>
             <div className="create-home__select-wrap">
               <BookIcon />
-              <select value={level} onChange={(event) => setLevel(event.target.value)} data-testid="create-level">
+              <select value={level} onChange={(event) => setLevel(event.target.value)} data-testid="create-level" title={level}>
                 {Object.entries(levelOptions).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
@@ -240,9 +265,10 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
                 value={knowledgeDepth}
                 onChange={(event) => setKnowledgeDepth(event.target.value as KnowledgeDepth)}
                 data-testid="create-depth"
+                title={KNOWLEDGE_DEPTH_OPTIONS.find((option) => option.value === knowledgeDepth)?.label}
               >
                 {KNOWLEDGE_DEPTH_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                  <option key={option.value} value={option.value}>{knowledgeDepthShortLabels[option.value]}</option>
                 ))}
               </select>
             </div>
@@ -253,7 +279,7 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
             <span className="create-home__choice-title"><span aria-hidden="true">★</span> 長文の長さ</span>
             <div className="create-home__select-wrap">
               <FeatherIcon />
-              <select value={length} onChange={(event) => setLength(event.target.value)} data-testid="create-length">
+              <select value={length} onChange={(event) => setLength(event.target.value)} data-testid="create-length" title={`約${length}語`}>
                 {Object.entries(lengthOptions).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
@@ -279,14 +305,14 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
           <div className="create-home__persona-controls">
             <label>
               <span>役割</span>
-              <select value={role} onChange={(event) => setRole(event.target.value)} data-testid="create-role">
-                {roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              <select value={role} onChange={(event) => setRole(event.target.value)} data-testid="create-role" title={role}>
+                {roleOptions.map((option) => <option key={option} value={option}>{roleShortLabels[option] || option}</option>)}
               </select>
             </label>
             <label>
               <span>性格</span>
-              <select value={trait} onChange={(event) => setTrait(event.target.value)} data-testid="create-trait">
-                {traitOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              <select value={trait} onChange={(event) => setTrait(event.target.value)} data-testid="create-trait" title={trait}>
+                {traitOptions.map((option) => <option key={option} value={option}>{traitShortLabels[option] || option}</option>)}
               </select>
             </label>
           </div>

@@ -4,7 +4,7 @@ import { Card, SRSState } from '../types';
 import { Theme, Themes } from '../App';
 import SettingsIcon from './icons/SettingsIcon';
 import GridIcon from './icons/GridIcon';
-import { Grade, getNextReviewText } from '../lib/srs';
+import { calculateSRS, Grade, getNextReviewText } from '../lib/srs';
 
 interface FlashcardScreenProps {
   cards: Card[];
@@ -70,7 +70,6 @@ const FlashcardScreen: React.FC<FlashcardScreenProps> = ({ cards, deckName, onBa
 
   const handleGrade = useCallback(async (grade: Grade) => {
       if (onSaveCardStats && currentCard) {
-           const { calculateSRS } = await import('../lib/srs');
            const newState = calculateSRS(currentCard.srsState, grade);
            await onSaveCardStats(currentCard, newState);
       }

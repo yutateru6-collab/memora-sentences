@@ -1337,8 +1337,23 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       setIsSpeedSettingsOpen(false);
   };
 
+  const hasReaderOverlay = Boolean(
+      activeNote
+      || activeWordPopup
+      || activeGrammarTerm
+      || isNoteInputOpen
+      || isGlobalMemoOpen
+      || isMoreMenuOpen
+      || isProfileModalOpen
+      || isBackgroundModalOpen
+      || isQuizModalOpen
+      || isPdfModalOpen
+      || isSpeedSettingsOpen
+      || isRsvpModeOpen
+  );
+
   return (
-    <div ref={readerScreenRef} className={`memora-reader-screen ${isHeaderVisible ? 'memora-reader-screen--header-visible' : ''} flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
+    <div ref={readerScreenRef} className={`memora-reader-screen ${isHeaderVisible ? 'memora-reader-screen--header-visible' : ''} ${!isSpeedMode && !isControlsVisible ? 'memora-reader-screen--player-collapsed' : ''} flex flex-col h-[100dvh] max-h-[100dvh] overflow-hidden ${T.bg} ${T.textPrimary}`}>
       {/* RSVP Screen Overlay */}
       {isRsvpModeOpen && (
           <RsvpScreen 
@@ -1399,7 +1414,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
             // Normal Header
             <>
                 <div className="memora-reader-header__normal flex items-center gap-2 overflow-hidden min-w-0 flex-1">
-                    <button onClick={onBack} className={`p-2 rounded-full ${T.button} hover:bg-white/10 transition-colors flex-shrink-0`}>
+                    <button onClick={onBack} aria-label="教材ライブラリに戻る" className={`w-11 h-11 inline-flex items-center justify-center rounded-full ${T.button} hover:bg-white/10 transition-colors flex-shrink-0`}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" /></svg>
                     </button>
                     <h1 className="memora-reader-header__title font-bold text-lg truncate min-w-0 flex-1">{title}</h1>
@@ -1411,7 +1426,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                                 if (!nextShow) setIsSideBySide(false);
                             }}
                             aria-pressed={showJapanese}
-                            className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showJapanese ? 'text-sky-300 border-sky-400/40 bg-sky-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
+                            className={`min-h-11 inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showJapanese ? 'text-sky-300 border-sky-400/40 bg-sky-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
                             title="日本語訳を表示"
                         >
                             <TranslateIcon className="w-4 h-4" />
@@ -1421,7 +1436,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                             <button
                                 onClick={() => setShowExplanation(prev => !prev)}
                                 aria-pressed={showExplanation}
-                                className={`inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showExplanation ? 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
+                                className={`min-h-11 inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-[11px] font-bold border ${showExplanation ? 'text-yellow-300 border-yellow-400/40 bg-yellow-400/10' : `${T.textMuted} ${T.border} bg-white/5`}`}
                                 title="解説を表示"
                             >
                                 <LightBulbIcon className="w-4 h-4" />
@@ -1431,7 +1446,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                         <button
                             type="button"
                             onClick={() => setIsMoreMenuOpen(true)}
-                            className={`p-1.5 rounded-full border ${T.border} ${T.textMuted} bg-white/5`}
+                            className={`w-11 h-11 inline-flex items-center justify-center rounded-full border ${T.border} ${T.textMuted} bg-white/5`}
                             title="その他の機能"
                             aria-label="その他の機能を開く"
                         >
@@ -2009,17 +2024,23 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                          </div>
                      </div>
                 </div>
-            ) : (
-                 <button 
-                    onClick={() => setIsControlsVisible(true)}
-                    className={`fixed right-4 sm:right-6 px-3 py-2 sm:p-3 rounded-full ${T.accentBg} text-white shadow-xl z-30 hover:scale-110 active:scale-95 transition-all animate-fade-in bg-opacity-90 backdrop-blur-sm flex items-center gap-1.5`}
-                    style={{ bottom: 'calc(env(safe-area-inset-bottom) + 1rem)' }}
-                    title="プレイヤーを表示"
+            ) : !hasReaderOverlay ? (
+                <div
+                    data-testid="reader-player-restore"
+                    className={`memora-reader-player-restore fixed inset-x-0 bottom-0 sm:relative sm:inset-x-auto sm:bottom-auto flex-shrink-0 flex items-center justify-end px-3 pt-2 ${T.panelBg} border-t ${T.border} z-30 sm:z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.3)]`}
+                    style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
                 >
-                    <MusicIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                    <span className="sm:hidden text-xs font-bold">再生</span>
-                </button>
-            )}
+                    <button
+                        onClick={() => setIsControlsVisible(true)}
+                        className={`min-h-11 px-4 rounded-full ${T.accentBg} text-white shadow-lg hover:brightness-110 active:scale-95 transition-all animate-fade-in flex items-center gap-2`}
+                        title="プレイヤーを表示"
+                        aria-label="プレイヤーを表示"
+                    >
+                        <MusicIcon className="w-5 h-5" />
+                        <span className="text-xs font-bold">再生</span>
+                    </button>
+                </div>
+            ) : null}
         </>
       )}
 

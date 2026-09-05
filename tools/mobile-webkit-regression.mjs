@@ -1,5 +1,6 @@
 import { webkit } from 'playwright';
 import fs from 'node:fs/promises';
+import { PNG } from 'pngjs';
 import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:3000';
@@ -23,6 +24,54 @@ const result = {
 };
 
 const errorText = error => error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+
+const installPaintProbe = async (page, locator) => {
+  await locator.evaluate(element => {
+    const style = document.createElement('style');
+    style.id = 'memora-qa-paint-probe-style';
+    style.textContent = '[data-qa-paint-probe="true"]{position:relative!important}[data-qa-paint-probe="true"]::after{content:"";position:absolute!important;left:8px!important;top:8px!important;width:8px!important;height:8px!important;background:rgb(255,0,255)!important;z-index:2147483647!important;pointer-events:none!important}';
+    document.head.appendChild(style);
+    element.setAttribute('data-qa-paint-probe', 'true');
+  });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+};
+
+const assertPaintProbe = async (page, locator, label) => {
+  const bounds = await locator.boundingBox();
+  if (!bounds) throw new Error(`${label}: paint target has no bounding box.`);
+
+  const buffer = await page.screenshot({ fullPage: false, scale: 'css' });
+  const png = PNG.sync.read(buffer);
+  const left = Math.max(0, Math.round(bounds.x) + 8);
+  const top = Math.max(0, Math.round(bounds.y) + 8);
+  const right = Math.min(png.width, left + 8);
+  const bottom = Math.min(png.height, top + 8);
+  let matchingPixels = 0;
+
+  for (let y = top; y < bottom; y += 1) {
+    for (let x = left; x < right; x += 1) {
+      const index = (png.width * y + x) * 4;
+      const red = png.data[index];
+      const green = png.data[index + 1];
+      const blue = png.data[index + 2];
+      if (red > 240 && green < 20 && blue > 240) matchingPixels += 1;
+    }
+  }
+
+  if (matchingPixels < 16) {
+    throw new Error(`${label}: WebKit did not paint the importer layer after the viewport changed (${matchingPixels} probe pixels).`);
+  }
+
+  return { matchingPixels, sampleBox: { left, top, right, bottom }, screenshot: { width: png.width, height: png.height } };
+};
+
+const removePaintProbe = async (page, locator) => {
+  await locator.evaluate(element => element.removeAttribute('data-qa-paint-probe'));
+  await page.evaluate(() => {
+    document.getElementById('memora-qa-paint-probe-style')?.remove();
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+};
 
 const layoutSnapshot = async page => page.evaluate(() => {
   const rect = selector => {
@@ -253,6 +302,7 @@ const readerSnapshot = async page => page.evaluate(() => {
   const main = document.querySelector('.memora-reader-main');
   const scroll = document.querySelector('.memora-reader-scroll');
   const first = document.querySelector('.memora-reader-sentence');
+  const playerRestore = document.querySelector('[data-testid="reader-player-restore"]');
   const visibleActionButtons = actions instanceof HTMLElement
     ? [...actions.querySelectorAll('button')].filter(button => {
         const style = getComputedStyle(button);
@@ -280,6 +330,7 @@ const readerSnapshot = async page => page.evaluate(() => {
     actions: rect(actions),
     actionButtons: visibleActionButtons.map(rect),
     main: rect(main),
+    playerRestore: rect(playerRestore),
     scroll: scroll instanceof HTMLElement ? {
       ...rect(scroll),
       clientWidth: scroll.clientWidth,
@@ -339,6 +390,12 @@ const assertReaderLayout = (snapshot, label) => {
   }
   if (snapshot.title.right > snapshot.actions.left + 0.5) {
     throw new Error(`${label}: title overlaps the mobile action group: ${JSON.stringify(snapshot)}`);
+  }
+  if (snapshot.actionButtons.some(value => value.height < 44 || value.width < 44)) {
+    throw new Error(`${label}: mobile Reader action is smaller than 44px: ${JSON.stringify(snapshot.actionButtons)}`);
+  }
+  if (!snapshot.playerRestore || snapshot.main.bottom > snapshot.playerRestore.top + 0.5) {
+    throw new Error(`${label}: collapsed player overlaps the readable area: ${JSON.stringify(snapshot)}`);
   }
 };
 
@@ -453,8 +510,14 @@ try {
   const longMaterial = buildValidQaMaterial({ paragraphCount: 8 });
   await page.getByLabel('教材名').fill(materialTitle);
   await importerTextarea.focus();
+  await installPaintProbe(page, importerDialog);
   await page.setViewportSize({ width: 393, height: 520 });
-  await page.waitForTimeout(180);
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-labelledby="add-material-title"]');
+    return dialog instanceof HTMLElement
+      && dialog.dataset.viewportPaintReady === 'true'
+      && Math.abs(dialog.getBoundingClientRect().height - 520) <= 1;
+  }, null, { timeout: 8_000 });
   const importerKeyboardFocused = await importerSnapshot(page);
   if (!importerKeyboardFocused?.keyboardMode
       || importerKeyboardFocused.submit.visible
@@ -464,6 +527,9 @@ try {
       || importerKeyboardFocused.textarea.top >= importerKeyboardFocused.body.bottom) {
     throw new Error(`importer-keyboard-focused: paste field is still covered: ${JSON.stringify(importerKeyboardFocused)}`);
   }
+  const importerPaint = await assertPaintProbe(page, importerDialog, 'importer-keyboard-focused');
+  await removePaintProbe(page, importerDialog);
+  await page.waitForTimeout(320);
   result.actions.push('focus-importer-with-keyboard-and-retire-footer-webkit');
   result.screenshots.importerKeyboard = `${screenshotDir}/iphone-16-webkit-importer-keyboard-field-clear.png`;
   await page.screenshot({ path: result.screenshots.importerKeyboard, fullPage: false, scale: 'device' });
@@ -523,7 +589,7 @@ try {
     throw new Error(`importer-bottom: bottom controls are unreachable: ${JSON.stringify(importerAtBottom)}`);
   }
 
-  result.states.importer = { importerKeyboardFocused, importerKeyboardSized, importerBeforeScroll, importerAfterGesture, importerAtBottom };
+  result.states.importer = { importerKeyboardFocused, importerPaint, importerKeyboardSized, importerBeforeScroll, importerAfterGesture, importerAtBottom };
   result.actions.push('scroll-importer-to-bottom-webkit');
   result.screenshots.importer = `${screenshotDir}/iphone-16-webkit-importer-bottom-reachable.png`;
   await page.screenshot({ path: result.screenshots.importer, fullPage: false, scale: 'device' });
