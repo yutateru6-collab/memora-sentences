@@ -1,0 +1,2193 @@
+{
+  "generatedAt": "2026-09-05T15:57:04.539Z",
+  "repository": "yutateru6-collab/memora-sentences",
+  "commitSha": "d27b8dca4fa773fa53d992d34bbe3786d6439b3c",
+  "workflowRunId": "33976252052",
+  "workflowRunNumber": "104",
+  "eventName": "push",
+  "baseUrl": "http://127.0.0.1:3000",
+  "sampleTitle": "QA Ramen Culture with an intentionally long Reader title",
+  "status": "success",
+  "results": [
+    {
+      "target": "desktop-1440x900",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "status": "success",
+      "actions": [
+        "open-create-home",
+        "open-empty-library",
+        "open-importer",
+        "paste-material-and-show-compact-confirmation",
+        "scroll-importer-to-cover-and-submit",
+        "import-material-and-open-reader",
+        "verify-yellow-word-highlight",
+        "hide-yellow-word-highlight",
+        "open-word-memo",
+        "verify-explanation-persona-avatar",
+        "open-grammar-memo",
+        "return-to-library-and-verify-card",
+        "verify-library-menu",
+        "open-vocabulary-decks",
+        "open-card-list",
+        "flip-card-list-item",
+        "open-flashcard",
+        "grade-card-and-advance-session"
+      ],
+      "dialogs": [],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "states": {
+        "create": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 1565,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/create-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          },
+          "flow": {
+            "topic": {
+              "top": 576,
+              "bottom": 808,
+              "height": 232
+            },
+            "choices": {
+              "top": 822,
+              "bottom": 958.03125,
+              "height": 136.03125
+            },
+            "persona": {
+              "top": 972.03125,
+              "bottom": 1187.03125,
+              "height": 215
+            },
+            "actions": {
+              "top": 1202.03125,
+              "bottom": 1452.03125,
+              "height": 250
+            },
+            "gaps": {
+              "topicToChoices": 14,
+              "choicesToPersona": 14,
+              "personaToActions": 15
+            },
+            "keywordFontSize": 15,
+            "selectLabels": {
+              "level": {
+                "label": "準1級",
+                "measuredWidth": 39,
+                "availableWidth": 161,
+                "fits": true
+              },
+              "depth": {
+                "label": "ある程度",
+                "measuredWidth": 60,
+                "availableWidth": 161,
+                "fits": true
+              },
+              "role": {
+                "label": "やさしい先生",
+                "measuredWidth": 78,
+                "availableWidth": 337,
+                "fits": true
+              },
+              "trait": {
+                "label": "やさしく楽しい",
+                "measuredWidth": 91,
+                "availableWidth": 337,
+                "fits": true
+              },
+              "length": {
+                "label": "400語",
+                "measuredWidth": 42,
+                "availableWidth": 161,
+                "fits": true
+              }
+            }
+          }
+        },
+        "libraryEmpty": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/read-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "importer": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "backdrop": {
+            "backgroundColor": "rgba(0, 0, 0, 0.8)",
+            "alpha": 0.8
+          }
+        },
+        "importerPasted": {
+          "dialog": {
+            "top": 45,
+            "bottom": 855,
+            "left": 384,
+            "right": 1056,
+            "width": 672,
+            "height": 810
+          },
+          "body": {
+            "clientHeight": 587,
+            "scrollHeight": 1032,
+            "scrollTop": 0,
+            "top": 156,
+            "bottom": 743
+          },
+          "textarea": null,
+          "preview": {
+            "top": 234.046875,
+            "bottom": 437.015625,
+            "height": 202.96875,
+            "characterCount": 6817
+          },
+          "submit": {
+            "top": 768,
+            "bottom": 830,
+            "fullyVisible": true
+          },
+          "cover": {
+            "top": 1004.015625,
+            "bottom": 1029.015625,
+            "insideBody": false
+          },
+          "viewportHeight": 900
+        },
+        "importerReachability": {
+          "beforeScroll": {
+            "dialog": {
+              "top": 45,
+              "bottom": 855,
+              "left": 384,
+              "right": 1056,
+              "width": 672,
+              "height": 810
+            },
+            "body": {
+              "clientHeight": 587,
+              "scrollHeight": 1032,
+              "scrollTop": 0,
+              "top": 156,
+              "bottom": 743
+            },
+            "textarea": null,
+            "preview": {
+              "top": 234.046875,
+              "bottom": 437.015625,
+              "height": 202.96875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 768,
+              "bottom": 830,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 1004.015625,
+              "bottom": 1029.015625,
+              "insideBody": false
+            },
+            "viewportHeight": 900
+          },
+          "afterGesture": {
+            "dialog": {
+              "top": 45,
+              "bottom": 855,
+              "left": 384,
+              "right": 1056,
+              "width": 672,
+              "height": 810
+            },
+            "body": {
+              "clientHeight": 587,
+              "scrollHeight": 1032,
+              "scrollTop": 445,
+              "top": 156,
+              "bottom": 743
+            },
+            "textarea": null,
+            "preview": {
+              "top": -210.953125,
+              "bottom": -7.984375,
+              "height": 202.96875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 768,
+              "bottom": 830,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 559.015625,
+              "bottom": 584.015625,
+              "insideBody": true
+            },
+            "viewportHeight": 900
+          },
+          "atBottom": {
+            "dialog": {
+              "top": 45,
+              "bottom": 855,
+              "left": 384,
+              "right": 1056,
+              "width": 672,
+              "height": 810
+            },
+            "body": {
+              "clientHeight": 587,
+              "scrollHeight": 1032,
+              "scrollTop": 445,
+              "top": 156,
+              "bottom": 743
+            },
+            "textarea": null,
+            "preview": {
+              "top": -210.953125,
+              "bottom": -7.984375,
+              "height": 202.96875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 768,
+              "bottom": 830,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 559.015625,
+              "bottom": 584.015625,
+              "insideBody": true
+            },
+            "viewportHeight": 900
+          }
+        },
+        "readerWordHighlight": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "layout": {
+            "viewport": {
+              "width": 1440,
+              "height": 900
+            },
+            "document": {
+              "scrollWidth": 1440,
+              "clientWidth": 1440,
+              "horizontalOverflow": false
+            },
+            "guideCount": 0,
+            "header": {
+              "top": 0,
+              "right": 1440,
+              "bottom": 56,
+              "left": 0,
+              "width": 1440,
+              "height": 56
+            },
+            "title": {
+              "top": 13.5,
+              "right": 922,
+              "bottom": 41.5,
+              "left": 68,
+              "width": 854,
+              "height": 28
+            },
+            "actions": {
+              "top": 0,
+              "right": 0,
+              "bottom": 0,
+              "left": 0,
+              "width": 0,
+              "height": 0
+            },
+            "actionButtons": [],
+            "main": {
+              "top": 56,
+              "right": 1440,
+              "bottom": 811,
+              "left": 0,
+              "width": 1440,
+              "height": 755
+            },
+            "playerRestore": null,
+            "scroll": {
+              "top": 56,
+              "right": 1440,
+              "bottom": 811,
+              "left": 0,
+              "width": 1440,
+              "height": 755,
+              "clientWidth": 1440,
+              "scrollWidth": 1440,
+              "scrollLeft": 0
+            },
+            "firstSentence": {
+              "top": 74,
+              "right": 1166,
+              "bottom": 215.609375,
+              "left": 274,
+              "width": 892,
+              "height": 141.609375
+            }
+          }
+        },
+        "readerWordHighlightHidden": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          }
+        },
+        "readerWordMemo": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          }
+        },
+        "readerGrammarMemo": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "bounds": {
+            "x": 619,
+            "y": 268,
+            "width": 320,
+            "height": 191.5
+          }
+        },
+        "libraryCard": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 1116,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/read-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          },
+          "recentHero": {
+            "card": {
+              "top": 279.4375,
+              "right": 1296,
+              "bottom": 537.4375,
+              "left": 144,
+              "width": 1152,
+              "height": 258
+            },
+            "content": {
+              "top": 280.4375,
+              "right": 1295,
+              "bottom": 536.4375,
+              "left": 145,
+              "width": 1150,
+              "height": 256
+            },
+            "title": {
+              "top": 360.4375,
+              "right": 1263,
+              "bottom": 440.4375,
+              "left": 177,
+              "width": 1086,
+              "height": 80
+            },
+            "actions": {
+              "top": 456.4375,
+              "right": 1263,
+              "bottom": 504.4375,
+              "left": 177,
+              "width": 1086,
+              "height": 48
+            }
+          },
+          "libraryFabVisible": true
+        },
+        "deckList": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "cardListFront": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 1297,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/organize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "cardListBack": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 1297,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/organize-v2.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "flashcardFront": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "flashcardNext": {
+          "document": {
+            "scrollWidth": 1440,
+            "scrollHeight": 900,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        }
+      },
+      "screenshots": {
+        "create": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-create-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-create-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-create-ai-preview.jpg"
+        },
+        "libraryEmpty": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-library-empty-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-library-empty-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-library-empty-ai-preview.jpg"
+        },
+        "importer": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-importer-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-importer-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-importer-ai-preview.jpg"
+        },
+        "importerPasted": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-importer-pasted-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-importer-pasted-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-importer-pasted-ai-preview.jpg"
+        },
+        "importerScrolled": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-importer-scrolled-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-importer-scrolled-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-importer-scrolled-ai-preview.jpg"
+        },
+        "readerWordHighlight": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-ai-preview.jpg"
+        },
+        "readerWordHighlightHidden": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-hidden-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-hidden-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-reader-word-highlight-hidden-ai-preview.jpg"
+        },
+        "readerWordMemo": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-reader-word-memo-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-reader-word-memo-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-reader-word-memo-ai-preview.jpg"
+        },
+        "readerGrammarMemo": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-reader-grammar-memo-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-reader-grammar-memo-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-reader-grammar-memo-ai-preview.jpg"
+        },
+        "libraryCard": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-library-card-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-library-card-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-library-card-ai-preview.jpg"
+        },
+        "deckList": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-deck-list-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-deck-list-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-deck-list-ai-preview.jpg"
+        },
+        "cardListFront": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-card-list-front-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-card-list-front-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-card-list-front-ai-preview.jpg"
+        },
+        "cardListBack": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-card-list-back-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-card-list-back-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-card-list-back-ai-preview.jpg"
+        },
+        "flashcardFront": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-flashcard-front-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-flashcard-front-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-flashcard-front-ai-preview.jpg"
+        },
+        "flashcardNext": {
+          "viewport": "qa-artifacts/screenshots/desktop-1440x900-flashcard-next-viewport.png",
+          "full": "qa-artifacts/screenshots/desktop-1440x900-flashcard-next-full.png",
+          "preview": "qa-artifacts/screenshots/desktop-1440x900-flashcard-next-ai-preview.jpg"
+        }
+      },
+      "failure": null
+    },
+    {
+      "target": "iphone-16",
+      "viewport": {
+        "width": 393,
+        "height": 852
+      },
+      "deviceScaleFactor": 3,
+      "status": "success",
+      "actions": [
+        "open-create-home",
+        "open-empty-library",
+        "open-importer",
+        "paste-material-and-show-compact-confirmation",
+        "scroll-importer-to-cover-and-submit",
+        "import-material-and-open-reader",
+        "verify-yellow-word-highlight",
+        "hide-yellow-word-highlight",
+        "open-word-memo",
+        "verify-explanation-persona-avatar",
+        "open-grammar-memo",
+        "return-to-library-and-verify-card",
+        "verify-library-menu",
+        "open-vocabulary-decks",
+        "open-card-list",
+        "flip-card-list-item",
+        "open-flashcard",
+        "grade-card-and-advance-session"
+      ],
+      "dialogs": [],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "states": {
+        "create": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 882,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/create-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          },
+          "flow": {
+            "topic": {
+              "top": 262,
+              "bottom": 422.1875,
+              "height": 160.1875
+            },
+            "choices": {
+              "top": 429.1875,
+              "bottom": 504.53125,
+              "height": 75.34375
+            },
+            "persona": {
+              "top": 511.53125,
+              "bottom": 676.328125,
+              "height": 164.796875
+            },
+            "actions": {
+              "top": 683.328125,
+              "bottom": 839.71875,
+              "height": 156.390625
+            },
+            "gaps": {
+              "topicToChoices": 7,
+              "choicesToPersona": 7,
+              "personaToActions": 7
+            },
+            "keywordFontSize": 16,
+            "selectLabels": {
+              "level": {
+                "label": "準1級",
+                "measuredWidth": 41,
+                "availableWidth": 81,
+                "fits": true
+              },
+              "depth": {
+                "label": "ある程度",
+                "measuredWidth": 64,
+                "availableWidth": 99,
+                "fits": true
+              },
+              "role": {
+                "label": "やさしい先生",
+                "measuredWidth": 96,
+                "availableWidth": 132,
+                "fits": true
+              },
+              "trait": {
+                "label": "やさしく楽しい",
+                "measuredWidth": 112,
+                "availableWidth": 132,
+                "fits": true
+              },
+              "length": {
+                "label": "400語",
+                "measuredWidth": 43,
+                "availableWidth": 64,
+                "fits": true
+              }
+            }
+          }
+        },
+        "libraryEmpty": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/read-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "importer": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "backdrop": {
+            "backgroundColor": "rgba(2, 8, 27, 0.98)",
+            "alpha": 0.98
+          }
+        },
+        "importerPasted": {
+          "dialog": {
+            "top": 0,
+            "bottom": 520,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "clientHeight": 352,
+            "scrollHeight": 1171,
+            "scrollTop": 0,
+            "top": 72,
+            "bottom": 424
+          },
+          "textarea": null,
+          "preview": {
+            "top": 142.046875,
+            "bottom": 320.234375,
+            "height": 178.1875,
+            "characterCount": 6817
+          },
+          "submit": {
+            "top": 441,
+            "bottom": 503,
+            "fullyVisible": true
+          },
+          "cover": {
+            "top": 1067.234375,
+            "bottom": 1092.234375,
+            "insideBody": false
+          },
+          "viewportHeight": 520
+        },
+        "importerKeyboardSized": {
+          "dialog": {
+            "top": 0,
+            "bottom": 520,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "clientHeight": 352,
+            "scrollHeight": 1171,
+            "scrollTop": 0,
+            "top": 72,
+            "bottom": 424
+          },
+          "textarea": null,
+          "preview": {
+            "top": 142.046875,
+            "bottom": 320.234375,
+            "height": 178.1875,
+            "characterCount": 6817
+          },
+          "submit": {
+            "top": 441,
+            "bottom": 503,
+            "fullyVisible": true
+          },
+          "cover": {
+            "top": 1067.234375,
+            "bottom": 1092.234375,
+            "insideBody": false
+          },
+          "viewportHeight": 520
+        },
+        "importerReachability": {
+          "beforeScroll": {
+            "dialog": {
+              "top": 0,
+              "bottom": 852,
+              "left": 0,
+              "right": 393,
+              "width": 393,
+              "height": 852
+            },
+            "body": {
+              "clientHeight": 684,
+              "scrollHeight": 1171,
+              "scrollTop": 0,
+              "top": 72,
+              "bottom": 756
+            },
+            "textarea": null,
+            "preview": {
+              "top": 142.046875,
+              "bottom": 320.234375,
+              "height": 178.1875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 773,
+              "bottom": 835,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 1067.234375,
+              "bottom": 1092.234375,
+              "insideBody": false
+            },
+            "viewportHeight": 852
+          },
+          "afterGesture": {
+            "dialog": {
+              "top": 0,
+              "bottom": 852,
+              "left": 0,
+              "right": 393,
+              "width": 393,
+              "height": 852
+            },
+            "body": {
+              "clientHeight": 684,
+              "scrollHeight": 1171,
+              "scrollTop": 487,
+              "top": 72,
+              "bottom": 756
+            },
+            "textarea": null,
+            "preview": {
+              "top": -344.953125,
+              "bottom": -166.765625,
+              "height": 178.1875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 773,
+              "bottom": 835,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 580.234375,
+              "bottom": 605.234375,
+              "insideBody": true
+            },
+            "viewportHeight": 852
+          },
+          "atBottom": {
+            "dialog": {
+              "top": 0,
+              "bottom": 852,
+              "left": 0,
+              "right": 393,
+              "width": 393,
+              "height": 852
+            },
+            "body": {
+              "clientHeight": 684,
+              "scrollHeight": 1171,
+              "scrollTop": 487,
+              "top": 72,
+              "bottom": 756
+            },
+            "textarea": null,
+            "preview": {
+              "top": -344.953125,
+              "bottom": -166.765625,
+              "height": 178.1875,
+              "characterCount": 6817
+            },
+            "submit": {
+              "top": 773,
+              "bottom": 835,
+              "fullyVisible": true
+            },
+            "cover": {
+              "top": 580.234375,
+              "bottom": 605.234375,
+              "insideBody": true
+            },
+            "viewportHeight": 852
+          }
+        },
+        "readerWordHighlight": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "layout": {
+            "viewport": {
+              "width": 393,
+              "height": 852
+            },
+            "document": {
+              "scrollWidth": 393,
+              "clientWidth": 393,
+              "horizontalOverflow": false
+            },
+            "guideCount": 0,
+            "header": {
+              "top": 0,
+              "right": 393,
+              "bottom": 56,
+              "left": 0,
+              "width": 393,
+              "height": 56
+            },
+            "title": {
+              "top": 13.5,
+              "right": 204,
+              "bottom": 41.5,
+              "left": 68,
+              "width": 136,
+              "height": 28
+            },
+            "actions": {
+              "top": 5.5,
+              "right": 377,
+              "bottom": 49.5,
+              "left": 212,
+              "width": 165,
+              "height": 44
+            },
+            "actionButtons": [
+              {
+                "top": 5.5,
+                "right": 265,
+                "bottom": 49.5,
+                "left": 212,
+                "width": 53,
+                "height": 44
+              },
+              {
+                "top": 5.5,
+                "right": 329,
+                "bottom": 49.5,
+                "left": 269,
+                "width": 60,
+                "height": 44
+              },
+              {
+                "top": 5.5,
+                "right": 377,
+                "bottom": 49.5,
+                "left": 333,
+                "width": 44,
+                "height": 44
+              }
+            ],
+            "main": {
+              "top": 56,
+              "right": 393,
+              "bottom": 791,
+              "left": 0,
+              "width": 393,
+              "height": 735
+            },
+            "playerRestore": {
+              "top": 791,
+              "right": 393,
+              "bottom": 852,
+              "left": 0,
+              "width": 393,
+              "height": 61
+            },
+            "scroll": {
+              "top": 56,
+              "right": 393,
+              "bottom": 791,
+              "left": 0,
+              "width": 393,
+              "height": 735,
+              "clientWidth": 393,
+              "scrollWidth": 393,
+              "scrollLeft": 0
+            },
+            "firstSentence": {
+              "top": 74,
+              "right": 381,
+              "bottom": 410.828125,
+              "left": 12,
+              "width": 369,
+              "height": 336.828125
+            }
+          }
+        },
+        "readerWordHighlightHidden": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          }
+        },
+        "readerWordMemo": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          }
+        },
+        "readerGrammarMemo": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "bounds": {
+            "x": 12,
+            "y": 528,
+            "width": 369,
+            "height": 312
+          }
+        },
+        "libraryCard": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 1087,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/read-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          },
+          "recentHero": {
+            "card": {
+              "top": 225,
+              "right": 383,
+              "bottom": 451,
+              "left": 10,
+              "width": 373,
+              "height": 226
+            },
+            "content": {
+              "top": 226,
+              "right": 382,
+              "bottom": 450,
+              "left": 11,
+              "width": 371,
+              "height": 224
+            },
+            "title": {
+              "top": 302,
+              "right": 362,
+              "bottom": 366,
+              "left": 31,
+              "width": 331,
+              "height": 64
+            },
+            "actions": {
+              "top": 382,
+              "right": 362,
+              "bottom": 430,
+              "left": 31,
+              "width": 331,
+              "height": 48
+            }
+          },
+          "libraryFabVisible": false
+        },
+        "deckList": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "cardListFront": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 2405,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/organize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "cardListBack": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 2405,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/organize-v2.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "flashcardFront": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        },
+        "flashcardNext": {
+          "document": {
+            "scrollWidth": 393,
+            "scrollHeight": 852,
+            "clientWidth": 393,
+            "clientHeight": 852,
+            "horizontalOverflow": false
+          },
+          "mascot": {
+            "count": 1,
+            "images": [
+              {
+                "src": "/memora-world/memorize-v1.webp",
+                "loaded": true,
+                "naturalWidth": 1254,
+                "naturalHeight": 1254
+              }
+            ]
+          }
+        }
+      },
+      "screenshots": {
+        "create": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-create-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-create-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-create-ai-preview.jpg"
+        },
+        "libraryEmpty": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-library-empty-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-library-empty-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-library-empty-ai-preview.jpg"
+        },
+        "importer": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-importer-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-importer-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-importer-ai-preview.jpg"
+        },
+        "importerPasted": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-importer-pasted-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-importer-pasted-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-importer-pasted-ai-preview.jpg"
+        },
+        "importerScrolled": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-importer-scrolled-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-importer-scrolled-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-importer-scrolled-ai-preview.jpg"
+        },
+        "readerWordHighlight": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-ai-preview.jpg"
+        },
+        "readerWordHighlightHidden": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-hidden-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-hidden-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-reader-word-highlight-hidden-ai-preview.jpg"
+        },
+        "readerWordMemo": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-reader-word-memo-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-reader-word-memo-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-reader-word-memo-ai-preview.jpg"
+        },
+        "readerGrammarMemo": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-reader-grammar-memo-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-reader-grammar-memo-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-reader-grammar-memo-ai-preview.jpg"
+        },
+        "libraryCard": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-library-card-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-library-card-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-library-card-ai-preview.jpg"
+        },
+        "deckList": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-deck-list-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-deck-list-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-deck-list-ai-preview.jpg"
+        },
+        "cardListFront": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-card-list-front-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-card-list-front-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-card-list-front-ai-preview.jpg"
+        },
+        "cardListBack": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-card-list-back-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-card-list-back-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-card-list-back-ai-preview.jpg"
+        },
+        "flashcardFront": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-flashcard-front-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-flashcard-front-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-flashcard-front-ai-preview.jpg"
+        },
+        "flashcardNext": {
+          "viewport": "qa-artifacts/screenshots/iphone-16-flashcard-next-viewport.png",
+          "full": "qa-artifacts/screenshots/iphone-16-flashcard-next-full.png",
+          "preview": "qa-artifacts/screenshots/iphone-16-flashcard-next-ai-preview.jpg"
+        }
+      },
+      "failure": null
+    }
+  ],
+  "mobileWebKit": {
+    "engine": "webkit",
+    "target": "iphone-16-webkit",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "deviceScaleFactor": 3,
+    "status": "success",
+    "actions": [
+      "open-create-home-webkit",
+      "tap-and-fill-topic",
+      "shrink-viewport-like-ios-keyboard",
+      "restore-viewport-and-verify-repaint-recovery",
+      "open-importer-webkit",
+      "focus-importer-with-keyboard-and-retire-footer-webkit",
+      "scroll-importer-to-bottom-webkit",
+      "import-material-and-open-reader-webkit",
+      "reload-and-reopen-imported-material-webkit",
+      "verify-inline-play-hidden-webkit",
+      "verify-touch-tap-bridge-webkit"
+    ],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "states": {
+      "create": {
+        "before": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 848.984375,
+            "height": 28,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 852,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "",
+            "keyboardState": ""
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "focused": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 848.984375,
+            "height": 28,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 852,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "false",
+            "keyboardState": "focused"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "keyboardSized": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 848.984375,
+            "height": 28,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 848.984375,
+            "height": 848.984375,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 848.984375,
+            "height": 848.984375,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 849,
+            "clientHeight": 520,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "520px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "520px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "false",
+            "keyboardState": "open"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "restored": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 848.984375,
+            "height": 28,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 852,
+            "height": 852,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 852,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 2,
+            "scheduled": "viewport-restored",
+            "reason": "viewport-restored-settled",
+            "complete": "true",
+            "keyboardState": "restored"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        }
+      },
+      "importer": {
+        "importerKeyboardFocused": {
+          "viewportHeight": 520,
+          "dialog": {
+            "top": 0,
+            "bottom": 520,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "top": 66,
+            "bottom": 519,
+            "clientHeight": 453,
+            "scrollHeight": 1095,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": {
+            "top": 131.546875,
+            "bottom": 277.140625,
+            "clientHeight": 144,
+            "scrollHeight": 144,
+            "overflowY": "auto",
+            "fontSize": 16
+          },
+          "preview": null,
+          "submit": {
+            "top": 0,
+            "bottom": 0,
+            "visible": false,
+            "fullyVisible": true
+          },
+          "keyboardMode": true,
+          "cover": {
+            "top": 988.140625,
+            "bottom": 1007.640625,
+            "insideBody": false
+          }
+        },
+        "importerPaint": {
+          "matchingPixels": 49,
+          "sampleBox": {
+            "left": 8,
+            "top": 8,
+            "right": 16,
+            "bottom": 16
+          },
+          "screenshot": {
+            "width": 393,
+            "height": 520
+          }
+        },
+        "importerKeyboardSized": {
+          "viewportHeight": 520,
+          "dialog": {
+            "top": 0.009999999776482582,
+            "bottom": 520.0099999997765,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "top": 66.01000213623047,
+            "bottom": 424.01000213623047,
+            "clientHeight": 358,
+            "scrollHeight": 1117,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": 131.55686950683594,
+            "bottom": 305.244384765625,
+            "height": 173.68751525878906,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 441.010009765625,
+            "bottom": 503.010009765625,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 1009.744384765625,
+            "bottom": 1029.244384765625,
+            "insideBody": false
+          }
+        },
+        "importerBeforeScroll": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0.009999999776482582,
+            "bottom": 852.0099999997765,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66.01000213623047,
+            "bottom": 756.0100021362305,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": 131.55686950683594,
+            "bottom": 305.244384765625,
+            "height": 173.68751525878906,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773.010009765625,
+            "bottom": 835.010009765625,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 1009.744384765625,
+            "bottom": 1029.244384765625,
+            "insideBody": false
+          }
+        },
+        "importerAfterGesture": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0.009999999776482582,
+            "bottom": 852.0099999997765,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66.01000213623047,
+            "bottom": 756.0100021362305,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 427,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": -295.443115234375,
+            "bottom": -121.755615234375,
+            "height": 173.6875,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773.010009765625,
+            "bottom": 835.010009765625,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 582.744384765625,
+            "bottom": 602.244384765625,
+            "insideBody": true
+          }
+        },
+        "importerAtBottom": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0,
+            "bottom": 852,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66,
+            "bottom": 756,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 427,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": -295.453125,
+            "bottom": -121.765625,
+            "height": 173.6875,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773,
+            "bottom": 835,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 582.734375,
+            "bottom": 602.234375,
+            "insideBody": true
+          }
+        }
+      },
+      "importedReader": {
+        "viewportHeight": 852,
+        "viewportVariable": "852px",
+        "sentenceCount": 8,
+        "firstText": "Studentsanalyzeramenculturebyaskinghoweachregionlinksbroth,noodles,flavor,tradition,recipe,shop,chef,customer,community,history,ingredient,texture,aroma,style,innovation,localpride,popularappeal,mealcustoms,bowldesign,andidentity.",
+        "document": {
+          "scrollWidth": 393,
+          "clientWidth": 393,
+          "scrollX": 0,
+          "horizontalOverflow": false
+        },
+        "guideCount": 0,
+        "screen": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "shell": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "header": {
+          "top": 0,
+          "right": 393,
+          "bottom": 56,
+          "left": 0,
+          "width": 393,
+          "height": 56
+        },
+        "title": {
+          "top": 8,
+          "right": 204,
+          "bottom": 36,
+          "left": 68,
+          "width": 136,
+          "height": 28
+        },
+        "actions": {
+          "top": 0,
+          "right": 377,
+          "bottom": 44,
+          "left": 212,
+          "width": 165,
+          "height": 44
+        },
+        "actionButtons": [
+          {
+            "top": 0,
+            "right": 265,
+            "bottom": 44,
+            "left": 212,
+            "width": 53,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 329,
+            "bottom": 44,
+            "left": 269,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 377,
+            "bottom": 44,
+            "left": 333,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "main": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735
+        },
+        "playerRestore": {
+          "top": 791,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 61
+        },
+        "scroll": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735,
+          "clientWidth": 393,
+          "scrollWidth": 393,
+          "scrollLeft": 0,
+          "clientHeight": 735,
+          "scrollHeight": 2866
+        },
+        "first": {
+          "top": 74,
+          "right": 381,
+          "bottom": 377.4375,
+          "left": 12,
+          "width": 369,
+          "height": 303.4375
+        }
+      },
+      "reloadedReader": {
+        "viewportHeight": 852,
+        "viewportVariable": "852px",
+        "sentenceCount": 8,
+        "firstText": "Studentsanalyzeramenculturebyaskinghoweachregionlinksbroth,noodles,flavor,tradition,recipe,shop,chef,customer,community,history,ingredient,texture,aroma,style,innovation,localpride,popularappeal,mealcustoms,bowldesign,andidentity.",
+        "document": {
+          "scrollWidth": 393,
+          "clientWidth": 393,
+          "scrollX": 0,
+          "horizontalOverflow": false
+        },
+        "guideCount": 0,
+        "screen": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "shell": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "header": {
+          "top": 0,
+          "right": 393,
+          "bottom": 56,
+          "left": 0,
+          "width": 393,
+          "height": 56
+        },
+        "title": {
+          "top": 8,
+          "right": 204,
+          "bottom": 36,
+          "left": 68,
+          "width": 136,
+          "height": 28
+        },
+        "actions": {
+          "top": 0,
+          "right": 377,
+          "bottom": 44,
+          "left": 212,
+          "width": 165,
+          "height": 44
+        },
+        "actionButtons": [
+          {
+            "top": 0,
+            "right": 265,
+            "bottom": 44,
+            "left": 212,
+            "width": 53,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 329,
+            "bottom": 44,
+            "left": 269,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 377,
+            "bottom": 44,
+            "left": 333,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "main": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735
+        },
+        "playerRestore": {
+          "top": 791,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 61
+        },
+        "scroll": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735,
+          "clientWidth": 393,
+          "scrollWidth": 393,
+          "scrollLeft": 0,
+          "clientHeight": 735,
+          "scrollHeight": 2866
+        },
+        "first": {
+          "top": 74,
+          "right": 381,
+          "bottom": 377.4375,
+          "left": 12,
+          "width": 369,
+          "height": 303.4375
+        }
+      },
+      "readerTouchProbe": {
+        "wordStyle": {
+          "webkitUserSelect": "none",
+          "touchAction": "manipulation"
+        },
+        "effectiveUserSelect": "none",
+        "activated": true
+      }
+    },
+    "screenshots": {
+      "create": "qa-artifacts/screenshots/iphone-16-webkit-create-lower-form-after-keyboard-cycle.png",
+      "importerKeyboard": "qa-artifacts/screenshots/iphone-16-webkit-importer-keyboard-field-clear.png",
+      "importerPasted": "qa-artifacts/screenshots/iphone-16-webkit-importer-after-paste.png",
+      "importer": "qa-artifacts/screenshots/iphone-16-webkit-importer-bottom-reachable.png",
+      "importSuccess": "qa-artifacts/screenshots/iphone-16-webkit-import-success.png",
+      "importReloaded": "qa-artifacts/screenshots/iphone-16-webkit-import-reloaded.png",
+      "readerTouchProbe": "qa-artifacts/screenshots/iphone-16-webkit-word-tap-probe.png"
+    },
+    "failure": null
+  }
+}
