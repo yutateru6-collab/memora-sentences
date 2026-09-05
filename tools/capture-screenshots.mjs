@@ -120,6 +120,7 @@ async function readerLayoutState(page) {
     const main = document.querySelector('.memora-reader-main');
     const scroll = document.querySelector('.memora-reader-scroll');
     const firstSentence = document.querySelector('.memora-reader-sentence');
+    const playerRestore = document.querySelector('[data-testid="reader-player-restore"]');
     const visibleActionButtons = actions instanceof HTMLElement
       ? [...actions.querySelectorAll('button')].filter(button => {
           const style = getComputedStyle(button);
@@ -141,6 +142,7 @@ async function readerLayoutState(page) {
       actions: rect(actions),
       actionButtons: visibleActionButtons.map(rect),
       main: rect(main),
+      playerRestore: rect(playerRestore),
       scroll: scroll instanceof HTMLElement ? {
         ...rect(scroll),
         clientWidth: scroll.clientWidth,
@@ -186,6 +188,12 @@ function assertReaderLayout(state, label, mobile) {
   }
   if (state.title.right > state.actions.left + 0.5) {
     throw new Error(`${label}: mobile title overlaps the action group: ${JSON.stringify(state)}`);
+  }
+  if (state.actionButtons.some(value => value.height < 44 || value.width < 44)) {
+    throw new Error(`${label}: mobile Reader action is smaller than 44px: ${JSON.stringify(state.actionButtons)}`);
+  }
+  if (!state.playerRestore || state.main.bottom > state.playerRestore.top + 0.5) {
+    throw new Error(`${label}: collapsed player overlaps the readable area: ${JSON.stringify(state)}`);
   }
 }
 
@@ -386,6 +394,21 @@ for (const target of targets) {
       const persona = rect('.create-home__persona-card');
       const actions = rect('.create-home__actions');
       const keyword = document.querySelector('[data-testid="create-keyword"]');
+      const selectLabelState = selector => {
+        const select = document.querySelector(selector);
+        if (!(select instanceof HTMLSelectElement)) return null;
+        const style = getComputedStyle(select);
+        const option = select.selectedOptions[0];
+        const label = option?.textContent?.trim() || '';
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (context) context.font = style.font;
+        const measuredWidth = context?.measureText(label).width || 0;
+        const availableWidth = select.clientWidth
+          - Number.parseFloat(style.paddingLeft || '0')
+          - Number.parseFloat(style.paddingRight || '0');
+        return { label, measuredWidth, availableWidth, fits: measuredWidth <= availableWidth + 1 };
+      };
       return {
         topic,
         choices,
@@ -397,6 +420,13 @@ for (const target of targets) {
           personaToActions: persona && actions ? actions.top - persona.bottom : null,
         },
         keywordFontSize: keyword ? Number.parseFloat(getComputedStyle(keyword).fontSize) : null,
+        selectLabels: {
+          level: selectLabelState('[data-testid="create-level"]'),
+          depth: selectLabelState('[data-testid="create-depth"]'),
+          role: selectLabelState('[data-testid="create-role"]'),
+          trait: selectLabelState('[data-testid="create-trait"]'),
+          length: selectLabelState('[data-testid="create-length"]'),
+        },
       };
     });
     for (const [name, gap] of Object.entries(createFlow.gaps)) {
@@ -404,6 +434,12 @@ for (const target of targets) {
     }
     if (target.name === 'iphone-16' && createFlow.keywordFontSize < 16) {
       throw new Error(`Keyword input must use at least 16px on iPhone: ${JSON.stringify(createFlow)}`);
+    }
+    if (target.name === 'iphone-16') {
+      const clippedSelect = Object.entries(createFlow.selectLabels).find(([, state]) => !state?.fits);
+      if (clippedSelect) {
+        throw new Error(`Create selected value is visually clipped (${clippedSelect[0]}): ${JSON.stringify(clippedSelect[1])}`);
+      }
     }
 
     const createBodyText = (await page.locator('body').innerText()).replace(/\s+/g, '');
@@ -457,7 +493,22 @@ for (const target of targets) {
         throw new Error(`Importer copy is missing: ${text}`);
       }
     }
-    result.states.importer = { document: await assertNoOverflow(page, 'Importer') };
+    const importerBackdrop = await page.locator('.memora-modal-backdrop').evaluate(element => {
+      const backgroundColor = getComputedStyle(element).backgroundColor;
+      const match = backgroundColor.match(/rgba?\(([^)]+)\)/);
+      const parts = match ? match[1].split(',').map(value => Number.parseFloat(value.trim())) : [];
+      return {
+        backgroundColor,
+        alpha: parts.length === 4 ? parts[3] : parts.length === 3 ? 1 : 0,
+      };
+    });
+    if (target.name === 'iphone-16' && importerBackdrop.alpha < 0.96) {
+      throw new Error(`Importer backdrop is too transparent on iPhone: ${JSON.stringify(importerBackdrop)}`);
+    }
+    result.states.importer = {
+      document: await assertNoOverflow(page, 'Importer'),
+      backdrop: importerBackdrop,
+    };
     result.screenshots.importer = await saveScreenshots(page, target, 'importer');
 
     await page.getByPlaceholder('例：Japan’s Ramen Culture').fill(sampleTitle);
@@ -501,6 +552,9 @@ for (const target of targets) {
     await wordDialog.waitFor({ state: 'visible', timeout: 10_000 });
     if (!(await wordDialog.getByText('単語メモ', { exact: true }).isVisible())) throw new Error('Word memo heading is missing.');
     if (!(await wordDialog.getByText(/READONのQAで使う確認用データ/).isVisible())) throw new Error('Word memo content is missing.');
+    if (target.name === 'iphone-16' && await page.getByTestId('reader-player-restore').isVisible()) {
+      throw new Error('Collapsed Reader player remains visible behind the word memo.');
+    }
     result.actions.push('open-word-memo');
     result.states.readerWordMemo = { document: await assertNoOverflow(page, 'Reader word memo') };
     result.screenshots.readerWordMemo = await saveScreenshots(page, target, 'reader-word-memo');
@@ -528,6 +582,9 @@ for (const target of targets) {
     if (!grammarBounds || grammarBounds.x < 0 || grammarBounds.y < 0 || grammarBounds.x + grammarBounds.width > target.context.viewport.width + 0.5 || grammarBounds.y + grammarBounds.height > target.context.viewport.height + 0.5) {
       throw new Error(`Grammar memo is clipped: ${JSON.stringify(grammarBounds)}`);
     }
+    if (target.name === 'iphone-16' && await page.getByTestId('reader-player-restore').isVisible()) {
+      throw new Error('Collapsed Reader player remains visible behind the grammar memo.');
+    }
     result.actions.push('open-grammar-memo');
     result.states.readerGrammarMemo = {
       document: await assertNoOverflow(page, 'Reader grammar memo'),
@@ -542,10 +599,34 @@ for (const target of targets) {
     await card.waitFor({ state: 'visible', timeout: 15_000 });
     await card.getByText(/読む・約\d+語/).waitFor({ state: 'visible', timeout: 10_000 });
     if (!(await card.getByRole('button', { name: '読む', exact: true }).isVisible())) throw new Error('Read action is missing.');
+    const recentHero = await page.evaluate(() => {
+      const rect = selector => {
+        const value = document.querySelector(selector)?.getBoundingClientRect();
+        return value ? { top: value.top, right: value.right, bottom: value.bottom, left: value.left, width: value.width, height: value.height } : null;
+      };
+      return {
+        card: rect('.memora-recent-card'),
+        content: rect('.memora-recent-card__content'),
+        title: rect('.memora-recent-card__title'),
+        actions: rect('.memora-recent-card__actions'),
+      };
+    });
+    if (!recentHero.card || !recentHero.content || !recentHero.title || !recentHero.actions
+        || recentHero.title.bottom > recentHero.actions.top + 0.5
+        || recentHero.actions.bottom > recentHero.card.bottom + 0.5
+        || recentHero.content.bottom > recentHero.card.bottom + 0.5) {
+      throw new Error(`Recent material title or actions are clipped: ${JSON.stringify(recentHero)}`);
+    }
+    const libraryFabVisible = await page.getByTestId('library-add-fab').isVisible();
+    if ((target.name === 'iphone-16' && libraryFabVisible) || (target.name !== 'iphone-16' && !libraryFabVisible)) {
+      throw new Error(`Library floating add button has the wrong responsive state: ${JSON.stringify({ target: target.name, libraryFabVisible })}`);
+    }
     result.actions.push('return-to-library-and-verify-card');
     result.states.libraryCard = {
       document: await assertNoOverflow(page, 'Library card'),
       mascot: await assertMascot(page, '/memora-world/read-v1.webp', 'Library card'),
+      recentHero,
+      libraryFabVisible,
     };
     result.screenshots.libraryCard = await saveScreenshots(page, target, 'library-card');
 

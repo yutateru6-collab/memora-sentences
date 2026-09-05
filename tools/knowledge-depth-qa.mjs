@@ -6,21 +6,25 @@ const depthCases = [
   {
     value: 'beginner',
     label: '初心者｜全体像から',
+    uiLabel: '初心者',
     marker: '読者はテーマについてほとんど知らない想定にする。',
   },
   {
     value: 'familiar',
     label: 'ある程度｜もう一歩深く',
+    uiLabel: 'ある程度',
     marker: '読者は基本的な用語や代表例をある程度知っている想定にする。',
   },
   {
     value: 'advanced',
     label: 'かなり詳しい｜細部まで',
+    uiLabel: 'かなり詳しい',
     marker: '読者は一般向けの概要や定番の説明をかなり知っている想定にする。',
   },
   {
     value: 'expert',
     label: 'マニア・専門家級｜とことん',
+    uiLabel: '専門家級',
     marker: '一般的な入門説明や有名な基本事項の再説明は原則として避ける。',
   },
 ];
@@ -108,7 +112,7 @@ for (const target of targets) {
     const depthOptions = await depth.locator('option').evaluateAll(options =>
       options.map(option => ({ value: option.value, label: option.textContent?.trim() || '' })),
     );
-    const expectedOptions = depthCases.map(item => ({ value: item.value, label: item.label }));
+    const expectedOptions = depthCases.map(item => ({ value: item.value, label: item.uiLabel }));
     if (JSON.stringify(depthOptions) !== JSON.stringify(expectedOptions)) {
       throw new Error(`${target.name}: depth options differ: ${JSON.stringify(depthOptions)}`);
     }
@@ -194,6 +198,26 @@ for (const target of targets) {
       await depth.selectOption(item.value);
       if (await depth.inputValue() !== item.value) {
         throw new Error(`${target.name}: could not select ${item.value}.`);
+      }
+
+      if (target.name === 'webkit-iphone') {
+        const visibleLabel = await depth.evaluate(select => {
+          const style = getComputedStyle(select);
+          const label = select.selectedOptions[0]?.textContent?.trim() || '';
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (context) context.font = style.font;
+          return {
+            label,
+            measuredWidth: context?.measureText(label).width || 0,
+            availableWidth: select.clientWidth
+              - Number.parseFloat(style.paddingLeft || '0')
+              - Number.parseFloat(style.paddingRight || '0'),
+          };
+        });
+        if (visibleLabel.label !== item.uiLabel || visibleLabel.measuredWidth > visibleLabel.availableWidth + 1) {
+          throw new Error(`${target.name}/${item.value}: selected depth label is clipped: ${JSON.stringify(visibleLabel)}`);
+        }
       }
 
       if (target.verifyPrompt) {

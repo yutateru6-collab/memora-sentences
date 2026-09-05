@@ -505,7 +505,7 @@ const HeroSection: React.FC<{ material: StoredMaterial; onLoad: (id: number) => 
     return (
         <section className="memora-recent w-full mb-8 animate-fade-in" aria-labelledby="recent-material-heading">
             <h2 id="recent-material-heading" className="memora-section-title">最近ひらいた教材</h2>
-            <div className={`relative w-full h-48 sm:h-64 rounded-2xl overflow-hidden shadow-2xl group cursor-pointer border ${T.border}`} onClick={() => onLoad(material.id)}>
+            <div className={`memora-recent-card relative w-full rounded-2xl overflow-hidden shadow-2xl group cursor-pointer border ${T.border}`} onClick={() => onLoad(material.id)}>
                 {material.thumbnail ? (
                     <>
                         <img src={material.thumbnail} alt={material.name} className="absolute inset-0 w-full h-full object-cover blur-sm opacity-50 scale-105 group-hover:scale-110 transition-transform duration-700" />
@@ -514,13 +514,13 @@ const HeroSection: React.FC<{ material: StoredMaterial; onLoad: (id: number) => 
                 ) : (
                     <div className={`absolute inset-0 ${T.accentBg} opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]`} />
                 )}
-                <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-8">
+                <div className="memora-recent-card__content relative z-10 min-h-56 sm:h-64 flex flex-col justify-end p-5 sm:p-8">
                     <div className="flex items-center gap-2 mb-2">
                         <span className={`px-2 py-0.5 text-xs font-bold tracking-wider rounded-full bg-white/20 text-white backdrop-blur-md`}>最近ひらいた教材</span>
                         <span className="text-white/70 text-sm">{new Date(material.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4 line-clamp-2 drop-shadow-md">{material.name}</h2>
-                    <div className="flex items-center gap-4">
+                    <h2 className="memora-recent-card__title text-2xl sm:text-4xl font-bold text-white mb-4 line-clamp-2 drop-shadow-md">{material.name}</h2>
+                    <div className="memora-recent-card__actions flex items-center gap-4">
                         <button onClick={(e) => { e.stopPropagation(); onLoad(material.id); }} className={`flex items-center gap-2 px-6 py-3 ${T.accentBg} hover:brightness-110 text-white rounded-full font-bold shadow-lg transform transition-all hover:scale-105 active:scale-95`}>
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>続きから読む</span>
                         </button>
@@ -566,6 +566,8 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
   const addModalCloseButtonRef = useRef<HTMLButtonElement>(null);
   const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
   const modalViewportBaselineRef = useRef(0);
+  const modalViewportSnapshotRef = useRef('');
+  const modalRepaintFrameRef = useRef<number | null>(null);
 
   const [editingMaterialId, setEditingMaterialId] = useState<number | null>(null);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -653,6 +655,23 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
                 || activeElement instanceof HTMLSelectElement;
             const keyboardOpen = hasTextFocus && height < modalViewportBaselineRef.current - 120;
             modal.classList.toggle('memora-modal--keyboard-open', keyboardOpen);
+
+            const viewportSnapshot = `${top}:${left}:${width}:${height}:${keyboardOpen}`;
+            if (viewportSnapshot !== modalViewportSnapshotRef.current) {
+                modalViewportSnapshotRef.current = viewportSnapshot;
+                modal.dataset.viewportPaintReady = 'false';
+                modal.classList.add('memora-modal--viewport-syncing');
+                if (modalRepaintFrameRef.current !== null) {
+                    window.cancelAnimationFrame(modalRepaintFrameRef.current);
+                }
+                modalRepaintFrameRef.current = window.requestAnimationFrame(() => {
+                    modalRepaintFrameRef.current = window.requestAnimationFrame(() => {
+                        modal.classList.remove('memora-modal--viewport-syncing');
+                        modal.dataset.viewportPaintReady = 'true';
+                        modalRepaintFrameRef.current = null;
+                    });
+                });
+            }
         }
     };
 
@@ -697,6 +716,11 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
         window.visualViewport?.removeEventListener('scroll', syncVisualViewport);
         window.removeEventListener('resize', syncVisualViewport);
         document.removeEventListener('keydown', handleModalKeyDown);
+        if (modalRepaintFrameRef.current !== null) {
+            window.cancelAnimationFrame(modalRepaintFrameRef.current);
+            modalRepaintFrameRef.current = null;
+        }
+        modalViewportSnapshotRef.current = '';
         document.body.classList.remove('memora-import-modal-open');
         previouslyFocusedElementRef.current?.focus({ preventScroll: true });
     };
@@ -968,7 +992,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
       </div>
 
       {!isFirstRun && (
-        <button onClick={() => setIsAddModalOpen(true)} className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl ${T.accentBg} text-white flex items-center justify-center hover:scale-110 transition-transform z-30 group`} title="新規追加">
+        <button data-testid="library-add-fab" onClick={() => setIsAddModalOpen(true)} className={`memora-library-fab hidden md:flex fixed bottom-8 right-8 w-16 h-16 rounded-full shadow-2xl ${T.accentBg} text-white items-center justify-center hover:scale-110 transition-transform z-30 group`} title="新規追加">
           <PlusIcon className="w-6 h-6 md:w-8 md:h-8 group-hover:rotate-90 transition-transform duration-300" />
         </button>
       )}

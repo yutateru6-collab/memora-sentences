@@ -41,6 +41,14 @@
     top: 56px !important;
   }
 
+  .memora-reader-screen--player-collapsed {
+    --memora-reader-restore-height: calc(52px + max(8px, env(safe-area-inset-bottom)));
+  }
+
+  .memora-reader-screen--player-collapsed .memora-reader-main {
+    bottom: var(--memora-reader-restore-height) !important;
+  }
+
   /* The theme layer gives every direct Reader child position:relative. Restore
      controls and sheets that deliberately opt into fixed positioning so they
      cannot consume the Reader's flex height in mobile WebKit. */
