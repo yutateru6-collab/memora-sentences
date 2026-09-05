@@ -42,7 +42,9 @@
   }
 
   .memora-reader-screen--player-collapsed {
-    --memora-reader-restore-height: calc(52px + max(8px, env(safe-area-inset-bottom)));
+    /* Include the restore rail's 1px top border so its painted edge never
+       intrudes into the Reader's scroll area. */
+    --memora-reader-restore-height: calc(53px + max(8px, env(safe-area-inset-bottom)));
   }
 
   .memora-reader-screen--player-collapsed .memora-reader-main {
