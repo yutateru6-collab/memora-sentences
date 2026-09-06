@@ -174,10 +174,9 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
     window.setTimeout(() => setCopied(false), 1800);
   }, [generatePrompt]);
 
-  const handleOpenAiStudio = useCallback(async () => {
-    await copyPrompt();
+  const handleOpenAiStudio = useCallback(() => {
     window.open(AI_STUDIO_URL, '_blank', 'noopener,noreferrer');
-  }, [copyPrompt]);
+  }, []);
 
   const selectedPersona: PromptPersonaSelection = useMemo(
     () => ({ name: '', role: getReaderCompatibleRole(role), trait }),
@@ -319,9 +318,15 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
         </section>
 
         <section className="create-home__actions" aria-label="教材作成アクション">
+          <button type="button" className="create-home__action create-home__action--copy" onClick={copyPrompt} data-testid="create-copy">
+            <span className="create-home__action-icon"><ClipboardIcon /></span>
+            <span className="create-home__action-copy"><strong>{copied ? '① コピーしました！' : '① コピー'}</strong><small>作成用の指示をコピー</small></span>
+            <span className="create-home__chevron" aria-hidden="true">›</span>
+          </button>
+
           <button type="button" className="create-home__action create-home__action--primary" onClick={handleOpenAiStudio} data-testid="create-open-ai-studio">
             <span className="create-home__action-icon"><WandIcon /></span>
-            <span className="create-home__action-copy"><strong>AI Studioで教材をつくる</strong><small>作成用の指示をコピーしてAI Studioを開きます</small></span>
+            <span className="create-home__action-copy"><strong>② 外部で作る</strong><small>AI Studioを開く</small></span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
 
@@ -332,13 +337,7 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
             data-testid="create-import"
           >
             <span className="create-home__action-icon"><ImportIcon /></span>
-            <span className="create-home__action-copy"><strong>できた教材を取り込む</strong><small>AI Studioで作った結果を貼り付けます</small></span>
-            <span className="create-home__chevron" aria-hidden="true">›</span>
-          </button>
-
-          <button type="button" className="create-home__action create-home__action--copy" onClick={copyPrompt} data-testid="create-copy">
-            <span className="create-home__action-icon"><ClipboardIcon /></span>
-            <span className="create-home__action-copy"><strong>{copied ? 'コピーしました！' : '作成用の指示だけコピー'}</strong><small>AI Studioへ貼り付ける内容をコピーします</small></span>
+            <span className="create-home__action-copy"><strong>③ 取り込み</strong><small>作った教材を貼り付け</small></span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
         </section>
