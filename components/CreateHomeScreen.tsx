@@ -8,6 +8,7 @@ import {
 } from '../lib/readingPrompt';
 import '../create-home.css';
 import '../create-depth.css';
+import '../create-ai-picker.css';
 
 interface CreateHomeScreenProps {
   onOpenLibrary: () => void;
@@ -15,7 +16,37 @@ interface CreateHomeScreenProps {
   onNavigateToPasteJSON: (personas: PromptPersonaSelection[]) => void;
 }
 
-const AI_STUDIO_URL = 'https://aistudio.google.com/app/u/0/prompts/new_chat?model=gemini-3-pro-preview';
+type ExternalAiProvider = 'gemini' | 'chatgpt' | 'claude';
+
+interface ExternalAiOption {
+  id: ExternalAiProvider;
+  label: string;
+  url: string;
+  mark: string;
+}
+
+const EXTERNAL_AI_STORAGE_KEY = 'readon-preferred-external-ai';
+
+const EXTERNAL_AI_OPTIONS: ExternalAiOption[] = [
+  {
+    id: 'gemini',
+    label: 'Gemini',
+    url: 'https://gemini.google.com/app',
+    mark: 'G',
+  },
+  {
+    id: 'chatgpt',
+    label: 'ChatGPT',
+    url: 'https://chatgpt.com/',
+    mark: 'GPT',
+  },
+  {
+    id: 'claude',
+    label: 'Claude',
+    url: 'https://claude.ai/new',
+    mark: 'C',
+  },
+];
 
 const levelOptions = {
   '日本の「英検1級」レベル': '1級',
@@ -134,10 +165,25 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
   const [role, setRole] = useState('やさしく導く先生');
   const [trait, setTrait] = useState('やさしくて、まなびを楽しませてくれる！');
   const [copied, setCopied] = useState(false);
+  const [isAiPickerOpen, setIsAiPickerOpen] = useState(false);
+  const [preferredAi, setPreferredAi] = useState<ExternalAiProvider | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const saved = window.localStorage.getItem(EXTERNAL_AI_STORAGE_KEY);
+      return saved === 'gemini' || saved === 'chatgpt' || saved === 'claude' ? saved : null;
+    } catch {
+      return null;
+    }
+  });
 
   const personalSettingsEnabled = useMemo(
     () => typeof window === 'undefined' || localStorage.getItem('use_personal_settings') !== 'false',
     [],
+  );
+
+  const preferredAiLabel = useMemo(
+    () => EXTERNAL_AI_OPTIONS.find((option) => option.id === preferredAi)?.label || '',
+    [preferredAi],
   );
 
   const generatePrompt = useCallback(() => {
@@ -174,8 +220,14 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
     window.setTimeout(() => setCopied(false), 1800);
   }, [generatePrompt]);
 
-  const handleOpenAiStudio = useCallback(() => {
-    window.open(AI_STUDIO_URL, '_blank', 'noopener,noreferrer');
+  const rememberExternalAi = useCallback((provider: ExternalAiProvider) => {
+    setPreferredAi(provider);
+    setIsAiPickerOpen(false);
+    try {
+      window.localStorage.setItem(EXTERNAL_AI_STORAGE_KEY, provider);
+    } catch {
+      // Browsers with storage disabled can still open the selected AI normally.
+    }
   }, []);
 
   const selectedPersona: PromptPersonaSelection = useMemo(
@@ -324,11 +376,62 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
 
-          <button type="button" className="create-home__action create-home__action--primary" onClick={handleOpenAiStudio} data-testid="create-open-ai-studio">
+          <button
+            type="button"
+            className="create-home__action create-home__action--primary"
+            onClick={() => setIsAiPickerOpen((open) => !open)}
+            data-testid="create-open-ai-studio"
+            aria-expanded={isAiPickerOpen}
+            aria-controls="create-external-ai-picker"
+          >
             <span className="create-home__action-icon"><WandIcon /></span>
-            <span className="create-home__action-copy"><strong>② 外部で作る</strong><small>AI Studioを開く</small></span>
+            <span className="create-home__action-copy">
+              <strong>② 外部で作る</strong>
+              <small>{preferredAiLabel ? `前回：${preferredAiLabel}` : 'Gemini・ChatGPT・Claude'}</small>
+            </span>
             <span className="create-home__chevron" aria-hidden="true">›</span>
           </button>
+
+          {isAiPickerOpen && (
+            <div className="create-home__ai-picker" id="create-external-ai-picker" data-testid="create-ai-picker">
+              <div className="create-home__ai-picker-head">
+                <strong>使うAIを選ぶ</strong>
+                <button
+                  type="button"
+                  className="create-home__ai-picker-close"
+                  onClick={() => setIsAiPickerOpen(false)}
+                  aria-label="AI選択を閉じる"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="create-home__ai-options">
+                {EXTERNAL_AI_OPTIONS.map((option) => (
+                  <a
+                    key={option.id}
+                    className="create-home__ai-option"
+                    href={option.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => rememberExternalAi(option.id)}
+                    data-testid={`create-ai-${option.id}`}
+                  >
+                    <span className="create-home__ai-option-mark" data-provider={option.id}>{option.mark}</span>
+                    <span className="create-home__ai-option-copy">
+                      <strong>{option.label}</strong>
+                      <small>アプリ / Webで開く</small>
+                    </span>
+                    {preferredAi === option.id && <span className="create-home__ai-option-badge">前回</span>}
+                  </a>
+                ))}
+              </div>
+
+              <p className="create-home__ai-picker-note">
+                アプリが入っている場合は端末のリンク設定に従ってアプリを開き、開けない場合はWeb版を開きます。
+              </p>
+            </div>
+          )}
 
           <button
             type="button"
