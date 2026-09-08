@@ -72,6 +72,75 @@ const modeFixtures = {
   sns: { mode: 'x_thread', main_post: { author_name: 'QA author', handle: '@qa', is_verified: false, avatar_emoji: '🐈', timestamp: '2026-09-08', jp_content: 'QA 猫は眠ります。', en_content: 'Cats sleep.', explanation: 'Cats は主語。', stats: { replies: '0', reposts: '0', likes: '0', views: '1' } }, replies: [] },
 };
 const cases = [
+  ['reader-orientation', async ({ page, mobile, snap }) => {
+    await importText(page);
+    if (!mobile) return;
+    await page.setViewportSize({ width: 852, height: 393 });
+    await page.waitForTimeout(400);
+    await snap('reader-landscape');
+    const sizes = await page.evaluate(() => ({ viewport: innerHeight, reader: document.querySelector('.memora-reader-screen').getBoundingClientRect().height }));
+    assert(sizes.reader <= sizes.viewport + 1, `Reader retains portrait height after rotation: ${JSON.stringify(sizes)}`);
+  }],
+  ['word-prefix-false-match', async ({ page, snap }) => {
+    const material = `Progress takes time.\n進歩には時間がかかります。\n----------\n${JSON.stringify([{ front: 'program', back: 'プログラム', memo: 'QA distinct word' }])}\n----------\n確認用。`;
+    await importText(page, material);
+    const progress = page.locator('.memora-reader-sentence span').filter({ hasText: /^Progress$/ }).last();
+    await progress.click();
+    await snap('word-prefix-match');
+    assert(!(await page.getByRole('dialog', { name: 'program の単語情報' }).isVisible()), 'Progress incorrectly opens the program card because only the first five letters match');
+  }],
+  ['personal-settings', async ({ page, snap }) => {
+    await page.getByRole('button', { name: '教材一覧', exact: true }).click();
+    await page.getByRole('button', { name: 'ライブラリメニュー' }).click();
+    await page.getByRole('button', { name: 'パーソナル設定', exact: true }).click();
+    await page.getByPlaceholder('好きなもの、近況、趣味など...AIが生成する例文の「隠し味」になります。').fill('QA synthetic preference');
+    await snap('personal-settings');
+    await page.getByRole('button', { name: '登録完了！', exact: true }).click();
+    await page.reload();
+    await page.getByRole('button', { name: '教材一覧', exact: true }).click();
+    await page.getByRole('button', { name: 'ライブラリメニュー' }).click();
+    await page.getByRole('button', { name: 'パーソナル設定', exact: true }).click();
+    assert(await page.getByPlaceholder('好きなもの、近況、趣味など...AIが生成する例文の「隠し味」になります。').inputValue() === 'QA synthetic preference', 'Personal settings were not retained');
+  }],
+  ['speed-reading-immediate-stop', async ({ page, mobile, snap }) => {
+    await importText(page, shortText);
+    await feature(page, mobile, 'WPM測定 (スピードリーディング)', /WPM測定/);
+    await page.getByRole('button', { name: 'START', exact: true }).click();
+    await page.getByRole('button', { name: 'STOP', exact: true }).click();
+    await page.getByRole('heading', { name: 'Finish!', exact: true }).waitFor();
+    await snap('speed-immediate-stop');
+    assert(!(await page.locator('body').innerText()).includes('Infinity'), 'Immediate stop renders Infinity WPM');
+  }],
+  ['speed-reading-and-rsvp', async ({ page, mobile, snap }) => {
+    await importText(page);
+    await feature(page, mobile, 'WPM測定 (スピードリーディング)', /WPM測定/);
+    await snap('speed-settings');
+    await page.getByRole('button', { name: 'START', exact: true }).click();
+    await page.waitForTimeout(1300);
+    await page.getByRole('button', { name: 'STOP', exact: true }).click();
+    await page.getByRole('heading', { name: 'Finish!', exact: true }).waitFor();
+    await snap('speed-result');
+    await page.getByRole('button', { name: '閉じる', exact: true }).click();
+    await feature(page, mobile, '速読トレーニング (Spartan Reader)', /速読トレーニング/);
+    await page.getByText('SPARTAN READER', { exact: true }).waitFor();
+    await snap('rsvp');
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(1400);
+    await page.keyboard.press('Space');
+    const counter = await page.getByText(/\d+ \/ \d+ WORDS/).innerText();
+    assert(!counter.startsWith('0 /'), 'RSVP did not advance');
+    await snap('rsvp-advanced');
+    await page.locator('button[title="横画面にする"]').locator('..').getByRole('button').last().click();
+    await page.locator('.memora-reader-sentence').first().waitFor();
+  }],
+  ['pdf-long-document', async ({ page, mobile, snap }) => {
+    await importText(page, buildValidQaMaterial({ paragraphCount: 12 }));
+    await feature(page, mobile, '教材PDF印刷・B5対訳出力', 'PDF');
+    await page.getByRole('button', { name: 'B5横・PDF印刷 / 保存', exact: true }).waitFor();
+    await page.waitForFunction(() => document.querySelector('#textbook-print-area')?.innerText.includes('12文目'));
+    await snap('pdf-long-document');
+    if (!mobile) await page.pdf({ path: 'qa-artifacts/audit-print.pdf', preferCSSPageSize: true, printBackground: true });
+  }],
   ['library-folder-and-other-prompts', async ({ page, snap }) => {
     await page.getByRole('button', { name: '教材一覧', exact: true }).click();
     await page.getByRole('button', { name: 'ライブラリメニュー' }).click();
@@ -112,12 +181,12 @@ const cases = [
     await importText(page, shortText, 'QA quiz with a deliberately long material title for mobile header checks');
     await createQuiz(page, mobile, [question]);
     await snap('quiz-before-answer');
-    await page.getByRole('button', { name: 'B. In class', exact: true }).click();
+    await page.getByRole('button', { name: 'B.In class', exact: true }).click();
     await page.getByText('残念！', { exact: true }).waitFor();
     await page.getByRole('button', { name: /復習モード/ }).waitFor();
     await snap('quiz-wrong-answer');
     await page.getByRole('button', { name: /復習モード/ }).click();
-    await page.getByRole('button', { name: 'A. At night', exact: true }).click();
+    await page.getByRole('button', { name: 'A.At night', exact: true }).click();
     await page.getByText('正解！', { exact: true }).waitFor();
     assert((await stored(page))[0].bookmarks?.includes(0), 'Incorrect answer bookmark was not saved');
     await snap('quiz-review');
@@ -125,7 +194,7 @@ const cases = [
   ['quiz-invalid-explanation', async ({ page, mobile, snap }) => {
     await importText(page, shortText);
     await createQuiz(page, mobile, [{ ...question, explanation: { text: 'Malformed explanation' } }]);
-    await page.getByRole('button', { name: 'A. At night', exact: true }).click();
+    await page.getByRole('button', { name: 'A.At night', exact: true }).click();
     await snap('malformed-quiz-answer');
     assert(await page.getByRole('heading', { name: /文法クイズ/ }).isVisible(), 'Malformed explanation was accepted and crashed the quiz after answering');
   }],
@@ -177,8 +246,19 @@ const cases = [
   }],
   ...Object.entries(modeFixtures).map(([mode, fixture]) => [`mode-${mode}`, async ({ page, snap }) => {
     await importText(page, JSON.stringify(fixture, null, 2), `QA ${mode}`);
+    const expectedHeading = { board: 'QA board', amazon: 'QA商品', legend: 'QA legend', sns: 'Post' }[mode];
+    await page.getByRole('heading', { name: expectedHeading, exact: true }).waitFor();
     await snap(`mode-${mode}`);
     assert((await stored(page)).length === 1, `${mode} not saved`);
+    if (mode === 'board' || mode === 'amazon') {
+      await page.getByRole('button', { name: '解説を見る', exact: true }).first().click();
+      await page.getByRole('button', { name: '解説を閉じる', exact: true }).first().waitFor();
+      await snap(`mode-${mode}-explanation`);
+    }
+    if (mode === 'sns') {
+      await page.locator('button[title="解説を表示"]').first().click();
+      await snap('mode-sns-explanation');
+    }
     if (mode === 'legend') {
       await page.getByRole('button', { name: 'Lv.3 英語', exact: true }).click();
       await page.getByRole('button', { name: '伝説達成！ (Finish)', exact: true }).click();
@@ -195,7 +275,12 @@ const cases = [
 for (const cfg of configs) {
   const browser = await cfg.engine.launch();
   for (const [name, run] of cases) {
-    const context = await browser.newContext(cfg.options);
+    if (process.env.QA_CASES && !process.env.QA_CASES.split(',').includes(name)) continue;
+    const context = await browser.newContext({
+      ...cfg.options,
+      screen: cfg.options.viewport,
+      ...(cfg.name !== 'desktop' ? { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' } : {}),
+    });
     const page = await context.newPage();
     page.setDefaultTimeout(10000);
     const result = { target: cfg.name, case: name, status: 'failure', consoleErrors: [], pageErrors: [], states: [], screenshots: [] };

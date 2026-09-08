@@ -105,12 +105,30 @@ jobs:
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
           fi
+          if [ -f qa-artifacts/audit-print.pdf ]; then
+            cp qa-artifacts/audit-print.pdf /tmp/qa-latest/audit-print.pdf
+          fi
           if [ -f qa-artifacts/audit-report.json ]; then
             cp qa-artifacts/audit-report.json /tmp/qa-latest/audit-report.json
           fi
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
           fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const reportPath = '/tmp/qa-latest/report.json';
+          if (fs.existsSync(reportPath)) {
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const auditPath = '/tmp/qa-latest/audit-report.json';
+            const audit = fs.existsSync(auditPath) ? JSON.parse(fs.readFileSync(auditPath, 'utf8')) : null;
+            report.baseQaStatus = report.status;
+            report.auditStatus = audit?.results?.length && audit.results.every(r => r.status === 'success') ? 'success' : 'failure';
+            report.auditReport = 'audit-report.json';
+            report.status = report.baseQaStatus === 'success' && report.auditStatus === 'success' ? 'success' : 'failure';
+            fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+          }
+          NODE
 
           SCREENSHOT_COUNT="$(find /tmp/qa-latest/screenshots -type f 2>/dev/null | wc -l | tr -d ' ')"
           QA_STATUS="failure"
@@ -145,6 +163,7 @@ jobs:
           git add latest.json
           if [ -f report.json ]; then git add report.json; fi
           if [ -f audit-report.json ]; then git add audit-report.json; fi
+          if [ -f audit-print.pdf ]; then git add audit-print.pdf; fi
           if [ -d screenshots ]; then git add screenshots/; fi
           git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest
