@@ -1,0 +1,11 @@
+{
+  "repository": "yutateru6-collab/memora-sentences",
+  "workflow": "QA Screenshots",
+  "run_id": "34197599468",
+  "run_number": "112",
+  "commit_sha": "52efa3844fdcc0682e3cab69e852b537e53f23ca",
+  "job_status": "success",
+  "qa_status": "success",
+  "screenshot_count": 308,
+  "generated_at_utc": "2026-09-08T07:13:01Z"
+}
