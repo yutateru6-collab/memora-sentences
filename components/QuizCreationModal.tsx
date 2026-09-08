@@ -35,6 +35,9 @@ export const parseQuizContent = (content: string): QuizQuestion[] => {
     }
 
     parsed.forEach((item, index) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            throw new Error(`問題${index + 1}はオブジェクトにしてください。`);
+        }
         const question = item as Partial<QuizQuestion>;
         if (typeof question.question !== 'string' || !question.question.trim()) {
             throw new Error(`問題${index + 1}の question が正しくありません。`);
@@ -44,6 +47,11 @@ export const parseQuizContent = (content: string): QuizQuestion[] => {
         }
         if (!Number.isInteger(question.correctAnswerIndex) || question.correctAnswerIndex! < 0 || question.correctAnswerIndex! > 3) {
             throw new Error(`問題${index + 1}の correctAnswerIndex は0〜3の整数にしてください。`);
+        }
+        for (const key of ['explanation', 'explanationCorrect', 'explanationIncorrect'] as const) {
+            if (question[key] !== undefined && typeof question[key] !== 'string') {
+                throw new Error(`問題${index + 1}の ${key} は文字列にしてください。`);
+            }
         }
     });
 

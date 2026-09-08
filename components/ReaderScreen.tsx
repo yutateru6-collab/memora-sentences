@@ -241,6 +241,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       root.clientHeight,
       visualViewport?.height || 0,
     );
+    let previousWidth = window.innerWidth;
 
     const applyStableViewportHeight = () => {
       const measuredHeight = Math.max(
@@ -251,7 +252,13 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       // iOS WebKit can keep the small keyboard viewport for CSS viewport units
       // after the import modal closes. Never shrink the Reader during that
       // lifecycle; use the largest real viewport measurement instead.
-      stableHeight = Math.max(stableHeight, measuredHeight);
+      // A keyboard changes height only; rotation/window resizing also changes width.
+      if (Math.abs(window.innerWidth - previousWidth) > 1) {
+        stableHeight = window.innerHeight;
+        previousWidth = window.innerWidth;
+      } else {
+        stableHeight = Math.max(stableHeight, measuredHeight);
+      }
       const stablePixels = `${Math.round(stableHeight)}px`;
       root.style.setProperty('--memora-reader-viewport-height', stablePixels);
       // Use inline important sizing as well. WebKit can retain the keyboard-era
@@ -548,11 +555,6 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       for (let i = 0; i < precomputedRegisteredWords.length; i++) {
           const { card, cardWords } = precomputedRegisteredWords[i];
           if (cardWords.includes(cleanTranscriptWord)) return card;
-          if (cleanTranscriptWord.length >= 5) {
-              const transcriptPrefix = cleanTranscriptWord.substring(0, 5);
-              const hasPrefixMatch = cardWords.some(cw => cw.length >= 5 && cw.substring(0, 5) === transcriptPrefix);
-              if (hasPrefixMatch) return card;
-          }
           if (cleanTranscriptWord.endsWith('s') && cardWords.includes(cleanTranscriptWord.slice(0, -1))) return card;
           if (cleanTranscriptWord.endsWith('es') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return card;
           if (cleanTranscriptWord.endsWith('ed') && cardWords.includes(cleanTranscriptWord.slice(0, -2))) return card;
@@ -697,14 +699,12 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
     };
   }, [title, thumbnailUrl, msSkipBackward, msSkipForward, msPrevTrack, msNextTrack]);
 
-  useEffect(() => {
-      const timer = setTimeout(() => {
-          if (globalMemo !== initialGlobalMemo || inlineNotes !== initialInlineNotes) {
-              onUpdateMaterial(materialId, { globalMemo, inlineNotes });
-          }
-      }, 1000);
-      return () => clearTimeout(timer);
-  }, [globalMemo, inlineNotes, materialId, onUpdateMaterial, initialGlobalMemo, initialInlineNotes]);
+  // Persist only user edits, immediately. A mount-time/debounced save could
+  // overwrite newer data with empty initial props or be canceled by navigation.
+  const saveGlobalMemo = (value: string) => {
+      setGlobalMemo(value);
+      void onUpdateMaterial(materialId, { globalMemo: value });
+  };
 
   const handleTextSelection = useCallback(() => {
       const selection = window.getSelection();
@@ -843,7 +843,9 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
               newNote.sentenceIndex = selectionMenu.sentenceIndex;
               newNote.characterRange = selectionMenu.characterRange;
           }
-          setInlineNotes(prev => [...prev, newNote]);
+          const nextNotes = [...inlineNotes, newNote];
+          setInlineNotes(nextNotes);
+          void onUpdateMaterial(materialId, { inlineNotes: nextNotes });
           setIsNoteInputOpen(false);
           setSelectionMenu(null);
           handleClearSelection();
@@ -851,7 +853,9 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
   };
 
   const handleDeleteNote = (noteId: string) => {
-      setInlineNotes(prev => prev.filter(n => n.id !== noteId));
+      const nextNotes = inlineNotes.filter(n => n.id !== noteId);
+      setInlineNotes(nextNotes);
+      void onUpdateMaterial(materialId, { inlineNotes: nextNotes });
       setActiveNote(null);
   };
 
@@ -2170,7 +2174,7 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                    <div className="flex-grow p-4">
                        <textarea 
                            value={globalMemo}
-                           onChange={(e) => setGlobalMemo(e.target.value)}
+                           onChange={(e) => saveGlobalMemo(e.target.value)}
                            placeholder="全体的な感想、目標、To-Doなどを自由に書いてください。"
                            className={`w-full h-full p-4 text-base ${T.button} ${T.textPrimary} rounded-lg resize-none border ${T.border} focus:outline-none focus:ring-2 ${T.ring}`}
                        />
@@ -2340,7 +2344,9 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
                   <div className="bg-white/5 p-4 rounded-lg border border-white/10 mb-6">
                       <div className="text-sm text-gray-300 mb-1">実績スピード</div>
                       <div className="text-2xl font-bold text-white">
-                          {Math.round(totalWordCount / ((targetDuration - timeRemaining) / 60))} <span className="text-sm font-normal text-gray-400">WPM</span>
+                          {targetDuration - timeRemaining > 0
+                              ? <>{Math.round(totalWordCount / ((targetDuration - timeRemaining) / 60))} <span className="text-sm font-normal text-gray-400">WPM</span></>
+                              : <span className="text-base">計測時間が短すぎます</span>}
                       </div>
                   </div>
                   <div className="flex gap-3">

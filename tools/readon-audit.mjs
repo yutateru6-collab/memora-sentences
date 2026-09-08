@@ -1,5 +1,6 @@
 import { chromium, webkit } from 'playwright';
 import fs from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { buildValidQaMaterial } from './qa-material-fixture.mjs';
 
 // Run only in isolated QA browser contexts. No production accounts or user data.
@@ -139,7 +140,14 @@ const cases = [
     await page.getByRole('button', { name: 'B5横・PDF印刷 / 保存', exact: true }).waitFor();
     await page.waitForFunction(() => document.querySelector('#textbook-print-area')?.innerText.includes('12文目'));
     await snap('pdf-long-document');
-    if (!mobile) await page.pdf({ path: 'qa-artifacts/audit-print.pdf', preferCSSPageSize: true, printBackground: true });
+    if (!mobile) {
+      await page.pdf({ path: 'qa-artifacts/audit-print.pdf', preferCSSPageSize: true, printBackground: true });
+      const pdfText = execFileSync('pdftotext', ['qa-artifacts/audit-print.pdf', '-'], { encoding: 'utf8' });
+      // Twelve main sentences plus twelve repetitions in the explanation section.
+      assert((pdfText.match(/Students analyze ramen culture/g) || []).length === 24, 'PDF loses or duplicates sentences');
+      assert(pdfText.includes('12文目'), 'PDF loses the final explanation');
+      assert(pdfText.includes('QA確認語30'), 'PDF loses the final word card');
+    }
   }],
   ['library-folder-and-other-prompts', async ({ page, snap }) => {
     await page.getByRole('button', { name: '教材一覧', exact: true }).click();
@@ -193,10 +201,12 @@ const cases = [
   }],
   ['quiz-invalid-explanation', async ({ page, mobile, snap }) => {
     await importText(page, shortText);
-    await createQuiz(page, mobile, [{ ...question, explanation: { text: 'Malformed explanation' } }]);
-    await page.getByRole('button', { name: 'A.At night', exact: true }).click();
-    await snap('malformed-quiz-answer');
-    assert(await page.getByRole('heading', { name: /文法クイズ/ }).isVisible(), 'Malformed explanation was accepted and crashed the quiz after answering');
+    await feature(page, mobile, 'クイズを作成', 'クイズ作成');
+    await page.getByPlaceholder('ここにJSONデータを貼り付け...').fill(JSON.stringify([{ ...question, explanation: { text: 'Malformed explanation' } }]));
+    await page.getByRole('button', { name: '保存してクイズを開始', exact: true }).click();
+    await page.getByText('問題1の explanation は文字列にしてください。', { exact: true }).waitFor();
+    await snap('malformed-quiz-rejected');
+    assert(!(await stored(page))[0].quiz, 'Malformed quiz was persisted');
   }],
   ['flashcards-complete', async ({ page, snap }) => {
     await wordDeck(page);
@@ -223,10 +233,9 @@ const cases = [
   ['game-duplicate-meanings', async ({ page, snap }) => {
     await wordDeck(page, cards.map(c => ({ ...c, back: '同じ意味' })));
     await page.getByRole('button', { name: '4択ゲーム', exact: true }).click();
-    await page.getByRole('button', { name: '同じ意味', exact: true }).first().waitFor();
+    await page.getByRole('heading', { name: 'ゲームをプレイできません', exact: true }).waitFor();
     await snap('duplicate-choices');
-    const choices = await page.locator('main button').allTextContents();
-    assert(new Set(choices).size === choices.length, `Duplicate answer choices: ${JSON.stringify(choices)}`);
+    assert(await page.getByText(/異なる意味の単語カードが4種類以上必要/).isVisible(), 'Missing unique-meaning guidance');
   }],
   ['combined-text-and-separate-cards', async ({ page, snap }) => {
     await importer(page);
@@ -235,6 +244,10 @@ const cases = [
     const remaining = await page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください').inputValue();
     await snap('combined-import-after-cards');
     assert(remaining.includes('Cats sleep at night.'), 'Typing separate word cards silently erased the previously pasted reading material');
+    await page.getByRole('button', { name: '教材として取り込む', exact: true }).click();
+    await page.locator('.memora-reader-sentence').first().waitFor();
+    const saved = (await stored(page))[0];
+    assert(saved.transcript.includes('Cats sleep at night.') && JSON.parse(saved.cards).length === 4, 'Combined input did not save both text and cards');
   }],
   ['damaged-media', async ({ page, snap }) => {
     await importer(page);
@@ -289,8 +302,8 @@ for (const cfg of configs) {
     page.on('dialog', d => d.dismiss());
     const snap = async label => {
       const prefix = `${out}/audit-${cfg.name}-${label}`;
-      await page.screenshot({ path: `${prefix}.png`, scale: 'device' });
-      await page.screenshot({ path: `${prefix}.jpg`, scale: 'css', type: 'jpeg', quality: 55 });
+      await page.screenshot({ path: `${prefix}.png`, scale: 'device', animations: 'disabled' });
+      await page.screenshot({ path: `${prefix}.jpg`, scale: 'css', type: 'jpeg', quality: 55, animations: 'disabled' });
       result.screenshots.push(`${prefix}.png`, `${prefix}.jpg`);
       result.states.push(await page.evaluate(label => ({ label, url: location.href, title: document.title, viewport: { width: innerWidth, height: innerHeight }, deviceScaleFactor: devicePixelRatio, scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight, clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight, horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth, visibleButtons: [...document.querySelectorAll('button')].filter(b => b.getBoundingClientRect().width && b.getBoundingClientRect().height).map(b => ({ text: b.innerText || b.getAttribute('aria-label') || b.title, top: b.getBoundingClientRect().top, bottom: b.getBoundingClientRect().bottom, right: b.getBoundingClientRect().right, left: b.getBoundingClientRect().left })), bodyExcerpt: document.body.innerText.slice(0, 5000) }), label));
     };

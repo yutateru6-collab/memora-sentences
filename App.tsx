@@ -414,7 +414,7 @@ const App: React.FC = () => {
              }
         }
 
-        if (data.wordContent && !data.plainTextContent) {
+        if (data.wordContent) {
             const warnings: string[] = [];
             const repairs: string[] = [];
             const parsedCards = parseImportCards(data.wordContent, warnings, repairs);
@@ -566,11 +566,30 @@ const App: React.FC = () => {
   };
 
   const getDuration = (file: File): Promise<number> => {
-    return new Promise((resolve) => {
-      const audio = new Audio(URL.createObjectURL(file));
-      audio.onloadedmetadata = () => {
-        resolve(audio.duration);
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio();
+      const cleanup = () => {
+        clearTimeout(timer);
+        audio.onloadedmetadata = null;
+        audio.onerror = null;
+        audio.removeAttribute('src');
+        audio.load();
+        URL.revokeObjectURL(url);
       };
+      const fail = () => {
+        cleanup();
+        reject(new Error('音声・動画を読み込めません。ファイルが壊れているか、対応していない形式です。別のファイルを選んでください。'));
+      };
+      const timer = setTimeout(fail, 10000);
+      audio.onerror = fail;
+      audio.onloadedmetadata = () => {
+        const duration = audio.duration;
+        if (!Number.isFinite(duration) || duration <= 0) { fail(); return; }
+        cleanup();
+        resolve(duration);
+      };
+      audio.src = url;
     });
   };
 

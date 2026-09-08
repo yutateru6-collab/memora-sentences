@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Theme } from '../App';
 import { TranscriptEntry, Card, QuizQuestion } from '../types';
 import { getMaterialById } from '../lib/db';
@@ -262,11 +263,24 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
       return circleChars[index] || `[${index + 1}]`;
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+  return createPortal(
+    <div id="memora-print-modal" className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
       {/* Dynamic styles injected just for printing configuration */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+            html, body { height: auto !important; overflow: visible !important; background: white !important; }
+            body > :not(#memora-print-modal) { display: none !important; }
+            #memora-print-modal, #memora-print-modal > div,
+            #memora-print-modal .print-preview-shell, #memora-print-modal .print-preview-scroll {
+                display: block !important; position: static !important;
+                width: auto !important; min-width: 0 !important; max-width: none !important;
+                height: auto !important; min-height: 0 !important; max-height: none !important;
+                overflow: visible !important; padding: 0 !important; margin: 0 !important;
+                border: 0 !important; background: white !important;
+                box-shadow: none !important; transform: none !important;
+                animation: none !important; filter: none !important; backdrop-filter: none !important;
+            }
+            #memora-print-modal .print-controls, #memora-print-modal .print-preview-heading { display: none !important; }
             body * {
                 visibility: hidden !important;
             }
@@ -274,10 +288,12 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
                 visibility: visible !important;
             }
             #textbook-print-area {
-                position: absolute !important;
+                position: static !important;
                 left: 0 !important;
                 top: 0 !important;
                 width: 100% !important;
+                min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+                border: 0 !important; box-shadow: none !important; border-radius: 0 !important;
                 background-color: white !important;
                 color: black !important;
                 font-family: 'Noto Sans JP', 'Inter', sans-serif !important;
@@ -300,12 +316,12 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
       `}} />
 
       <div 
-        className={`${T.containerBg} rounded-xl shadow-2xl max-w-5xl w-full border ${T.border} flex flex-col md:flex-row h-[90vh] md:h-[80vh] overflow-hidden animate-fade-in`} 
+        className={`${T.containerBg} rounded-xl shadow-2xl max-w-5xl w-full border ${T.border} flex flex-col md:flex-row max-h-[90vh] md:h-[80vh] overflow-y-auto md:overflow-hidden animate-fade-in`} 
         onClick={e => e.stopPropagation()}
       >
         
         {/* Left Side: Controller Options (1/3) */}
-        <div className={`p-5 flex flex-col justify-between border-b md:border-b-0 md:border-r ${T.border} md:w-80 flex-shrink-0 bg-black/20`}>
+        <div className={`print-controls p-5 flex flex-col justify-between border-b md:border-b-0 md:border-r ${T.border} md:w-80 flex-shrink-0 bg-black/20`}>
           <div className="space-y-4 overflow-y-auto pr-1">
             <div className="flex items-center justify-between">
               <h3 className={`text-lg font-bold ${T.textPrimary}`}>印刷・PDF出力設定</h3>
@@ -480,15 +496,15 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
         </div>
 
         {/* Right Side: Print Preview (2/3) */}
-        <div className="flex-grow p-4 md:p-6 bg-black/40 flex flex-col h-full overflow-hidden">
-          <div className="flex justify-between items-center mb-3">
+        <div className="print-preview-shell flex-grow p-4 md:p-6 bg-black/40 flex flex-col min-h-[320px] md:h-full md:min-h-0 overflow-hidden">
+          <div className="print-preview-heading flex justify-between items-center mb-3">
             <span className="text-xs font-bold text-gray-400">📄 印刷プレビュー面イメージ (B5 Landscape)</span>
             <span className="text-[10px] text-sky-400 bg-sky-500/10 border border-sky-500/20 px-2 py-0.5 rounded font-bold">
               ※実際の印刷/PDF保存時に、B5用紙にフィットします
             </span>
           </div>
 
-          <div className="flex-grow w-full overflow-auto rounded-lg border border-white/10 bg-gray-900/50 p-2 md:p-4">
+          <div className="print-preview-scroll flex-grow w-full overflow-auto rounded-lg border border-white/10 bg-gray-900/50 p-2 md:p-4">
             
             {/* The Actual B5 Landscape Layout Card */}
             <div 
@@ -663,7 +679,8 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
