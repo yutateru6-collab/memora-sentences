@@ -312,11 +312,14 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
             .border-custom-pink {
                 border-color: #f43f5e !important;
             }
+            #textbook-print-area .truncate {
+                white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+            }
         }
       `}} />
 
       <div 
-        className={`${T.containerBg} rounded-xl shadow-2xl max-w-5xl w-full border ${T.border} flex flex-col md:flex-row max-h-[90vh] md:h-[80vh] overflow-y-auto md:overflow-hidden animate-fade-in`} 
+        className={`${T.containerBg} rounded-xl shadow-2xl max-w-5xl w-full border ${T.border} flex flex-col md:flex-row max-h-[90vh] md:h-[80vh] overflow-y-auto md:overflow-hidden animate-fade-in`}
         onClick={e => e.stopPropagation()}
       >
         
@@ -586,7 +589,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
 
               {/* Additional Pages / Break Elements for Wordlist and Quiz */}
               {((options.wordList && words.length > 0) || (options.quiz && quizQuestions.length > 0) || (options.explanation && transcript.some(t => t.explanation))) && (
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-stone-300 print-no-break">
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-stone-300">
                   
                   {/* Vocabulary Section (Check Box Checklist) */}
                   {options.wordList && words.length > 0 && (
@@ -610,7 +613,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
 
                   {/* Detailed Explanations Column/Box */}
                   {options.explanation && transcript.some(t => t.explanation) && (
-                    <div className="mb-6 bg-amber-50/40 rounded-xl p-5 border border-amber-200/50 print-no-break">
+                    <div className="mb-6 bg-amber-50/40 rounded-xl p-5 border border-amber-200/50">
                       <h4 className="text-sm font-bold text-stone-800 mb-3 border-amber-500 border-l-4 pl-2">
                         💡 読解のポイント・文法解説
                       </h4>
@@ -618,7 +621,7 @@ const PdfExportModal: React.FC<PdfExportModalProps> = ({ T, onClose, materialId,
                         {transcript.map((t, idx) => {
                           if (!t.explanation) return null;
                           return (
-                            <div key={idx} className="text-xs text-stone-700 leading-relaxed border-b border-stone-150/50 pb-2 last:border-0">
+                            <div key={idx} className="print-no-break text-xs text-stone-700 leading-relaxed border-b border-stone-150/50 pb-2 last:border-0">
                               <span className="font-semibold text-amber-600 mr-1.5">{getCircleNo(idx)}</span>
                               <span className="font-serif italic font-medium inline mr-2 text-stone-900 border-b border-dashed border-stone-200">
                                 {cleanTextForCopy(t.english)}

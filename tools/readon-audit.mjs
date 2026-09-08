@@ -140,6 +140,12 @@ const cases = [
     await page.getByRole('button', { name: 'B5横・PDF印刷 / 保存', exact: true }).waitFor();
     await page.waitForFunction(() => document.querySelector('#textbook-print-area')?.innerText.includes('12文目'));
     await snap('pdf-long-document');
+    if (mobile) {
+      await page.locator('.print-preview-shell').scrollIntoViewIfNeeded();
+      const preview = await page.locator('.print-preview-scroll').boundingBox();
+      assert(preview && preview.height >= 200, 'Mobile PDF preview has no usable height');
+      await snap('pdf-mobile-preview-scrolled');
+    }
     if (!mobile) {
       await page.pdf({ path: 'qa-artifacts/audit-print.pdf', preferCSSPageSize: true, printBackground: true });
       const pdfText = execFileSync('pdftotext', ['qa-artifacts/audit-print.pdf', '-'], { encoding: 'utf8' });
@@ -241,7 +247,7 @@ const cases = [
     await importer(page);
     await paste(page, shortText);
     await page.getByRole('textbox', { name: '単語カードのデータ', exact: true }).fill(JSON.stringify(cards));
-    const remaining = await page.getByPlaceholder('AI Studioで作った教材データをここに貼り付けてください').inputValue();
+    const remaining = await page.getByTestId('material-paste-preview').innerText();
     await snap('combined-import-after-cards');
     assert(remaining.includes('Cats sleep at night.'), 'Typing separate word cards silently erased the previously pasted reading material');
     await page.getByRole('button', { name: '教材として取り込む', exact: true }).click();
@@ -256,6 +262,8 @@ const cases = [
     await page.waitForTimeout(5000); // Bounded observation of missing media error handling.
     await snap('damaged-media-after-5s');
     assert(!(await page.getByRole('button', { name: '取り込み中…' }).isVisible()), 'Damaged audio leaves import pending without an error after 5 seconds');
+    assert(await page.getByText(/音声・動画を読み込めません/).isVisible(), 'Missing corrupt-media error');
+    assert((await stored(page)).length === 0, 'Damaged audio was saved');
   }],
   ...Object.entries(modeFixtures).map(([mode, fixture]) => [`mode-${mode}`, async ({ page, snap }) => {
     await importText(page, JSON.stringify(fixture, null, 2), `QA ${mode}`);
@@ -320,7 +328,7 @@ for (const cfg of configs) {
     } finally { await context.close(); }
     results.push(result);
     console.log(`AUDIT ${cfg.name} ${name}: ${result.status}${result.failure ? ` — ${result.failure}` : ''}`);
-    await fs.writeFile('qa-artifacts/audit-report.json', JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, commitSha: process.env.QA_COMMIT_SHA, applicationCommit: '8e24420ae9582143c4d21240aa4e3067261684d7', runId: process.env.GITHUB_RUN_ID, results }, null, 2));
+    await fs.writeFile('qa-artifacts/audit-report.json', JSON.stringify({ generatedAt: new Date().toISOString(), baseUrl, commitSha: process.env.QA_COMMIT_SHA, applicationCommit: process.env.QA_COMMIT_SHA, runId: process.env.GITHUB_RUN_ID, results }, null, 2));
   }
   await browser.close();
 }

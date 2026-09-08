@@ -551,6 +551,8 @@ const ReaderScreen: React.FC<ReaderScreenProps> = ({ mediaUrl, transcript, onBac
       // Vocabulary cards are learning content, not user-created inline notes.
       // Keep them tappable even when the user temporarily hides inline notes.
       if (cleanTranscriptWord.length <= 1 || precomputedRegisteredWords.length === 0) return undefined;
+      const exact = precomputedRegisteredWords.find(({ cardWords }) => cardWords.includes(cleanTranscriptWord));
+      if (exact) return exact.card;
       
       for (let i = 0; i < precomputedRegisteredWords.length; i++) {
           const { card, cardWords } = precomputedRegisteredWords[i];

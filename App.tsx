@@ -18,6 +18,7 @@ import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
 import { parseImportCards, prepareReadingMaterialImport } from './lib/readingMaterialImport';
+import { parseQuizContent } from './components/QuizCreationModal';
 
 type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
@@ -396,7 +397,7 @@ const App: React.FC = () => {
                  'transcript.json',
                  { type: 'application/json' }
              );
-             if (prepared.cards.length > 0) {
+             if (prepared.cards.length > 0 && !data.wordFile && !data.wordContent) {
                  preparedWordFile = new File(
                      [JSON.stringify(prepared.cards)],
                      'words.json',
@@ -932,7 +933,7 @@ const App: React.FC = () => {
           setCurrentMaterial(material);
           if (material.quizFile) {
               const text = await material.quizFile.text();
-              const questions = JSON.parse(text) as QuizQuestion[];
+              const questions = parseQuizContent(text);
               setQuizQuestions(questions);
           } else {
               setQuizQuestions([]);
@@ -1083,7 +1084,8 @@ const App: React.FC = () => {
         />
       )}
       {view === 'reader' && (
-        <ReaderScreen 
+        <ReaderScreen
+          key={currentMaterial!.id}
           mediaUrl={mediaUrl} 
           transcript={transcript} 
           onBack={() => setView('upload')} 

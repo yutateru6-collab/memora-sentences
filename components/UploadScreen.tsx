@@ -339,7 +339,7 @@ const MaterialCard: React.FC<{
         <>
             <article className={`memora-material-card ${T.containerBg} group relative flex flex-col rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl border ${T.border}`}>
                  <div 
-                  className="relative aspect-video w-full cursor-pointer overflow-hidden bg-black/10"
+                  className="memora-material-card__thumbnail relative aspect-video w-full cursor-pointer overflow-hidden bg-black/10"
                   onClick={() => { setEditingMaterialId(material.id); thumbnailInputRef.current?.click(); }}
                 >
                     {material.thumbnail ? (

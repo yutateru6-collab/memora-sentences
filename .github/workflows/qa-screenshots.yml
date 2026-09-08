@@ -38,6 +38,8 @@ jobs:
         run: |
           npx esbuild lib/readingMaterialImport.ts --bundle --platform=node --format=esm --outfile=/tmp/memora-reading-import.mjs
           node tools/import-parser-smoke.mjs
+          npx esbuild components/QuizCreationModal.tsx --bundle --platform=node --format=esm --outfile=/tmp/readon-quiz-validation.mjs
+          node tools/quiz-validation-smoke.mjs
 
       - name: Install Playwright
         run: |
