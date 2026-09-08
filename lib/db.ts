@@ -202,6 +202,9 @@ export const updateMaterial = async (
     };
     return new Promise((resolve, reject) => {
         const transaction = db.transaction([STORE_NAME], 'readwrite');
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error);
+        transaction.onabort = () => reject(transaction.error || new Error('保存が中断されました。'));
         const store = transaction.objectStore(STORE_NAME);
         const getRequest = store.get(id);
 
@@ -277,7 +280,6 @@ export const updateMaterial = async (
                 }
                 
                 const updateRequest = store.put(material);
-                updateRequest.onsuccess = () => resolve();
                 updateRequest.onerror = () => reject(updateRequest.error);
             } else {
                 reject(new Error('Material not found for update'));

@@ -1,5 +1,14 @@
 /* Mobile interaction regressions: keep Reader taps and Create-screen rendering stable. */
 
+.memora-quiz-header { gap: 12px; }
+.memora-quiz-header > h1 { overflow-wrap: anywhere; }
+@media (max-width: 699px) {
+  .memora-quiz-header { display: grid !important; grid-template-columns: auto 1fr; }
+  .memora-quiz-header > h1 { font-size: 16px; line-height: 1.4; }
+  .memora-quiz-header > div { grid-column: 1 / -1; display: flex; flex-wrap: wrap; }
+  .memora-quiz-header button { white-space: nowrap; flex-shrink: 0; min-height: 40px; }
+}
+
 /* The per-sentence play triangle is intentionally hidden. The main Reader player remains available. */
 .memora-reader-sentence > button {
   display: none !important;
@@ -175,4 +184,16 @@
   .create-home--keyboard-recovering {
     background-color: #071333 !important;
   }
+}
+.memora-material-card__thumbnail {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.memora-material-card__thumbnail > .absolute {
+  pointer-events: none;
 }

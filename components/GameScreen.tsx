@@ -26,12 +26,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ cards, deckName, onBack, T }) =
   const currentCard = useMemo(() => cards[currentIndex], [cards, currentIndex]);
 
   useEffect(() => {
-    if (cards.length > 0) {
+    if (currentCard) {
       const correctAnswer = currentCard.back;
-      const distractors = shuffleArray(cards.filter(c => c.id !== currentCard.id))
-        .slice(0, 3)
-        // FIX: Cast 'c' to 'Card' to address type inference issue where it was treated as 'unknown'.
-        .map(c => (c as Card).back);
+      const distractors = shuffleArray([...new Set(cards.map(c => c.back))]
+        .filter(answer => answer !== correctAnswer)).slice(0, 3);
       
       const allChoices = shuffleArray([correctAnswer, ...distractors]);
       setChoices(allChoices);
@@ -55,11 +53,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ cards, deckName, onBack, T }) =
     }, 1500);
   };
 
-  if (cards.length < 4) {
+  if (new Set(cards.map(c => c.back)).size < 4) {
       return (
           <div className="flex flex-col h-screen items-center justify-center p-4">
               <h1 className={`${T.textPrimary} text-2xl font-bold mb-4`}>ゲームをプレイできません</h1>
-              <p className={`${T.textSecondary} text-center mb-6`}>このゲームをプレイするには、デッキに少なくとも4枚のユニークなカードが必要です。</p>
+              <p className={`${T.textSecondary} text-center mb-6`}>このゲームには、異なる意味の単語カードが4種類以上必要です。同じ意味のカードは1種類として数えます。</p>
               <button onClick={onBack} className={`px-4 py-2 ${T.button} rounded-md`}>戻る</button>
           </div>
       );

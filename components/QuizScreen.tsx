@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { QuizQuestion, TranscriptEntry } from '../types';
 import { Theme } from '../App';
 import BookmarkIcon from './icons/BookmarkIcon';
-import QuizCreationModal from './QuizCreationModal';
+import QuizCreationModal, { parseQuizContent } from './QuizCreationModal';
 
 interface QuizScreenProps {
   questions: QuizQuestion[];
@@ -143,7 +143,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, deckName, onBack, T,
   const handleAddQuestions = async (file: File) => {
       try {
           const text = await file.text();
-          const newQuestions = JSON.parse(text) as QuizQuestion[];
+          const newQuestions = parseQuizContent(text);
           if (!Array.isArray(newQuestions)) {
               throw new Error("Invalid JSON format");
           }
@@ -162,11 +162,11 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, deckName, onBack, T,
 
   return (
     <div className={`flex flex-col h-screen max-h-screen overflow-hidden ${T.bg}`}>
-      <header className={`flex-shrink-0 flex items-center justify-between p-3 ${T.containerBg} shadow-md z-10 border-b ${T.border}`}>
-        <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
+      <header className={`memora-quiz-header flex-shrink-0 flex items-center justify-between p-3 ${T.containerBg} shadow-md z-10 border-b ${T.border}`}>
+        <button onClick={onBack} className={`flex-shrink-0 whitespace-nowrap flex items-center gap-2 px-3 py-2 text-sm ${T.button} rounded-md transition-colors`}>
           &larr; 戻る
         </button>
-        <h1 className={`text-xl font-bold ${T.textPrimary}`}>{deckName} - 文法クイズ</h1>
+        <h1 className={`min-w-0 text-xl font-bold ${T.textPrimary}`}>{deckName} - 文法クイズ</h1>
         <div className="flex justify-end gap-2">
              <button 
                 onClick={() => setIsAddModalOpen(true)}

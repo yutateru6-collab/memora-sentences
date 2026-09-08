@@ -339,7 +339,7 @@ const MaterialCard: React.FC<{
         <>
             <article className={`memora-material-card ${T.containerBg} group relative flex flex-col rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl border ${T.border}`}>
                  <div 
-                  className="relative aspect-video w-full cursor-pointer overflow-hidden bg-black/10"
+                  className="memora-material-card__thumbnail relative aspect-video w-full cursor-pointer overflow-hidden bg-black/10"
                   onClick={() => { setEditingMaterialId(material.id); thumbnailInputRef.current?.click(); }}
                 >
                     {material.thumbnail ? (
@@ -758,9 +758,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
   };
 
   const clearPlainTextAlternatives = () => {
-      setWordFile(null);
       setTextFile(null);
-      setWordContent('');
   };
 
   const handlePlainTextPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -1082,7 +1080,7 @@ const UploadScreen: React.FC<UploadScreenProps> = ({ onBack, onLoad, error, onCl
                             <span className={`flex items-center text-xs ${T.textMuted}`}>{wordFile?.name}</span>
                             <input type="file" ref={wordInputRef} accept=".json,.txt,text/plain,application/json" onChange={handleWordFileChange} className="hidden"/>
                         </div>
-                            <textarea aria-label="単語カードのデータ" value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) { setWordFile(null); setPlainTextContent(''); setIsPlainTextEditing(true); } }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
+                            <textarea aria-label="単語カードのデータ" value={wordContent} onChange={(e) => { setWordContent(e.target.value); if (e.target.value) setWordFile(null); }} placeholder="単語カードのデータを直接貼り付けることもできます" rows={3} className={`w-full p-3 text-sm ${T.button} ${T.textSecondary} rounded-xl border ${T.border} focus:outline-none focus:ring-2 ${T.ring} font-mono`}/>
                     </div>
 
                     <div onPaste={handleImagePaste}>

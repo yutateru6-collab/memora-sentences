@@ -38,9 +38,12 @@ jobs:
         run: |
           npx esbuild lib/readingMaterialImport.ts --bundle --platform=node --format=esm --outfile=/tmp/memora-reading-import.mjs
           node tools/import-parser-smoke.mjs
+          npx esbuild components/QuizCreationModal.tsx --bundle --platform=node --format=esm --outfile=/tmp/readon-quiz-validation.mjs
+          node tools/quiz-validation-smoke.mjs
 
       - name: Install Playwright
         run: |
+          sudo apt-get update && sudo apt-get install -y poppler-utils
           npm install --no-save playwright@1.62.1 pngjs@7.0.0
           npx playwright install --with-deps chromium webkit
 
@@ -72,11 +75,13 @@ jobs:
           QA_EVENT_NAME: ${{ github.event_name }}
 
       - name: Run READON knowledge depth QA
+        if: always()
         run: node tools/knowledge-depth-qa.mjs
         env:
           APP_URL: http://127.0.0.1:3000
 
       - name: Run exact, atomic, and tolerant READON import QA
+        if: always()
         run: node tools/readon-strict-contract-qa.mjs
         env:
           APP_URL: http://127.0.0.1:3000
@@ -87,6 +92,13 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:3000
 
+      - name: Run all reachable screens and adversarial input audit
+        if: always()
+        run: node tools/readon-audit.mjs
+        env:
+          APP_URL: http://127.0.0.1:3000
+          QA_COMMIT_SHA: ${{ github.sha }}
+
       - name: Publish latest QA evidence
         if: always()
         env:
@@ -96,9 +108,30 @@ jobs:
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
           fi
+          if [ -f qa-artifacts/audit-print.pdf ]; then
+            cp qa-artifacts/audit-print.pdf /tmp/qa-latest/audit-print.pdf
+          fi
+          if [ -f qa-artifacts/audit-report.json ]; then
+            cp qa-artifacts/audit-report.json /tmp/qa-latest/audit-report.json
+          fi
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
           fi
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const reportPath = '/tmp/qa-latest/report.json';
+          if (fs.existsSync(reportPath)) {
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const auditPath = '/tmp/qa-latest/audit-report.json';
+            const audit = fs.existsSync(auditPath) ? JSON.parse(fs.readFileSync(auditPath, 'utf8')) : null;
+            report.baseQaStatus = report.status;
+            report.auditStatus = audit?.results?.length && audit.results.every(r => r.status === 'success') ? 'success' : 'failure';
+            report.auditReport = 'audit-report.json';
+            report.status = report.baseQaStatus === 'success' && report.auditStatus === 'success' ? 'success' : 'failure';
+            fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+          }
+          NODE
 
           SCREENSHOT_COUNT="$(find /tmp/qa-latest/screenshots -type f 2>/dev/null | wc -l | tr -d ' ')"
           QA_STATUS="failure"
@@ -132,6 +165,8 @@ jobs:
           cp -R /tmp/qa-latest/. .
           git add latest.json
           if [ -f report.json ]; then git add report.json; fi
+          if [ -f audit-report.json ]; then git add audit-report.json; fi
+          if [ -f audit-print.pdf ]; then git add audit-print.pdf; fi
           if [ -d screenshots ]; then git add screenshots/; fi
           git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest

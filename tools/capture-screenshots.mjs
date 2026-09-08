@@ -451,9 +451,9 @@ for (const target of targets) {
       '入れたいこと',
       '長文の長さ',
       '性格',
-      'AI Studioで教材をつくる',
-      'できた教材を取り込む',
-      '作成用の指示だけコピー',
+      '② 外部で作る',
+      '③ 取り込み',
+      '作成用の指示をコピー',
     ]) {
       if (!createBodyText.includes(text.replace(/\s+/g, ''))) {
         throw new Error(`Create copy is missing: ${text}`);

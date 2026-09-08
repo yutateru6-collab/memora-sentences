@@ -18,6 +18,7 @@ import { LegendScreen } from './components/LegendScreen';
 import { TranscriptEntry, Word, StoredMaterial, StoredFolder, Card, QuizQuestion, InlineNote, SRSState, BoardThread, AmazonData, LegendData, SnsThreadData } from './types';
 import { initDB, saveMaterial, getAllMaterials, getMaterialById, deleteMaterial, updateMaterial, addFolder, getAllFolders, updateFolder, deleteFolderAndReassign } from './lib/db';
 import { parseImportCards, prepareReadingMaterialImport } from './lib/readingMaterialImport';
+import { parseQuizContent } from './components/QuizCreationModal';
 
 type View = 'create' | 'upload' | 'reader' | 'deckList' | 'flashcard' | 'cardList' | 'editDeck' | 'game' | 'promptLibrary' | 'quiz' | 'board' | 'amazon' | 'legend' | 'sns';
 
@@ -396,7 +397,7 @@ const App: React.FC = () => {
                  'transcript.json',
                  { type: 'application/json' }
              );
-             if (prepared.cards.length > 0) {
+             if (prepared.cards.length > 0 && !data.wordFile && !data.wordContent) {
                  preparedWordFile = new File(
                      [JSON.stringify(prepared.cards)],
                      'words.json',
@@ -414,7 +415,7 @@ const App: React.FC = () => {
              }
         }
 
-        if (data.wordContent && !data.plainTextContent) {
+        if (data.wordContent) {
             const warnings: string[] = [];
             const repairs: string[] = [];
             const parsedCards = parseImportCards(data.wordContent, warnings, repairs);
@@ -566,11 +567,30 @@ const App: React.FC = () => {
   };
 
   const getDuration = (file: File): Promise<number> => {
-    return new Promise((resolve) => {
-      const audio = new Audio(URL.createObjectURL(file));
-      audio.onloadedmetadata = () => {
-        resolve(audio.duration);
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio();
+      const cleanup = () => {
+        clearTimeout(timer);
+        audio.onloadedmetadata = null;
+        audio.onerror = null;
+        audio.removeAttribute('src');
+        audio.load();
+        URL.revokeObjectURL(url);
       };
+      const fail = () => {
+        cleanup();
+        reject(new Error('音声・動画を読み込めません。ファイルが壊れているか、対応していない形式です。別のファイルを選んでください。'));
+      };
+      const timer = setTimeout(fail, 10000);
+      audio.onerror = fail;
+      audio.onloadedmetadata = () => {
+        const duration = audio.duration;
+        if (!Number.isFinite(duration) || duration <= 0) { fail(); return; }
+        cleanup();
+        resolve(duration);
+      };
+      audio.src = url;
     });
   };
 
@@ -913,7 +933,7 @@ const App: React.FC = () => {
           setCurrentMaterial(material);
           if (material.quizFile) {
               const text = await material.quizFile.text();
-              const questions = JSON.parse(text) as QuizQuestion[];
+              const questions = parseQuizContent(text);
               setQuizQuestions(questions);
           } else {
               setQuizQuestions([]);
@@ -1064,7 +1084,8 @@ const App: React.FC = () => {
         />
       )}
       {view === 'reader' && (
-        <ReaderScreen 
+        <ReaderScreen
+          key={currentMaterial!.id}
           mediaUrl={mediaUrl} 
           transcript={transcript} 
           onBack={() => setView('upload')} 
