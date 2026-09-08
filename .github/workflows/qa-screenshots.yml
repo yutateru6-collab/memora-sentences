@@ -89,6 +89,13 @@ jobs:
         env:
           APP_URL: http://127.0.0.1:3000
 
+      - name: Run all reachable screens and adversarial input audit
+        if: always()
+        run: node tools/readon-audit.mjs
+        env:
+          APP_URL: http://127.0.0.1:3000
+          QA_COMMIT_SHA: ${{ github.sha }}
+
       - name: Publish latest QA evidence
         if: always()
         env:
@@ -97,6 +104,9 @@ jobs:
           mkdir -p /tmp/qa-latest/screenshots
           if [ -f qa-artifacts/report.json ]; then
             cp qa-artifacts/report.json /tmp/qa-latest/report.json
+          fi
+          if [ -f qa-artifacts/audit-report.json ]; then
+            cp qa-artifacts/audit-report.json /tmp/qa-latest/audit-report.json
           fi
           if [ -d qa-artifacts/screenshots ]; then
             cp -R qa-artifacts/screenshots/. /tmp/qa-latest/screenshots/
@@ -134,6 +144,7 @@ jobs:
           cp -R /tmp/qa-latest/. .
           git add latest.json
           if [ -f report.json ]; then git add report.json; fi
+          if [ -f audit-report.json ]; then git add audit-report.json; fi
           if [ -d screenshots ]; then git add screenshots/; fi
           git commit -m "Update latest QA evidence"
           git push --force origin HEAD:qa-latest
