@@ -72,11 +72,13 @@ jobs:
           QA_EVENT_NAME: ${{ github.event_name }}
 
       - name: Run READON knowledge depth QA
+        if: always()
         run: node tools/knowledge-depth-qa.mjs
         env:
           APP_URL: http://127.0.0.1:3000
 
       - name: Run exact, atomic, and tolerant READON import QA
+        if: always()
         run: node tools/readon-strict-contract-qa.mjs
         env:
           APP_URL: http://127.0.0.1:3000
