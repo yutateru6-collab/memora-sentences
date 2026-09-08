@@ -5,8 +5,8 @@
 ## 実行タイミング
 
 - `main` push
+- `main` 向け Pull Request
 - `workflow_dispatch`
-- 毎日 03:00 JST（18:00 UTC）
 
 ## 標準フロー
 
@@ -21,9 +21,10 @@
 9. ページをリロードし、IndexedDB に教材が残っていることを確認する。
 10. 保存済み教材を再度 Reader で開く。
 11. Console Error / Page Error / horizontal overflow を判定する。
-12. 成功・失敗にかかわらず、可能な限り `report.json` と失敗証拠を残す。
-13. PC / iPhone の実画像を ChatGPT が後から目視できるよう vision handoff を作る。
-14. 最新結果だけを `qa-latest` ブランチへ置き換える。`main` は force push しない。
+12. 通常導線とは独立して、全到達画面・異常入力・回転・永続化の厳格監査を実行する。
+13. 成功・失敗にかかわらず、`report.json`、`audit-report.json`、失敗証拠、生成PDFを可能な限り残す。
+14. PC / iPhone の実画像を ChatGPT が後から目視できるよう vision handoff を作る。
+15. 最新結果だけを `qa-latest` ブランチへ置き換える。`main` は force push しない。
 
 ## スクリーンショット
 
