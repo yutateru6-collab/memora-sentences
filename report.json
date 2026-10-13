@@ -1,0 +1,908 @@
+{
+  "generatedAt": "2026-10-13T14:36:39.993Z",
+  "repository": "yutateru6-collab/memora-sentences",
+  "commitSha": "03ae19539b393e92891fed48f155e8ee25c31cbc",
+  "workflowRunId": "38414632835",
+  "workflowRunNumber": "113",
+  "eventName": "push",
+  "baseUrl": "http://127.0.0.1:3000",
+  "sampleTitle": "QA Ramen Culture with an intentionally long Reader title",
+  "status": "failure",
+  "results": [
+    {
+      "target": "desktop-1440x900",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "status": "failure",
+      "actions": [
+        "open-create-home"
+      ],
+      "dialogs": [],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "states": {},
+      "screenshots": {
+        "failure": "qa-artifacts/screenshots/desktop-1440x900-failure.png"
+      },
+      "failure": "Error: Create copy is missing: AI Studioで教材をつくる"
+    },
+    {
+      "target": "iphone-16",
+      "viewport": {
+        "width": 393,
+        "height": 852
+      },
+      "deviceScaleFactor": 3,
+      "status": "failure",
+      "actions": [
+        "open-create-home"
+      ],
+      "dialogs": [],
+      "consoleErrors": [],
+      "pageErrors": [],
+      "states": {},
+      "screenshots": {
+        "failure": "qa-artifacts/screenshots/iphone-16-failure.png"
+      },
+      "failure": "Error: Create copy is missing: AI Studioで教材をつくる"
+    }
+  ],
+  "mobileWebKit": {
+    "engine": "webkit",
+    "target": "iphone-16-webkit",
+    "viewport": {
+      "width": 393,
+      "height": 852
+    },
+    "deviceScaleFactor": 3,
+    "status": "success",
+    "actions": [
+      "open-create-home-webkit",
+      "tap-and-fill-topic",
+      "shrink-viewport-like-ios-keyboard",
+      "restore-viewport-and-verify-repaint-recovery",
+      "open-importer-webkit",
+      "focus-importer-with-keyboard-and-retire-footer-webkit",
+      "scroll-importer-to-bottom-webkit",
+      "import-material-and-open-reader-webkit",
+      "reload-and-reopen-imported-material-webkit",
+      "verify-inline-play-hidden-webkit",
+      "verify-touch-tap-bridge-webkit"
+    ],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "states": {
+      "create": {
+        "before": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 896.484375,
+            "height": 75.5,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 896,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "",
+            "keyboardState": ""
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "focused": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 896.484375,
+            "height": 75.5,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 896,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "false",
+            "keyboardState": "focused"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "keyboardSized": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 896.484375,
+            "height": 75.5,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 896,
+            "clientHeight": 520,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "520px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "520px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 0,
+            "scheduled": "",
+            "reason": "",
+            "complete": "false",
+            "keyboardState": "open"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        },
+        "restored": {
+          "topic": {
+            "top": 262,
+            "bottom": 422.1875,
+            "height": 160.1875,
+            "width": 359
+          },
+          "choices": {
+            "top": 429.1875,
+            "bottom": 504.1875,
+            "height": 75,
+            "width": 359
+          },
+          "persona": {
+            "top": 511.1875,
+            "bottom": 657.984375,
+            "height": 146.796875,
+            "width": 359
+          },
+          "actions": {
+            "top": 664.984375,
+            "bottom": 815.984375,
+            "height": 151,
+            "width": 359
+          },
+          "footer": {
+            "top": 820.984375,
+            "bottom": 896.484375,
+            "height": 75.5,
+            "width": 393
+          },
+          "createRoot": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "shell": {
+            "top": 0,
+            "bottom": 896.484375,
+            "height": 896.484375,
+            "width": 393
+          },
+          "gaps": {
+            "topicToChoices": 7,
+            "choicesToPersona": 7,
+            "personaToActions": 7,
+            "actionsToFooter": 5
+          },
+          "document": {
+            "scrollWidth": 393,
+            "clientWidth": 393,
+            "scrollHeight": 896,
+            "clientHeight": 852,
+            "horizontalOverflow": false,
+            "htmlCreateClass": true,
+            "bodyCreateClass": true,
+            "htmlOverflowX": "hidden",
+            "htmlOverflowY": "auto",
+            "bodyOverflowX": "visible",
+            "bodyOverflowY": "visible",
+            "bodyOverscrollY": "auto",
+            "bodyBackgroundColor": "rgb(7, 19, 51)",
+            "scrollingElement": "HTML"
+          },
+          "scrollStructure": {
+            "create": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto"
+            },
+            "shell": {
+              "overflowX": "visible",
+              "overflowY": "visible",
+              "minHeight": "852.000061px",
+              "isolation": "auto",
+              "beforeDisplay": "none",
+              "beforeContent": "none"
+            }
+          },
+          "recovery": {
+            "count": 2,
+            "scheduled": "viewport-restored",
+            "reason": "viewport-restored-settled",
+            "complete": "true",
+            "keyboardState": "restored"
+          },
+          "glassBackdropFilter": "none",
+          "glassWebkitBackdropFilter": "none"
+        }
+      },
+      "importer": {
+        "importerKeyboardFocused": {
+          "viewportHeight": 520,
+          "dialog": {
+            "top": 0,
+            "bottom": 520,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "top": 66,
+            "bottom": 519,
+            "clientHeight": 453,
+            "scrollHeight": 1095,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": {
+            "top": 131.546875,
+            "bottom": 277.140625,
+            "clientHeight": 144,
+            "scrollHeight": 144,
+            "overflowY": "auto",
+            "fontSize": 16
+          },
+          "preview": null,
+          "submit": {
+            "top": 0,
+            "bottom": 0,
+            "visible": false,
+            "fullyVisible": true
+          },
+          "keyboardMode": true,
+          "cover": {
+            "top": 988.140625,
+            "bottom": 1007.640625,
+            "insideBody": false
+          }
+        },
+        "importerPaint": {
+          "matchingPixels": 49,
+          "sampleBox": {
+            "left": 8,
+            "top": 8,
+            "right": 16,
+            "bottom": 16
+          },
+          "screenshot": {
+            "width": 393,
+            "height": 520
+          }
+        },
+        "importerKeyboardSized": {
+          "viewportHeight": 520,
+          "dialog": {
+            "top": 0.009999999776482582,
+            "bottom": 520.0099999997765,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 520
+          },
+          "body": {
+            "top": 66.01000213623047,
+            "bottom": 424.01000213623047,
+            "clientHeight": 358,
+            "scrollHeight": 1117,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": 131.55686950683594,
+            "bottom": 305.244384765625,
+            "height": 173.68751525878906,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 441.010009765625,
+            "bottom": 503.010009765625,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 1009.744384765625,
+            "bottom": 1029.244384765625,
+            "insideBody": false
+          }
+        },
+        "importerBeforeScroll": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0.009999999776482582,
+            "bottom": 852.0099999997765,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66.01000213623047,
+            "bottom": 756.0100021362305,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 0,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": 131.55686950683594,
+            "bottom": 305.244384765625,
+            "height": 173.68751525878906,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773.010009765625,
+            "bottom": 835.010009765625,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 1009.744384765625,
+            "bottom": 1029.244384765625,
+            "insideBody": false
+          }
+        },
+        "importerAfterGesture": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0,
+            "bottom": 852,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66,
+            "bottom": 756,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 427,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": -295.453125,
+            "bottom": -121.765625,
+            "height": 173.6875,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773,
+            "bottom": 835,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 582.734375,
+            "bottom": 602.234375,
+            "insideBody": true
+          }
+        },
+        "importerAtBottom": {
+          "viewportHeight": 852,
+          "dialog": {
+            "top": 0,
+            "bottom": 852,
+            "left": 0,
+            "right": 393,
+            "width": 393,
+            "height": 852
+          },
+          "body": {
+            "top": 66,
+            "bottom": 756,
+            "clientHeight": 690,
+            "scrollHeight": 1117,
+            "scrollTop": 427,
+            "overflowY": "auto",
+            "touchAction": "pan-y"
+          },
+          "textarea": null,
+          "preview": {
+            "top": -295.453125,
+            "bottom": -121.765625,
+            "height": 173.6875,
+            "characterCount": 9764
+          },
+          "submit": {
+            "top": 773,
+            "bottom": 835,
+            "visible": true,
+            "fullyVisible": true
+          },
+          "keyboardMode": false,
+          "cover": {
+            "top": 582.734375,
+            "bottom": 602.234375,
+            "insideBody": true
+          }
+        }
+      },
+      "importedReader": {
+        "viewportHeight": 852,
+        "viewportVariable": "852px",
+        "sentenceCount": 8,
+        "firstText": "Studentsanalyzeramenculturebyaskinghoweachregionlinksbroth,noodles,flavor,tradition,recipe,shop,chef,customer,community,history,ingredient,texture,aroma,style,innovation,localpride,popularappeal,mealcustoms,bowldesign,andidentity.",
+        "document": {
+          "scrollWidth": 393,
+          "clientWidth": 393,
+          "scrollX": 0,
+          "horizontalOverflow": false
+        },
+        "guideCount": 0,
+        "screen": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "shell": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "header": {
+          "top": 0,
+          "right": 393,
+          "bottom": 56,
+          "left": 0,
+          "width": 393,
+          "height": 56
+        },
+        "title": {
+          "top": 8,
+          "right": 204,
+          "bottom": 36,
+          "left": 68,
+          "width": 136,
+          "height": 28
+        },
+        "actions": {
+          "top": 0,
+          "right": 377,
+          "bottom": 44,
+          "left": 212,
+          "width": 165,
+          "height": 44
+        },
+        "actionButtons": [
+          {
+            "top": 0,
+            "right": 265,
+            "bottom": 44,
+            "left": 212,
+            "width": 53,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 329,
+            "bottom": 44,
+            "left": 269,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 377,
+            "bottom": 44,
+            "left": 333,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "main": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735
+        },
+        "playerRestore": {
+          "top": 791,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 61
+        },
+        "scroll": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735,
+          "clientWidth": 393,
+          "scrollWidth": 393,
+          "scrollLeft": 0,
+          "clientHeight": 735,
+          "scrollHeight": 2866
+        },
+        "first": {
+          "top": 74,
+          "right": 381,
+          "bottom": 377.4375,
+          "left": 12,
+          "width": 369,
+          "height": 303.4375
+        }
+      },
+      "reloadedReader": {
+        "viewportHeight": 852,
+        "viewportVariable": "852px",
+        "sentenceCount": 8,
+        "firstText": "Studentsanalyzeramenculturebyaskinghoweachregionlinksbroth,noodles,flavor,tradition,recipe,shop,chef,customer,community,history,ingredient,texture,aroma,style,innovation,localpride,popularappeal,mealcustoms,bowldesign,andidentity.",
+        "document": {
+          "scrollWidth": 393,
+          "clientWidth": 393,
+          "scrollX": 0,
+          "horizontalOverflow": false
+        },
+        "guideCount": 0,
+        "screen": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "shell": {
+          "top": 0,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 852
+        },
+        "header": {
+          "top": 0,
+          "right": 393,
+          "bottom": 56,
+          "left": 0,
+          "width": 393,
+          "height": 56
+        },
+        "title": {
+          "top": 8,
+          "right": 204,
+          "bottom": 36,
+          "left": 68,
+          "width": 136,
+          "height": 28
+        },
+        "actions": {
+          "top": 0,
+          "right": 377,
+          "bottom": 44,
+          "left": 212,
+          "width": 165,
+          "height": 44
+        },
+        "actionButtons": [
+          {
+            "top": 0,
+            "right": 265,
+            "bottom": 44,
+            "left": 212,
+            "width": 53,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 329,
+            "bottom": 44,
+            "left": 269,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "top": 0,
+            "right": 377,
+            "bottom": 44,
+            "left": 333,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "main": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735
+        },
+        "playerRestore": {
+          "top": 791,
+          "right": 393,
+          "bottom": 852,
+          "left": 0,
+          "width": 393,
+          "height": 61
+        },
+        "scroll": {
+          "top": 56,
+          "right": 393,
+          "bottom": 791,
+          "left": 0,
+          "width": 393,
+          "height": 735,
+          "clientWidth": 393,
+          "scrollWidth": 393,
+          "scrollLeft": 0,
+          "clientHeight": 735,
+          "scrollHeight": 2866
+        },
+        "first": {
+          "top": 74,
+          "right": 381,
+          "bottom": 377.4375,
+          "left": 12,
+          "width": 369,
+          "height": 303.4375
+        }
+      },
+      "readerTouchProbe": {
+        "wordStyle": {
+          "webkitUserSelect": "none",
+          "touchAction": "manipulation"
+        },
+        "effectiveUserSelect": "none",
+        "activated": true
+      }
+    },
+    "screenshots": {
+      "create": "qa-artifacts/screenshots/iphone-16-webkit-create-lower-form-after-keyboard-cycle.png",
+      "importerKeyboard": "qa-artifacts/screenshots/iphone-16-webkit-importer-keyboard-field-clear.png",
+      "importerPasted": "qa-artifacts/screenshots/iphone-16-webkit-importer-after-paste.png",
+      "importer": "qa-artifacts/screenshots/iphone-16-webkit-importer-bottom-reachable.png",
+      "importSuccess": "qa-artifacts/screenshots/iphone-16-webkit-import-success.png",
+      "importReloaded": "qa-artifacts/screenshots/iphone-16-webkit-import-reloaded.png",
+      "readerTouchProbe": "qa-artifacts/screenshots/iphone-16-webkit-word-tap-probe.png"
+    },
+    "failure": null
+  }
+}
