@@ -446,6 +446,10 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
         </section>
 
         <footer className="create-home__footer">
+          <p style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px 18px', fontSize: '13px' }}>
+            <a href="/ai.html" style={{ textDecoration: 'underline', textUnderlineOffset: '3px' }}>アプリの説明をAIに渡す</a>
+            <a href="/ai-export.html" style={{ textDecoration: 'underline', textUnderlineOffset: '3px' }}>教材をClaudeに渡す</a>
+          </p>
           <img className="create-home__footer-flowers" src="/create-home/footer-flowers.webp" alt="" aria-hidden="true" draggable={false} loading="lazy" decoding="async" />
           <div className="create-home__footer-note">
             <span aria-hidden="true">♢</span>
@@ -467,3 +471,4 @@ const CreateHomeScreen: React.FC<CreateHomeScreenProps> = ({
 };
 
 export default CreateHomeScreen;
+

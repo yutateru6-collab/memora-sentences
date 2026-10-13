@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{{NAME}}の教材をClaudeに渡す</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f7f6f2;color:#172026;font:16px/1.8 system-ui,sans-serif}main{max-width:860px;margin:auto;padding:28px 20px 64px}h1{font-size:clamp(24px,5vw,36px);line-height:1.4}a{color:#215e4c}button{padding:12px 18px;margin:6px 8px 6px 0;border:1px solid #215e4c;border-radius:8px;background:#215e4c;color:white;font:inherit;cursor:pointer}button:disabled{opacity:.45;cursor:default}fieldset{border:1px solid #cbcfc8;border-radius:8px;padding:16px;margin:24px 0}label{display:flex;align-items:center;gap:12px;padding:6px 0}input{width:20px;height:20px;flex:none}textarea{width:100%;min-height:340px;border:1px solid #a8b1ac;border-radius:8px;padding:14px;font:14px/1.65 ui-monospace,monospace;resize:vertical}.note{background:#e9eee9;border-radius:8px;padding:14px 18px}#status{min-height:3em}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #c08628;outline-offset:3px}
+  </style>
+</head>
+<body data-app="{{ID}}" data-app-name="{{NAME}}">
+<main>
+  <p><a href="/">アプリに戻る</a> · <a href="/ai.html">Claude向けのアプリ説明</a></p>
+  <h1>{{NAME}}の教材をClaudeに渡す</h1>
+  <p>普段アプリを使っている端末・ブラウザで開いてください。保存された教材をテキストにまとめ、Claudeに添付できるファイルを作ります。</p>
+  <p class="note">教材はここで確認・選択できます。ダウンロードしたファイルをClaudeのメッセージに添付してください。音声・動画・画像は含みません。</p>
+  <noscript><p>登録教材の書き出しにはブラウザのJavaScriptが必要です。アプリの機能と生成形式は、<a href="/ai.html">説明ページ</a>や<a href="/ai.txt">テキスト版</a>で読めます。</p></noscript>
+  <button type="button" id="load">登録教材を確認</button>
+  <p id="status" role="status" aria-live="polite">ボタンを押すと、このブラウザの教材を読み取ります。</p>
+  <fieldset><legend>渡す教材</legend><div id="selection"></div></fieldset>
+  <button type="button" id="download" disabled>選んだ教材をテキストで保存</button>
+  <label for="preview">書き出す内容</label>
+  <textarea id="preview" readonly spellcheck="false"></textarea>
+  <p>この画面では、学習履歴・個人設定・APIキーを書き出さず、保存データの変更やアップロードも行いません。</p>
+</main>
+<script type="module" src="/ai-export.mjs"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'memora-shell-v2';
+const CACHE_NAME = 'memora-shell-v3';
 const urlsToCache = ['/manifest.json'];
 
 self.addEventListener('install', event => {
@@ -11,6 +11,8 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin && (url.pathname.startsWith('/ai') || url.pathname === '/llms.txt')) return;
 
   // Always prefer the network for navigations. The previous cache-first shell
   // could keep an old bundle alive on installed iPhones after a deployment.
@@ -85,3 +87,4 @@ self.addEventListener('activate', event => {
       .then(() => self.clients.claim())
   );
 });
+

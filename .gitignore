@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated public AI reading pages
+/public/ai.html
+/public/ai.txt
+/public/ai-export.html
+/public/ai-sample.json
+/public/llms.txt
